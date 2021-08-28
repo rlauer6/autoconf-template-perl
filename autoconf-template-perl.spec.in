@@ -9,7 +9,7 @@ Release:    %(echo @VERSION@ | awk -F- '{if (length($2) == 0) {print "0" } else 
 License:    GNU Public License 
 Source:     %{project_base}-%{project_version}.tar.gz
 
-BuildArch:  noarch
+BuildArch:  x86_64
 
 %define _prefix         /usr
 %define _sysconfdir     %{_prefix}/etc

@@ -29,7 +29,15 @@ while (my $module = <> ) {
   my $v = Module::CoreList->first_release($module);
            
   if ( $v ) {
-    print STDERR "$module\n";
+    eval "require $module";
+    if ($@) {
+      print "$module\n";
+    }
+    else {
+      print STDERR "$module\n";
+    }
+    
+    
   }
   else {
     print "$module\n";

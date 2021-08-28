@@ -23,7 +23,7 @@ done
 test -s "$perl_requires" || exit 0;
 
 # create module list, filter out core junk
-sort -u $perl_requires | perl utils/is-core.pl 2>requirements-core.txt >$modules
+sort -u $perl_requires | grep -v "^perl " | perl utils/is-core.pl 2>requirements-core.txt >$modules
 
 # only output what we don't provide
 AX_REQUIRED_PERL_MODULES=$(mktemp)

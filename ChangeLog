@@ -1,3 +1,14 @@
+Sat Aug 28 12:02:09 2021  Rob Lauer  <rlauer6@comcast.net>
+
+	[bugs]
+	* autoconf-template-perl.spec.in: x86_64
+	* utils/find-perl-requires.sh: remove perl as dependency
+	* utils/is-core.pl
+	- check if module is installed even if it is reported to be core
+	* utils/perl-deps.pl
+	- add trailing slash to module list
+	- avoid trailing slash if no modules in directory
+
 Fri Sep  3 08:46:09 2021  Rob Lauer  <rlauer6@comcast.net>
 	* git version first check-in
 

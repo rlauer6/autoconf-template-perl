@@ -105,7 +105,7 @@ sub main {
     $sub_dir =~s|$root_dir\/?||;
     if (! $sub_dir ) {
       printf("PERLMODULES = \\\n    ");
-      printf("%s\n", join("\n    ", @{$dirs->{$d}}));
+      printf("%s\n", join(" \\\n    ", @{$dirs->{$d}}));
       printf("\nGPERLMODULES = \$(PERLMODULES:.pm.in=.pm)\n");
       printf("\nperl5lib_DATA = \$(GPERLMODULES)\n");
     
@@ -122,10 +122,15 @@ sub main {
       my $modules = uc($sub_dir);
       $modules =~s/\///g;
       push @module_list, "\$(${modules}MODULES)";
-      
       printf("\n%s\n", join("\n", print_header($sub_dir, 48)));
-      printf("%sMODULES = \\\n    ", $modules);
-      printf("%s\n", join(" \\\n    ", map { $sub_dir . "/$_" } @{$dirs->{$d}}));
+
+      if (@{$dirs->{$d}}) {
+        printf("%sMODULES = \\\n    ", $modules);
+        printf("%s\n", join(" \\\n    ", map { $sub_dir . "/$_" } @{$dirs->{$d}}));
+      }
+      else {
+        printf("%sMODULES = \n    ", $modules);
+      }
       printf("\nG%sMODULES = \$(%sMODULES:.pm.in=.pm)\n", $modules, $modules);
       printf("\nperl5lib_%sdir = \$(perl5libdir)/%s", lc($modules), $sub_dir);
       printf("\nperl5lib_%s_DATA = \$(G%sMODULES)\n", lc($modules), $modules);
