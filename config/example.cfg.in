@@ -1,0 +1,89 @@
+# $Id: example.cfg.in,v 1.1.1.1 2015/12/04 00:04:42 rlauer Exp $
+#
+# +---------------------+  
+# | Example: foo.cfg.in |
+# +---------------------+  
+#
+#  Don't forget to set the makevar variables in your Makefile.am (see below for information)
+#
+#  ...and as this project template does don't forget to place this:
+#
+#   @do_subst_command@ 
+# 
+#   ...somewhere in your Makefile.am It defines a sed command line
+#   that does the substitutions in your .in file, replacing @SIS_XXX@,
+#   etc, with the value of $XXX set in your Makefile.am as shown
+#   below:
+#                              
+#    NAME_DB = @SIS_NAME_DB@
+#    NAME_USERNAME = @SIS_NAME_USERNAME@
+#    NAME_PASSWORD = @SIS_NAME_PASSWORD@
+#
+# Example of using the AM_CONDITIONAL (--enable-some-thingy) in your
+# Makefile.am:
+#    
+#    if SOME_THINGY_ENABLED 
+#       SOME_THINGY = on
+#    else
+#       SOME_THINGY = off
+#    endif
+
+[database]
+db = @NAME_DB@
+username = @NAME_USERNAME@
+password = @NAME_PASSWORD@
+
+[log]
+level = info
+path = @logdir@/foo.log
+
+[option]
+some_thingy @SOME_THINGY@
+
+# --> use './configure --help' to see all the possible configuration
+#     options and features available in this project template
+#
+# --> In general, the feature or option shown becomes available as an autoconf
+#      variable in your Makefile.am as the capitalized version of the
+#      token dropping the --with or --enable and by replacing the dash
+#      ('-') with an underscore ('_')
+#
+#      Example: --with-sis-name-db ===> @SIS_NAME_DB@
+#
+#      In order to use this in your source files (.in), the sed
+#      command that actually does the substitution during the 'make'
+#      phase expects that you have created a makevar of the same name
+#      without the SIS_ part in your Makefile.am.
+#
+#      Makefile.am: 
+#
+#      NAME_DB = @SIS_NAME_DB@
+#
+# Some possible assignments you may find useful in your Makefile.am:
+#
+# NAME_DB = @SIS_NAME_DB@ 
+# NAME_USERNAME = @SIS_NAME_USERNAME@
+# NAME_PASSWORD = @SIS_NAME_PASSWORD@
+
+# OMS_DB = @SIS_OMS_DB@ 
+# OMS_USERNAME = @SIS_OMS_USERNAME@
+# OMS_PASSWORD = @SIS_OMS_PASSWORD@
+
+# CDS_DB = @SIS_CDS_DB@ 
+# CDS_USERNAME = @SIS_CDS_USERNAME@
+# CDS_PASSWORD = @SIS_CDS_PASSWORD@
+
+# ACCTN_DB = @SIS_ACCTN_DB@ 
+# ACCTN_USERNAME = @SIS_ACCTN_USERNAME@
+# ACCTN_PASSWORD = @SIS_ACCTN_PASSWORD@
+
+# MARS_TAX_DB = @SIS_MARS_TAX_DB@ 
+# MARS_TAX_USERNAME = @SIS_MARS_TAX_USERNAME@
+# MARS_TAX_PASSWORD = @SIS_MARS_TAX_PASSWORD@
+
+# GEO_DB = @SIS_GEO_DB@ 
+# GEO_USERNAME = @SIS_GEO_USERNAME@
+# GEO_PASSWORD = @SIS_GEO_PASSWORD@
+
+# REPORTS_USERNAME = @SIS_REPORTS_USERNAME@
+# REPORTS_PASSWORD = @SIS_REPORTS_PASSWORD@

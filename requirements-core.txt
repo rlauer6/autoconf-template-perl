@@ -1,0 +1,7 @@
+Data::Dumper
+Exporter
+File::Basename
+Getopt::Long
+strict
+vars
+warnings

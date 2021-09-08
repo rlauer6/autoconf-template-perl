@@ -1,0 +1,25 @@
+# -*- mode: make; -*-
+all: requirements
+
+.PHONY: requirements
+requirements: autotools/ax_required_perl_modules.m4 includes/perl-modules.inc
+
+autotools/ax_required_perl_modules.m4: includes/perl-modules.inc
+	set -x; \
+	mkdir -p autotools; \
+	utils/find-perl-requires.sh >$@
+
+includes/perl-modules.inc: perl-deps.yaml
+	mkdir -p includes || true
+	perl utils/perl-deps.pl -d $< >$@
+
+perl-deps.yaml:
+	utils/perl-deps.sh >$@
+
+CLEANFILES = \
+    includes/perl-modules.inc \
+    ax_required_perl_modules.m4 \
+    perl-deps.yaml
+
+clean:
+	rm -f $(CLEANFILES)

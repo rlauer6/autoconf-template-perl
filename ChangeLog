@@ -1,0 +1,31 @@
+Fri Sep  3 08:46:09 2021  Rob Lauer  <rlauer6@comcast.net>
+	* git version first check-in
+
+2016-05-17 Rob Lauer <rlauer6@comcast.net>
+	* src/main/perl/Makefile.am: -cgi-bin
+
+2016-05-16 Rob Lauer <rlauer6@comcast.net>
+	* autoconf-template-perl.spec.in
+	- perl5libdir
+	- configure
+
+2016-05-06 Rob Lauer <rlauer6@comcast.net>
+	* src/main/perl/cgi-bin/Makfile.am: new
+	* src/main/perl/Makefile.am: cgi-bin
+	* fixup-project: /usr default prefix
+	* config/Makefile.am: removed unnecessary assignments
+	* directories.inc: tbc specfic directories
+	* configure.ac
+	(ads_PERL_MODULE): +Bedrock, -foreign modules
+	* src/main/perl/bin/Makefile.am: tbc specific man pages
+	* src/main/perl/lib/Makefile.am: likewise
+
+2015-12-03 Rob Lauer <rlauer6@comcast.net>
+
+	* configure.ac: RPM_BUILD_MODE
+	* autotools/am_build_mode.m4: new
+	* autotools/ax_distcheck_hack: DISTCHECK_HACK_ENABLED->DISTCHECK_HACK
+	* find-perl-requires: new
+	* directories.inc: new
+
+	[imported sources]:

@@ -1,0 +1,7 @@
+modules:
+  Foo.pm.in:
+    - Foo/Bar.pm.in
+  Foo/Bar/Baz.pm.in:
+  Foo/Bar/Buz.pm.in:
+  Foo/Bar.pm.in:
+    - Foo/Bar/Baz.pm.in

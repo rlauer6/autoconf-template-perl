@@ -1,0 +1,4 @@
+AC_DEFUN([AX_REQUIRED_PERL_MODULES], [
+  ads_PERL_MODULE(Getopt::Long)
+  ads_PERL_MODULE([JSON])
+])

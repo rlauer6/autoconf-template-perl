@@ -1,0 +1,87 @@
+#!@perlrun@
+# modulino pattern - 
+package example;
+
+use strict;
+use warnings;
+
+BEGIN  {
+  push @INC, '@perl5libdir@';
+
+  # if ax_perl5_extra_includes was configured...
+  my $ax_perl5_extra_includes = '@ax_perl5_extra_includes@';
+  for (split /:/, $ax_perl5_extra_includes) {
+    push @INC, $_;
+  }
+
+  use Exporter ();
+  use File::Basename;
+  use Data::Dumper;
+  
+  use vars qw ( $VERSION $SCRIPT_NAME );
+
+  $SCRIPT_NAME = fileparse($0, qr/\..*/);
+  $VERSION  = "0.1";
+}
+
+=pod
+
+=head1 NAME
+
+$0
+
+=head1 SYNOPSIS
+
+  $0
+
+=head1 DESCRIPTION
+
+=head1 NOTES
+
+=head1 AUTHOR
+
+=cut
+
+# +--------------------------+
+# | MAIN PROGRAM STARTS HERE |
+# +--------------------------+
+
+use Getopt::Long;
+
+use Foo;
+use Foo::Bar;
+
+use vars qw( $help $version );
+
+__PACKAGE__->main() unless caller();
+
+sub get_options {
+  @ARGV = @_;
+  
+  GetOptions( 
+             "help",    \$help,
+             "version", \$version
+            );
+
+  defined $help || defined $version && do {
+    
+    printf("%s v%s\n", $SCRIPT_NAME, $VERSION);
+  };
+  
+  defined $help && do {
+    print <<eom;
+Usage: $SCRIPT_NAME OPTIONS
+
+eom
+    return;
+  };
+
+}
+
+sub main {
+  get_options(@ARGV);
+  
+  return 0;
+}
+
+1;

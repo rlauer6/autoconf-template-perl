@@ -1,0 +1,11 @@
+package Foo::Bar;
+use Foo::Bar::Baz;
+
+use strict;
+use warnings;
+
+sub new {
+  return bless {}, shift;
+}
+
+1;
