@@ -85,7 +85,7 @@ sub main {
             );
 
   defined $help || defined $version && do {
-    
+
     printf("%s v%s\n", $0, $VERSION);
     return 0;
   };
@@ -95,12 +95,12 @@ sub main {
     printf("no dependency file. $0 -d deps.yaml\n");
     return 0;
   }
-  
+
   my $all_dependencies = LoadFile($depfile);
   $all_dependencies = $all_dependencies->{modules};
   my @module_list = ("\$(PERLMODULES)");
-  
-  for my $d (keys $dirs) {
+
+  for my $d (keys %{$dirs}) {
     my $sub_dir = $d;
     $sub_dir =~s|$root_dir\/?||;
     if (! $sub_dir ) {
@@ -108,7 +108,7 @@ sub main {
       printf("%s\n", join(" \\\n    ", @{$dirs->{$d}}));
       printf("\nGPERLMODULES = \$(PERLMODULES:.pm.in=.pm)\n");
       printf("\nperl5lib_DATA = \$(GPERLMODULES)\n");
-    
+
       foreach my $f (@{$dirs->{$d}}) {
         my $dependencies = [ map { s/\.in$//; $_ } @{$all_dependencies->{$f} || []} ];
         my $pm = $f;
@@ -116,7 +116,6 @@ sub main {
         printf("\n%s: %% : %%.in %s\n", $pm, join(" ", @$dependencies));
         printf("include \$(top_srcdir)/includes/perl-build.inc\n");
       }
-    
     }
     else {
       my $modules = uc($sub_dir);

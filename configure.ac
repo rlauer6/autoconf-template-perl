@@ -144,7 +144,7 @@ PERLCRITIC_MODE
 
 AC_ARG_WITH([license],[  --with-license (defaults to GNU Public License)],
 	[LICENSE=$withval],
-        [LICENSE=GNU Public License]
+        [LICENSE=["GNU Public License"]]
 )
 
 AC_SUBST([LICENSE])
@@ -188,3 +188,5 @@ printf "                          bash: %s\n" "`__poor_mans_expand_file_name BAS
 printf "\n"
 printf "                    Maintainer: ${PACKAGE_BUGREPORT}\n"
 printf "                       Version: ${PACKAGE_VERSION}\n\n"
+printf "                  Architecture: %s\n" "`__poor_mans_expand_file_name ARCHITECTURE`"
+printf "                       License: %s\n" "`__poor_mans_expand_file_name LICENSE`"

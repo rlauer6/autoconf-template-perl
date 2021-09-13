@@ -1,3 +1,27 @@
+Mon Sep 13 13:08:15 2021  Rob Lauer  <rlauer6@comcast.net>
+
+	* configure.ac
+	- added LICENSE, ARCHITECTURE output
+	- ["GNU Public License"] not [GNU Public License]
+	* bootstrap
+	- back automake version requirement into bootstrap script
+	- remove Perl dependency file creation (move to init.sh)
+	* init.sh: new
+	- create Perl dependency files
+	- check for required Perl modules
+	- check for required utilities (cpanm, perl.req, automake)
+	* .gitignore: added *.spec
+	* Makefile.perl-req
+	- mode
+	- silence output of make
+	- added cpan target for local installation of files
+	* utils/find-perl-requires.sh
+	- remove helpful messsage (only for RHEL)
+	* is-core.pl: /usr/bin/env, not /bin/env
+	* utils/perl-deps.pl
+	- likewise
+	- %{$dirs}, not $dirs
+
 Sun Sep 12 09:48:29 2021  Rob Lauer  <rlauer6@comcast.net>
 
 	* Makefile.am:

@@ -1,4 +1,4 @@
-#!/bin/env perl
+#!/usr/bin/env perl
 
 use strict;
 use warnings;
@@ -27,7 +27,7 @@ while (my $module = <> ) {
   chomp $module;
   $module =~s/^perl\((.*)\)\s*$/$1/;
   my $v = Module::CoreList->first_release($module);
-           
+
   if ( $v ) {
     eval "require $module";
     if ($@) {
@@ -36,8 +36,6 @@ while (my $module = <> ) {
     else {
       print STDERR "$module\n";
     }
-    
-    
   }
   else {
     print "$module\n";
