@@ -30,6 +30,8 @@ __poor_mans_expand_file_name () {
 [
 do_subst_command='do_subst = sed \
   -e '"'"'s,[@]PACKAGE[@],$(PACKAGE),g'"'"' \
+  -e '"'"'s,[@]LICENSE[@],$(LICENSE),g'"'"' \
+  -e '"'"'s,[@]ARCHITECTURE[@],$(ARCHITECTURE),g'"'"' \
   -e '"'"'s,[@]VERSION[@],$(VERSION),g'"'"' \
   -e '"'"'s,[@]PATH_SEPARATOR[@],$(PATH_SEPARATOR),g'"'"' \
   -e '"'"'s~[@]configure_input[@]~Generated from $@.in; do not edit by hand.~g'"'"' \
@@ -140,6 +142,20 @@ AX_PERLDEPS_CHECK
 RPM_BUILD_MODE
 PERLCRITIC_MODE
 
+AC_ARG_WITH([license],[  --with-license (defaults to GNU Public License)],
+	[LICENSE=$withval],
+        [LICENSE=GNU Public License]
+)
+
+AC_SUBST([LICENSE])
+
+AC_ARG_WITH([architecture],[  --with-architecture (defaults to noarch)],
+	[ARCHITECTURE=$withval],
+        [ARCHITECTURE=noarch]
+)
+
+AC_SUBST([ARCHITECTURE])
+
 AC_CONFIG_FILES([
     Makefile
     src/Makefile
@@ -149,9 +165,9 @@ AC_CONFIG_FILES([
     src/main/perl/lib/Makefile
     src/main/bash/Makefile
     src/main/bash/bin/Makefile
-    ${PACKAGE_NAME}.spec
     config/Makefile
     resources/Makefile
+    ${PACKAGE_NAME}.spec
 ])
 
 AC_OUTPUT

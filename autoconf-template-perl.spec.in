@@ -6,10 +6,11 @@
 Name:       %{project_base}
 Version:    %(echo @VERSION@ | awk -F- '{print $1}')
 Release:    %(echo @VERSION@ | awk -F- '{if (length($2) == 0) {print "0" } else { print $2 } }')
-License:    GNU Public License 
+License:    @LICENSE@
+
 Source:     %{project_base}-%{project_version}.tar.gz
 
-BuildArch:  x86_64
+BuildArch:  @ARCHITECTURE@
 
 %define _prefix         /usr
 %define _sysconfdir     %{_prefix}/etc
@@ -25,19 +26,14 @@ BuildArch:  x86_64
 %define _includedir     %{_prefix}/include
 %define _perl5libdir    %(perl -e 'use Config; print $Config{installsitelib};')
 
-# %define vhostdir        /var/www/vhosts
-
 BuildRoot:  %{buildroot}
 Prefix:     %{_prefix}
-
-### END OF BOILERPLATE HEADER ###
 
 BuildRequires: automake autoconf perl(App::cpanminus)
 
 #--------------------------------------------------------------------#
 
 Summary:  @PACKAGE@
-Group:    Development/Tools 
 
 %description
 
@@ -52,8 +48,12 @@ Group:    Development/Tools
 	    --with-perl5libdir=yes \
             --enable-rpm-build-mode \
             --disable-perldeps \
-            --disable-deps
+            --disable-deps \
+            --with-license=@LICENSE@ \
+            --with-architecture=@ARCHITECTURE@
+            
 make
+test -n "requirements.txt" && make cpan
 
 # Pre-installation steps go here
 %pre
@@ -82,7 +82,7 @@ make DESTDIR=%{buildroot} install
 #%{_sbindir}/*
 
 # Resources (README's, init scripts, reference materials, etc. go in resources)
-#%{_datadir}/resources/%{project_base}
+%{_datadir}/resources/%{project_base}
 
 # Most config files should be sacred
 %config(noreplace) /etc/*

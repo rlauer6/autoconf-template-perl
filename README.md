@@ -15,6 +15,7 @@ Send questions or bugs to Rob Lauer <rclauer@gmail.com>
 
 ![GNU
 Autotools](https://upload.wikimedia.org/wikipedia/en/2/22/Heckert_GNU_white.svg)
+
 Aurelio A. Heckert, CC BY-SA 2.0
 [https://creativecommons.org/licenses/by-sa/2.0], via Wikimedia
 Commons
@@ -40,6 +41,11 @@ This project presents a template for using the toolchain for building
 Perl applications without necessarily having to do a deep dive to learn
 the intricacies (and wonders) of autotools.
 
+Using the autotools toolchain you can create *build rules* and specify
+*deployment targets* for all of your built artifacts. If you've ever
+wondered how software gets installed on a Linux system, then you'll
+want to learn more about autoconfiscated projects.
+
 ## Why Autoconfiscate
 
 The term
@@ -62,11 +68,6 @@ that organized, extensible and scalable.
 
 # Getting Started
 
-After installing and configuring the template, you have the framework
-for a sane build environment for your Perl based project.
-
-# Using the Template
-
 `autoconf-template-perl` is a template.  It is not meant to be
 configured and installed itself.
 
@@ -76,12 +77,49 @@ projects.  To do this, you might do something like:
 ```
 wget https://github.com/rlauer6/autoconf-template-perl/archive/refs/master.zip
 gunzip master.zip
-mv autoconf-template-perl my-awesome-project 
+mv autoconf-template-perl my-awesome-project
+cd my-awesome-project
+perl utils/init.pl --project my-awesome-project \
+  --name "Your Name" \
+  --email your-email@domain.com 
 ```
 
 At this point you will have the template in your
-project directory and you can begin adding to or removing
-parts of the project as necessary.
+project directory and you can begin hacking on the project as
+described in this document.
+
+## Project Structure
+
+Perl projects using this template are laid out as follows:
+
+```.
+├── autom4te.cache
+├── autotools
+├── config
+├── includes
+├── resources
+├── src
+│   └── main
+│       ├── bash
+│       │   └── bin
+│       └── perl
+│           ├── bin
+│           │   └── t
+│           └── lib
+│               └── t
+└── utils
+```
+
+* `autom4te.cache` - automatically created by autoconf
+* `autotools` - contains m4 macros
+* `config` - configuration files
+* `includes` - Makefile includes
+* `resources` - artifacts to be installed
+* `src/perl/bin` - Perl scripts
+* `src/perl/bin/t` - test scripts for Perl scripts
+* `src/perl/lib` - Perl modules
+* `src/perl/lib/t` - test scripts for Perl modules
+* `utils` - project utilities
 
 ## Building Your Perl Scripts
 
@@ -172,3 +210,47 @@ rpmbuild -tb $(ls -1t *.tar.gz | head -1) --sign
 
 
 
+#
+
+# A NOTE ABOUT `PERLINCLUDE'
+
+In most cases you'll want to use a -I "somepath" when compiling the
+Perl script (perl -wc $@) to make sure the Perl scripts or modules
+you are building can find the necessary modules you are using in the
+script. You'll note below that this template includes 3 default
+include paths.
+
+YMMV, depending upon your build tree and other factors, however you
+should not be tricked into assuming your build is working when you
+are in fact using include paths OUTSIDE your build tree and you have
+previously installed the package you are building!
+
+Additionally, you should be aware of the difference between
+$(srcdir) and $(builddir) as they relate to VPATH builds when doing
+
+`make distcheck`
+
+You will also note that $(perl5libdir) is LAST in this order to
+further insulate you from being duped into thinking that you are
+using the newly built Perl modules when in fact you might be
+using those already installed.
+
+Note further that $(builddir)../lib is included as a Perl include path on the
+assumption that your project most likely (but not always) builds
+perl modules as well.
+
+Lastly, the order of the build is therefore important.  You'll want
+to build the src/main/perl/lib first, so these perl modules are
+available to you as you build your perl scripts.  Accordingly,
+src/main/perl/Makefile.am is told to recurse the directories as
+follows:
+
+```
+SUBDIRS = . lib bin
+```
+
+Laying out your build tree is not a mindless task and you should
+consider the intradependencies of the components within the project
+when making those decisions.   Of course, it's not rocket science
+either. ;-)
+ 

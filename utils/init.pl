@@ -4,9 +4,12 @@
 use strict;
 use warnings;
 
+use Carp;
 use Getopt::Long;
 
-__PACKAGE_->main() unless caller();
+use vars qw($PROJECT $EMAIL $FULLNAME $HELP);
+
+__PACKAGE__->main() unless caller();
 
 sub usage {
   print <<eot;
@@ -14,20 +17,34 @@ Usage: $0 --project=your-project-name --email=your-email-address --name=your-nam
 
 Script to customize your autoconfisication template for use.
 
-       Example: $0 ---project=foo \\
-                   --email=rclauer\@gmail.com \\
-                   --name="Rob Lauer"
+Example: $0 ---project=foo \\
+--email=rclauer\@gmail.com \\
+--name="Rob Lauer"
 
 If you have the environment variables FULLNAME and EMAIL set then
 these will be used.
 
 eot
-  return;
 }
 
-sub main {
+sub write_file {
+  my $text = shift;
+  my $file = shift;
 
-  my $INSTALL =<<eot;
+  if (-e $file) {
+    rename($file,"$file.bak");
+  }
+  else {
+    open (my $fh, ">$file") or croak "Could not open INSTALL for writing.";
+    print $fh $text;
+    close $fh;
+  }
+  
+  return $file;
+}
+
+sub create_install {
+  my $TEXT =<<eot;
 Basic Installation
 ==================
 
@@ -271,154 +288,85 @@ Where to put perl modules if the project builds any (defaults to \$perl5libdir)
 `--with-perl-includes=DIR[:DIR:...]
 prepend DIRs to Perl's \@INC which might be helpful when building
 perl modules or perl scripts
-
 eot
+ 
+  write_file(sprintf($TEXT, $PROJECT), 'INSTALL');
+}
 
+sub create_readme {
   my $README =<<eot;
 # README
 
-This is the README file for the `%s` project...
+This is the README for the %s project.
 
 # Overview
 
 # Author
 
-%s  <%s>
-eot
+%s <%s>
 
+# License
+
+eot
+  write_file(sprintf($README, $PROJECT, $FULLNAME, $EMAIL), 'README.md');
+}
+
+sub create_copying {
   my $COPYING =<<eot;
 Copyright (C) %s %s
 All rights reserved
 eot
+  write_file(sprinf($COPYING, $FULLNAME), 'COPYING');
+}
 
+sub create_changelog {
+  my @time_stuff = localtime;
+  my $date = sprintf("%04d-%02d-%02d", $time_stuff[5]+1900, $time_stuff[4]+1, $time_stuff[3]);
+  
   my $CHANGELOG =<<eot;
 %s  %s <%s>
 eot
+  writefile(sprintf($CHANGELOG, $date, $FULLNAME, $EMAIL), 'ChangeLog');;
+}
 
-  use vars qw($PROJECT $EMAIL $FULLNAME $HELP);
-
-  GetOptions(
-             "project=s", \$PROJECT,
-             "email=s", \$EMAIL,
-             "name=s", \$FULLNAME,
-             "help!", \$HELP
-            );
-
-  if ($HELP || ! $PROJECT) {
-    &usage;
-    return 0;
-  }
-
-  $EMAIL = $EMAIL || $ENV{EMAIL} || 'your-email@signatureinfo.com';
-  $FULLNAME = $FULLNAME || $ENV{FULLNAME} || 'your-name';
-
-  my @time_stuff = localtime;
-  my $date = sprintf("%04d-%02d-%02d", $time_stuff[5]+1900, $time_stuff[4]+1, $time_stuff[3]);
-
-  printf "=> Creating TBD...\n"; sleep(1);
-  open TBD, ">TBD" or die "Cannot open TBD for writing!";
-  print TBD sprintf($TBD, $PROJECT);
-  close TBD;
-
-  printf "=> Creating INSTALLS...\n"; sleep(1);
-  open INSTALL, ">INSTALL" or die "Cannot open INSTALL for writing!";
-  print INSTALL sprintf($INSTALL, $PROJECT);
-  close INSTALL;
-
-  printf "=> Creating README...\n"; sleep(1);
-  open README, ">README.md" or die "Cannot open README for writing!";
-  print README sprintf($README, $PROJECT, $FULLNAME, $EMAIL);
-  close README;
-
-  printf "=> Creating COPYING...\n"; sleep(1);
-  open COPYING, ">COPYING" or die "Cannot open COPYING for writing!";
-  print COPYING sprintf($COPYING, $FULLNAME);
-  close COPYING;
-
-  printf "=> Creating AUTHORS...\n"; sleep(1);
-  open AUTHORS, ">AUTHORS" or die "Cannot open AUTHORS for writing!";
-  print AUTHORS sprintf("%s - %s\n", $FULLNAME, $EMAIL);
-  close AUTHORS;
-
-  printf "=> Creating ChangeLog...\n"; sleep(1);
-  open CHANGELOG, ">ChangeLog" or die "Cannot open ChangeLog for writing!";
-  my @d = localtime;
-  print CHANGELOG sprintf($CHANGELOG, sprintf("%02d-%02d-%04d", 1+$d[4], $d[3], 1900+$d[5]), $FULLNAME, $EMAIL);
-  close CHANGELOG;
-
-  printf "=> Creating Makefile.am...\n"; sleep(1);
-  open (my $fd, ">Makefile.am") or die "Cannot open Makefile.am for writing!\n";
-  print $fd <<eot;
-SUBDIRS = . src config
+sub create_makefile {
+  my $MAKEFILE =<<eot;
+SUBDIRS = . src config resources
 
 ACLOCAL_AMFLAGS = -I autotools
 
 dist_noinst_DATA = \\
-ChangeLog \\
-README.md \\
-\${PACKAGE_NAME}.spec \\
-\${PACKAGE_NAME}.spec.in
+  ChangeLog \\
+  README.md \\
+  \${PACKAGE_NAME}.spec \\
+  \${PACKAGE_NAME}.spec.in
 eot
+  write_file($MAKEFILE, 'Makefile.am');
+}
 
-  close $fd;
+sub main {
+  GetOptions(
+             "project=s", \$PROJECT,
+             "email=s",   \$EMAIL,
+             "name=s",    \$FULLNAME,
+             "help!",     \$HELP
+            );
 
-  printf "=> Customizing 'configure.ac'...\n"; sleep(1);
-
-  if (-s "configure.ac") {
-    rename("configure.ac","configure.ac.old");
-    {
-      local $/;
-      open FILE, "<configure.ac.old";
-      my $configure_ac = <FILE>;
-      close FILE;
-      my $ac_init = sprintf("AC_INIT([%s], [1.0.0], [%s])", $PROJECT, $EMAIL);
-      $configure_ac =~s/^AC_INIT\(.*?\)/$ac_init/;
-      open FILE, ">configure.ac";
-      print FILE $configure_ac;
-      close FILE;
-      unlink "configure.ac.old" if -s "configure.ac";
-    }
+  if ($HELP || ! $PROJECT) {
+    usage();
   }
-
-  print <<eot;
-
-Project initialization...
-
-You probably want to perform the following steps at this point:
-
-1. rename the current working directory to your project name
-
-mv autoconf-template-perl-1.0.1 your-project-name
-
-2. cp your project source files to their various destinations:
-
-src/main/perl/bin => perl scripts
-src/main/perl/lib => perl modules
-config            => configuration files
-
-* * REMEMBER TO ADD A .in EXTENSION TO YOUR YOUR FILES * *
-
-3. edit the Makfile.am files in 
-
-src/main/perl/bin
-src/main/perl/lib
-config
-
-...as appropriate, adding your source files, etc.
-
-4. creating a working build
-
-autoreconf -i
-
-./configure --prefix=/usr
-
-make && make install
-
-make distcheck
-
-5. check your project into CVS
-
-eot
-
+  else {
+    $EMAIL = $EMAIL || $ENV{EMAIL};
+    $FULLNAME = $FULLNAME || $ENV{FULLNAME} || 'your-name';
+    
+    create_install();
+    create_copying();
+    create_readme();
+    create_changelog();
+    create_makefile();
+    
+    print "See https://github.com/rlauer6/autoconf-template-perl for more details."
+  }
+  
   return 0;
 }

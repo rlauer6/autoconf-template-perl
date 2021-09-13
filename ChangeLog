@@ -1,4 +1,33 @@
-Sat Aug 28 12:02:09 2021  Rob Lauer  <rlauer6@comcast.net>
+Sun Sep 12 09:48:29 2021  Rob Lauer  <rlauer6@comcast.net>
+
+	* Makefile.am:
+	- use $(abs_builddir), not $(top_srcdir)
+	- remove ALL_REQUIREMENTS
+	* autoconf-template-perl.spec.in
+	- remove Group
+	- add @LICENSE@, @ARCHITECTURE@
+	- removed definition of vhostdir
+	- add options --with-license, --with-architecture
+	- explicitly install CPAN files during build phase
+	- install files from resources
+	* configure.ac
+	(do_subst): add @LICENSE@, @ARCHITECTURE@
+	* includes/perlcritic.inc
+	- add individual targets for .pl, .pm, .cgi files
+	- CHECK_ALL flag to continue on perlcritic errors
+	* resources/Makefile.am: add example.txt
+	* configure.ac
+	- --with-license, --with-architecture
+	* utils/init.pl
+	(main): new -  modulino pattern
+	- removed extra instructions, refer to README
+	(write_file): new
+	(create_readme): new
+	(create_install): new
+	(create_copying): new
+	(create_makefile): new
+
+Thu Sep   17:41:09 2021  Rob Lauer  <rlauer6@comcast.net>
 
 	[bugs]
 	* autoconf-template-perl.spec.in: x86_64
