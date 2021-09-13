@@ -39,20 +39,14 @@ endif
 
 CLEANFILES = 
 
-if RPM_BUILD_MODE
-ALL_REQUIREMENTS = cpan
-else
-ALL_REQUIREMENTS = 
-endif
-
-all: $(ALL_REQUIREMENTS)
+all:
 
 # install CPAN dependencies
 .PHONY: cpan
 cpan:
-	mkdir -p $(top_srcdir)/cpan
+	mkdir -p $(abs_builddir)/cpan
 	for a in $$(cat requirements.txt); do \
-	  cpanm -i -L $(top_srcdir)/cpan -n $$a; \
+	  cpanm -i -L $(abs_builddir)/cpan -n $$a; \
 	done
 
 .PHONY: test
