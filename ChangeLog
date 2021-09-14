@@ -1,3 +1,8 @@
+Tue Sep 14 09:00:59 2021  Rob Lauer  <rlauer6@comcast.net>
+
+	* utils/find-perl-requires.sh
+	- add .cgi.in files for requirements check
+
 Sun Sep 12 09:48:29 2021  Rob Lauer  <rlauer6@comcast.net>
 
 	* Makefile.am:

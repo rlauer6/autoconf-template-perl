@@ -16,7 +16,10 @@ perl_requires=$(mktemp)
 modules=$(mktemp)
 
 # see what the Perl scripts and modules require
-for a in $(find ./src/main/perl -name '*\.p[ml]\.in'); do 
+FILES_TO_CHECK=$(find ./src/main/perl -name '*\.p[ml]\.in')
+FILES_TO_CHECK="$FILES_TO_CHECK $(find ./src/main/perl -name '*\.cgi\.in')"
+
+for a in "$FILES_TO_CHECK"; do 
     /usr/lib/rpm/perl.req $a | perl -npe 's/^perl\((.*?)\)$/$1/;' >>$perl_requires
 done
 
