@@ -49,9 +49,9 @@ define BUILD_PERLCRITIC_RULE
 	  echo "check all $(CHECK_ALL)"; \
 	  test -n "$(CHECK_ALL)" && true; \
 	fi
-enddef
+endef
 
-$(GPERLCRITIC_PM): % : %.pm $(PERLCRITIC_PM)
+$(GPERLCRITIC_PM): %.pc : %.pm $(PERLCRITIC_PM)
 	EXT=pm; \
 	$(BUILD_PERLCRITIC_RULE)
 
@@ -59,7 +59,7 @@ $(GPERLCRITIC_PL): %.pc : %.pl $(PERLCRITIC_PL)
 	EXT=pl; \
 	$(BUILD_PERLCRITIC_RULE)
 
-$(GPERLCRITIC_CGI): % : %.cgi $(PERLCRITIC_CGI)
+$(GPERLCRITIC_CGI): %.pc : %.cgi $(PERLCRITIC_CGI)
 	EXT=cgi; \
 	$(BUILD_PERLCRITIC_RULE)
 endif

@@ -1,20 +1,29 @@
-# -*- mode: make; -*-
+# -*- mode: makefile; -*-
 all: requirements
 
 .PHONY: requirements
 requirements: autotools/ax_required_perl_modules.m4 includes/perl-modules.inc
 
 autotools/ax_required_perl_modules.m4: includes/perl-modules.inc
-	set -x; \
-	mkdir -p autotools; \
-	utils/find-perl-requires.sh >$@
+	@mkdir -p autotools; \
+	utils/find-perl-requires.sh >$@; \
+	echo "...$@"
 
 includes/perl-modules.inc: perl-deps.yaml
-	mkdir -p includes || true
-	perl utils/perl-deps.pl -d $< >$@
+	@mkdir -p includes || true; \
+	perl utils/perl-deps.pl -d $< >$@; \
+	echo "...$@"
 
 perl-deps.yaml:
-	utils/perl-deps.sh >$@
+	@utils/perl-deps.sh >$@; \
+	echo "...$@"
+
+# Local install of CPAN modules (development only)
+.PHONY: cpan
+cpan: requirements
+	for a in $$(cat requirements.txt); do \
+	  cpanm --sudo -i $$a; \
+	done
 
 CLEANFILES = \
     includes/perl-modules.inc \
@@ -22,4 +31,4 @@ CLEANFILES = \
     perl-deps.yaml
 
 clean:
-	rm -f $(CLEANFILES)
+	@rm -f $(CLEANFILES)

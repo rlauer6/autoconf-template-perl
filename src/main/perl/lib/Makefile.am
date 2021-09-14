@@ -1,10 +1,14 @@
 SUBDIRS = .
 
 include $(top_srcdir)/includes/directories.inc
+include $(top_srcdir)/includes/perl-build.inc
 include $(top_srcdir)/includes/perl-modules.inc
 include $(top_srcdir)/includes/perlcritic.inc
 
 GALLMODULES = $(ALLMODULES:.pm.in=.pm)
+
+perl5lib_DATA = $(GALLMODULES)
+
 PERLCRITIC_MODULES = $(GALLMODULES)
 
 perlrun = @PERL@
@@ -44,14 +48,17 @@ PERLINCLUDE = \
 %.pm: %.pm.in
 	test -d "$$(dirname "$@")" || $(INSTALL) -d "$$(dirname "$@")"
 	$(do_subst) $< > $@
+	>2& echo "$@"
 	$(perlwc) -wc $(PERLINCLUDE)  -M$$(echo $@ | perl -np -e 's/\//\:\:/g; s/\.pm$$//;') -e 1 || { rm $@ && exit 1; }
 
 test: $(GALLMODULES)
 	prove -v t/
 
+PERLCRITIC_PM = $(GALLMODULES)
+
 all:
 
-CLEANFILES = $(GALLMODULES)
+CLEANFILES = $(GALLMODULES) $(GPERLCRITIC_PM)
 
 $(G1MANPAGES): %.1man : %.pm
 	target_name="$@";\

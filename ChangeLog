@@ -3,6 +3,44 @@ Tue Sep 14 09:00:59 2021  Rob Lauer  <rlauer6@comcast.net>
 	* utils/find-perl-requires.sh
 	- add .cgi.in files for requirements check
 
+Mon Sep 13 13:08:15 2021  Rob Lauer  <rlauer6@comcast.net>
+
+	* configure.ac
+	- added LICENSE, ARCHITECTURE output
+	- ["GNU Public License"] not [GNU Public License]
+	* bootstrap
+	- back automake version requirement into bootstrap script
+	- remove Perl dependency file creation (move to init.sh)
+	* init.sh: new
+	- create Perl dependency files
+	- check for required Perl modules
+	- check for required utilities (cpanm, perl.req, automake)
+	* .gitignore: added *.spec
+	* Makefile.perl-req
+	- mode
+	- silence output of make
+	- added cpan target for local installation of files
+	* utils/find-perl-requires.sh
+	- remove helpful messsage (only for RHEL)
+	* is-core.pl: /usr/bin/env, not /bin/env
+	* utils/perl-deps.pl
+	- likewise
+	- %{$dirs}, not $dirs
+	- $(BUILD_PERL_MODULE_RULE) not include
+	* includes/perlcritic.inc: endef
+	* src/main/perl/lib/Makefile.am
+	- add GALLMODULES to PERLCRITIC_PM for make check
+	- add all generated Perl modules to perl5lib_DATA
+	- include perl-build.inc
+	* src/main/perl/bin/Makefile.am
+	- separate targets for .pl, .pm files for perlcritic
+	- added ALLSCRIPTS, placeholder for customizations
+	- include perl-build.inc
+	- remove note about PERLINCLUDE (reference README)
+	- add $GPERLCRITIC_PL to CLEANFILES
+	- remove $G1MANPAGES from CLEANFILES
+	- add BUILD_MAN_PAGE_RULE, || true
+
 Sun Sep 12 09:48:29 2021  Rob Lauer  <rlauer6@comcast.net>
 
 	* Makefile.am:

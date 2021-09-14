@@ -5,7 +5,6 @@
 
 if ! test -x "/usr/lib/rpm/perl.req"; then
     echo "/usr/lib/rpm/perl.req not found.  Install the rpm-build package."
-    echo "sudo yum install -y rpm-build"
     exit -1
 fi
 
