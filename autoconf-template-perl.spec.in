@@ -82,7 +82,7 @@ make DESTDIR=%{buildroot} install
 #%{_sbindir}/*
 
 # Resources (README's, init scripts, reference materials, etc. go in resources)
-%{_datadir}/resources/%{project_base}
+%{_datadir}/resources/%{project_base}/*
 
 # Most config files should be sacred
 %config(noreplace) /etc/*

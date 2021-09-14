@@ -1,3 +1,9 @@
+Tue Sep 14 11:32:16 2021  Rob Lauer  <rlauer6@comcast.net>
+
+	* resources/Makefile.am: dist_resources_DATA
+	* autoconf-template-perl.spec.in: /* for resources
+	* includes/directories.inc: resourcedir $(datadir)/resources/@PACKAGE@
+
 Tue Sep 14 10:46:50 2021  Rob Lauer  <rlauer6@comcast.net>
 
 	* includes/directories.inc: whitespace

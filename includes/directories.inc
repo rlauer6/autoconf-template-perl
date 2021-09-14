@@ -4,7 +4,7 @@ logrotatedir   = $(sysconfdir)/logrotate.d
 init_ddir      = $(sysconfdir)/init.d
 
 # resources
-resourcesdir    = $(datadir)/@PACKAGE@
+resourcesdir   = $(datadir)/resources/@PACKAGE@
 
 # perl modules (common)
 perl5libdir    = @perl5libdir@
