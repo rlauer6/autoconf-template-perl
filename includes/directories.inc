@@ -8,4 +8,3 @@ resourcesdir    = $(datadir)/@PACKAGE@
 
 # perl modules (common)
 perl5libdir    = @perl5libdir@
-

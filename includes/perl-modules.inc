@@ -3,10 +3,8 @@ PERLMODULES = \
 
 GPERLMODULES = $(PERLMODULES:.pm.in=.pm)
 
-perl5lib_DATA = $(GPERLMODULES)
-
 Foo.pm: % : %.in Foo/Bar.pm
-include $(top_srcdir)/includes/perl-build.inc
+	$(BUILD_PERL_MODULE_RULE)
 
 # +--------------------------------------------+
 # | Foo                                        |
@@ -23,7 +21,8 @@ perl5lib_foo_DATA = $(GFOOMODULES)
 # | build rule for Foo/Bar.pm.in               |
 # +--------------------------------------------+
 Foo/Bar.pm: % : %.in Foo/Bar/Baz.pm
-include $(top_srcdir)/includes/perl-build.inc
+	$(BUILD_PERL_MODULE_RULE)
+
 
 # +--------------------------------------------+
 # | Foo/Bar                                    |
@@ -41,13 +40,15 @@ perl5lib_foobar_DATA = $(GFOOBARMODULES)
 # | build rule for Foo/Bar/Baz.pm.in           |
 # +--------------------------------------------+
 Foo/Bar/Baz.pm: % : %.in 
-include $(top_srcdir)/includes/perl-build.inc
+	$(BUILD_PERL_MODULE_RULE)
+
 
 # +--------------------------------------------+
 # | build rule for Foo/Bar/Buz.pm.in           |
 # +--------------------------------------------+
 Foo/Bar/Buz.pm: % : %.in 
-include $(top_srcdir)/includes/perl-build.inc
+	$(BUILD_PERL_MODULE_RULE)
+
 
 ALLMODULES = \
     $(PERLMODULES) \

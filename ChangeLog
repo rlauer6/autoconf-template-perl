@@ -1,3 +1,12 @@
+Tue Sep 14 10:46:50 2021  Rob Lauer  <rlauer6@comcast.net>
+
+	* includes/directories.inc: whitespace
+	* includes/perl-build.inc
+	- +BUILD_PERL_MODULE_RULE
+	- +BUILD_PERL_RULE
+	* includes/perl-modules.inc: generated sample
+	* includes/perl-deps.yaml: likewise
+
 Tue Sep 14 09:00:59 2021  Rob Lauer  <rlauer6@comcast.net>
 
 	* utils/find-perl-requires.sh
