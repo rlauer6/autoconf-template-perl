@@ -33,16 +33,16 @@ function perl_file {
     echo $1 | perl -pe "s|$SOURCEDIR\/||;"
 }
 
-
 yaml=$(mktemp)
+
 echo "modules:"
 
 trap 'test -n "$yaml;" && rm -f $yaml' EXIT ERR
 
 for a in $(find src/main/perl -name '*.pm.in'); do
-    echo "  $(perl_file $(echo $a | utils/is-core.pl 2>/dev/null)):"
+    echo "  $(perl_file $(echo $a | perl -MModule::CoreList -ne 'chomp; s/^perl\((.*)\)\s*$/$1/; if ( Module::CoreList->first_release($_) ) { print STDERR "$_\n" } else { print "$_\n"; } ' 2>>requirements-core.txt)):"
     for m in $(/usr/lib/rpm/perl.req $a); do
-        is_core=$(echo $m | utils/is-core.pl 2>/dev/null)
+        is_core=$(echo $m | perl -MModule::CoreList -ne 'chomp; s/^perl\((.*)\)\s*$/$1/; if ( Module::CoreList->first_release($_) ) { print STDERR "$_\n" } else { print "$_\n"; } ' 2>/dev/null)
         if test -n "$is_core"; then
             file=$(is_local $m)
             test -n "$file" && echo "    - $(perl_file $file)"

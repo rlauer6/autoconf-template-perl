@@ -1,3 +1,21 @@
+Wed Sep 15 07:35:47 2021  Rob Lauer  <rlauer6@comcast.net>
+
+	[remove is-core.pl]:
+	* utils/find-perl-requires.sh
+	- put code from is-core.pl in-line
+	- use getopts to add options -d, -h, -r, -e
+	- write files to check to temp file
+	- DEBUG=1, not $1
+	- look for 'package {module}' in files to check file to determine local modules
+	* utils/perl-deps.sh: likewise
+	* Makefile.perl-req
+	- call find-perl-requires.sh with new args
+	- add test for DEBUG
+	* utils/is-core.pl
+	- removed, added code to utils/find-perl-require.sh
+	* Makefile.am: remove is-core.pl
+	* init.sh: add DEBUG arg
+
 Tue Sep 14 11:32:16 2021  Rob Lauer  <rlauer6@comcast.net>
 
 	* resources/Makefile.am: dist_resources_DATA

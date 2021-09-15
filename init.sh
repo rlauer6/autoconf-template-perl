@@ -38,7 +38,7 @@ if ! test -s "$MISSING"; then
 
     if test -e "Makefile.perl-req"; then
         make -f Makefile.perl-req clean
-        make -f Makefile.perl-req
+        make -f Makefile.perl-req DEBUG="$DEBUG"
     else
         >&2 echo "ERROR: missing Makefile.perl-req"
     fi

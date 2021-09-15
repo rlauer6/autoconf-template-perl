@@ -6,7 +6,8 @@ requirements: autotools/ax_required_perl_modules.m4 includes/perl-modules.inc
 
 autotools/ax_required_perl_modules.m4: includes/perl-modules.inc
 	@mkdir -p autotools; \
-	utils/find-perl-requires.sh >$@; \
+	test -n "$(DEBUG)" && DEBUG="-d"; \
+	utils/find-perl-requires.sh $$DEBUG -a -r src/main/perl -e '\.in' >$@; \
 	echo "...$@"
 
 includes/perl-modules.inc: perl-deps.yaml

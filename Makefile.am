@@ -11,7 +11,6 @@ dist_noinst_DATA =  \
     autotools/ax_required_perl_modules.m4 \
     utils/find-perl-requires.sh \
     utils/init.pl \
-    utils/is-core.pl \
     utils/perl-deps.pl \
     utils/perl-deps.sh \
     utils/rpm-sign.tcl \
