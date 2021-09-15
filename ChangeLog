@@ -1,4 +1,15 @@
-Wed Sep 15 07:35:47 2021  Rob Lauer  <rlauer6@comcast.net>
+Wed Sep 15 14:51:11 2021  Rob Lauer  <rlauer6@comcast.net>
+
+	* .gitignore: ignore man pages
+	* Makefile.am
+	- remove tar balls
+	* src/main/perl/lib/Makefile.am
+	- set perl5lib_DATA in includes/perl-modules.inc
+	* autoconf-template-perl.spec.in
+	- --localstatedir
+	- %config - ${_sysconfdir} not /etc
+
+Wed Sep 15 10:22:03 2021  Rob Lauer  <rlauer6@comcast.net>
 
 	[remove is-core.pl]:
 	* utils/find-perl-requires.sh

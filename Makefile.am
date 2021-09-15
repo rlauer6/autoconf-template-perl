@@ -70,6 +70,7 @@ $(RPM): $(PACKAGE)-$(VERSION).tar.gz
 clean-local:
 	test -d rpm && rm -rf rpm || true
 	test -d cpan && rm -rf cpan || true
+	rm -f *.tar.gz || true
 
 DISTCHECK_CONFIGURE_FLAGS = --disable-perlcritic-mode
 

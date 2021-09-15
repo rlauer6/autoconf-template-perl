@@ -1,3 +1,4 @@
+**/*.1man
 *.spec
 aclocal.m4
 configure

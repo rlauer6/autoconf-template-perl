@@ -13,9 +13,9 @@ Source:     %{project_base}-%{project_version}.tar.gz
 BuildArch:  @ARCHITECTURE@
 
 %define _prefix         /usr
-%define _sysconfdir     %{_prefix}/etc
+%define _sysconfdir     /etc
+%define _localstatedir  /var
 %define _datadir        %{_prefix}/share
-%define _localstatedir  %{_prefix}/var
 %define _mandir         %{_datadir}/man
 %define _infodir        %{_prefix}/info
 %define _libdir         %{_prefix}/lib
@@ -45,6 +45,7 @@ Summary:  @PACKAGE@
 %build
 ./configure --prefix=/usr \
             --sysconfdir=/etc \
+            --localstatedir=/var \
 	    --with-perl5libdir=yes \
             --enable-rpm-build-mode \
             --disable-perldeps \
@@ -85,4 +86,4 @@ make DESTDIR=%{buildroot} install
 %{_datadir}/resources/%{project_base}/*
 
 # Most config files should be sacred
-%config(noreplace) /etc/*
+%config(noreplace) %{_sysconfdir}/*

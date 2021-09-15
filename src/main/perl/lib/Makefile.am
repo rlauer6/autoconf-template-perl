@@ -7,8 +7,6 @@ include $(top_srcdir)/includes/perlcritic.inc
 
 GALLMODULES = $(ALLMODULES:.pm.in=.pm)
 
-perl5lib_DATA = $(GALLMODULES)
-
 PERLCRITIC_MODULES = $(GALLMODULES)
 
 perlrun = @PERL@
@@ -90,5 +88,3 @@ if RPM_BUILD_MODE
 else
 install-data-hook:
 endif
-
-
