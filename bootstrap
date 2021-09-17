@@ -52,7 +52,9 @@ export ACLOCAL="aclocal-$AM_VERSION"
 export AUTOMAKE="automake-$AM_VERSION"
 
 # create a VERSION file in project to version the package
-test -e VERSION && export VERSION=$(cat VERSION)
+if test -z "$VERSION"; then
+    test -e VERSION && export VERSION=$(cat VERSION)
+fi
 
 # --force: consider all files obsolete (ignores timestamps)
 # --warnings=all

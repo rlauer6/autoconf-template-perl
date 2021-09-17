@@ -1,8 +1,8 @@
 #!/bin/bash
 # -*- mode: sh; -*-
 # add module version to requirements.txt
-# format for cpanm consumption ('Module@Version'
-)
+# format for cpanm consumption ('Module@Version')
+
 trap "test -e \"$tmpfile\" && rm $tmpfile" EXIT ERR
 
 tmpfile=$(mktemp)

@@ -1,3 +1,9 @@
+Fri Sep 17 09:18:32 2021  Rob Lauer  <rlauer6@comcast.net>
+
+	* bootstrap: look for $VERSION in environment
+	* init.sh: echo to STDOUT only
+	* utils/get-module-version.sh: extraneous (
+
 Wed Sep 15 14:51:11 2021  Rob Lauer  <rlauer6@comcast.net>
 
 	* .gitignore: ignore man pages
