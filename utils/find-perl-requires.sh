@@ -2,11 +2,23 @@
 # -*- mode: sh; -*-
 # create list of non-core required Perl modules
 
-
 function usage() {
     cat <<EOF
 usage: find-perl-requires OPTIONS
-    
+
+Options
+-------
+
+-r   root directory for target search
+-e   extra extension on .pm, .pl files (typically .in)
+-h   help
+-a   create an m4 macro (AX_REQUIRED_PERL_MODULES)
+-d debug mode
+
+Example:
+
+find-perl-requires.sh -r .
+
 EOF
 }
 
@@ -125,10 +137,10 @@ test -e "requirements.txt" && unlink "requirements.txt"
 
 test -n "$DEBUG" && cat $modules
 
-for a in $(cat $modules); do
+for a in $(cat $modules | awk '{print $1}'); do
     test -n "$DEBUG" && echo "looking for $a...";
-    if ! grep -rq "package $a" $ROOTDIR; then
-        echo $a >>requirements.txt
+    if ! grep -rq "^package $a" $ROOTDIR; then
+        ! [ $a = "perl" ] && echo "$a" >>requirements.txt
         test -n "$AUTOTOOLS" && echo "  ads_PERL_MODULE([$a])" >>$AX_REQUIRED_PERL_MODULES
     fi
 done
