@@ -3,7 +3,7 @@ Wed Feb 15 10:21:38 2023  Rob Lauer  <rlauer6@comcast.net>
 	[autoconf-template-perl: 2.0.0]:
 	- no longer a template, includes utilties for creating an
 	  autoconfiscated project
- 
+
 	[deleted from project]:
 	* config/Makefile.am: deleted
 	* config/example.cfg.in: deleted
@@ -28,6 +28,7 @@ Wed Feb 15 10:21:38 2023  Rob Lauer  <rlauer6@comcast.net>
 
 	[added to project]:
 	* autotools/ax_requirements_check.m4: new
+	* autotools/ax_perlcritic_config.m4: new
 	* includes/bash-bin.inc: new
 	* includes/perl-bin.inc: new
 	* includes/perl-cgi-bin.inc: new

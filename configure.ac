@@ -176,6 +176,7 @@ AX_REQUIREMENTS_CHECK
 RPM_BUILD_MODE
 
 PERLCRITIC_MODE
+AX_PERLCRITIC_CONFIG
 
 AC_ARG_WITH([license],[  --with-license (defaults to GNU Public License)],
 	[LICENSE=$withval],

@@ -49,7 +49,7 @@ autoconfiscated projects.
 ## Why Autoconfiscate
 
 The term
-[`autoconfisicate`[(https://www.webster-dictionary.org/definition/autoconfiscate)
+[`autoconfisicate`](https://www.webster-dictionary.org/definition/autoconfiscate)
 is attributed to [Noah
 Friedman](https://savannah.gnu.org/users/friedman) to describe the
 process of setting up a build system that uses the GNU Autotools.

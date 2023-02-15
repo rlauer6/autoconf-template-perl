@@ -5,6 +5,7 @@ use strict;
 use warnings;
 
 use Carp qw(croak);
+use Carp::Always;
 use Cwd;
 use Data::Dumper;
 use Date::Format qw(time2str);
@@ -90,11 +91,11 @@ sub main {
     if ( -e 'Makefile' ) {
       my $makefile = slurp_file('Makefile');
 
-      if ( $makefile =~ /^PACKAGE_NAME\s=\s(.*)$/xsm ) {
+      if ( $makefile =~ /^PACKAGE_NAME\s=\s([^\n]+)$/xsm ) {
         $options{project} = $1;
       }
 
-      if ( $makefile =~ /^abs_top_srcdir\s=\s(.*)$/xsm ) {
+      if ( $makefile =~ /^abs_top_srcdir\s=\s([^\n]+)$/xsm ) {
         # init_parameters() will create destdir from project and
         # destdir, so we want the the directory before the root of the
         # project directory...
@@ -153,34 +154,35 @@ sub main {
       $_->{name_uc};
   }
 
-  # create unit test scaffolding for .pm, .pl, and .cgi files
-  my @unit_tests = (
-    ( sprintf '%s/%s', $options{destdir}, 'src/main/perl/lib' ) =>
-      [ keys %{$dependencies} ],
-    ( sprintf '%s/%s', $options{destdir}, 'src/main/perl/bin' ) =>
-      $options{perl_scripts},
-    ( sprintf '%s/%s', $options{destdir}, 'src/main/perl/cgi-bin' ) =>
-      $options{cgi_scripts},
-  );
-
-  for my $p ( pairs @unit_tests ) {
-    my ( $path, $files ) = @{$p};
-
-    DEBUG Dumper( [ 'creating tests ', $path, $files ] );
-
-    next if !$files || !@{$files};
-
-    create_unit_tests(
-      files => $files,
-      path  => $path,
-    );
-  }
-
-  # copy extra files that do not need to be rendered, but are required
-  # for the project's autoconfiscation to the project directory (see
-  # resources/file_list.json)
-
   if ( !$options{refresh} ) {
+
+    # create unit test scaffolding for .pm, .pl, and .cgi files
+    my @unit_tests = (
+      ( sprintf '%s/%s', $options{destdir}, 'src/main/perl/lib' ) =>
+        [ keys %{$dependencies} ],
+      ( sprintf '%s/%s', $options{destdir}, 'src/main/perl/bin' ) =>
+        $options{perl_scripts},
+      ( sprintf '%s/%s', $options{destdir}, 'src/main/perl/cgi-bin' ) =>
+        $options{cgi_scripts},
+    );
+
+    for my $p ( pairs @unit_tests ) {
+      my ( $path, $files ) = @{$p};
+
+      DEBUG Dumper( [ 'creating tests ', $path, $files ] );
+
+      next if !$files || !@{$files};
+
+      create_unit_tests(
+        files => $files,
+        path  => $path,
+      );
+    }
+
+    # copy extra files that do not need to be rendered, but are required
+    # for the project's autoconfiscation to the project directory (see
+    # resources/file_list.json)
+
     copy_list(%options);
   }
 
@@ -290,6 +292,9 @@ sub find_files {
 ########################################################################
   my ( $path, $type, $strip_in ) = @_;
   $type //= 'pm';
+
+  return []
+    if !-d $path;
 
   my @files;
 

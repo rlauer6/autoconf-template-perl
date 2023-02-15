@@ -1,5 +1,6 @@
 AC_DEFUN([AX_REQUIREMENTS_CHECK],[
 
+  ads_PERL_MODULE([Carp::Always], [], [0.16])
   ads_PERL_MODULE([Date::Format], [], [2.24])
   ads_PERL_MODULE([JSON], [], [4.07])
   ads_PERL_MODULE([Log::Log4perl], [], [1.55])
