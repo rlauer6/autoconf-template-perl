@@ -9,8 +9,6 @@ this project to create rpms.
 See `ChangeLog` for a listing of files that have changed since the
 last release.
 
-Send questions or bugs to Rob Lauer <rclauer@gmail.com>
-
 # Overview
 
 ![GNU
@@ -37,14 +35,16 @@ make
 make install
 ```
 
-This project presents a template for using the toolchain for building
-Perl applications without necessarily having to do a deep dive to learn
-the intricacies (and wonders) of autotools.
-
-Using the autotools toolchain you can create *build rules* and specify
-*deployment targets* for all of your built artifacts. If you've ever
-wondered how software gets installed on a Linux system, then you'll
-want to learn more about autoconfiscated projects.
+This project will create the scaffolding for an autoconfiscated Perl
+application without requiring you to perform the tedious task of
+setting up your own build tree and `configure.ac`.  Using the
+autotools toolchain you can create *build rules* and specify
+*deployment targets* for all of your built artifacts.  Even if you are
+not familiar with the intricacies (and wonders) of autotools, you will
+be able to create a fairly sophisticated build environment for your
+application using this utility. If you've ever wondered how software
+gets installed on a Linux system, then you'll want to learn more about
+autoconfiscated projects.
 
 ## Why Autoconfiscate
 
@@ -62,53 +62,153 @@ in with other packages that use the GNU Autotools. - https://www.oreilly.com/lib
 
 Although you might not need to create a portable Perl application, GNU
 Autotools provide the framework of a complete build and packaging
-environment for your application.  Coupling that the use of the
+environment for your application.  Coupling that with the use of the
 Redhat Package Manager and you are on your way to automated builds
-that organized, extensible and scalable.
+that are _organized_, _extensible_ and _scalable_.
+
+## Features of the `autoconf-template-perl` Utility
+
+* Organizes your application into an easily recognizable and navigable
+  tree structure
+* Creation of __deployment tarballs__ or __RPMs__
+* __Syntactic checking__ of Perl scripts and modules ( `make` )
+* Best practice checking using `perlcritic` (`make check`)
+* Automatic creation of all target directories during deployment
+* Identification of __Perl module dependencies__
+* Automatic creation of __unit test stubs__ for scripts and modules
+* Variable substitution during builds from configured variables
+* Creation of __man pages__ from your module or script POD
+
+# Requirements
+
+* `autoconf`
+* `automake`
+* `make`
+* ..and various other standard Linux utilities
 
 # Getting Started
 
-`autoconf-template-perl` is a template.  It is not meant to be
-configured and installed itself.
+`autoconf-template-perl` started out life as a simple template that
+required that you _fill in the blanks_ yourself.  It has since morphed
+into a set of utilities for automatically creating the scaffolding of an
+autoconfiscated Perl application. The resulting scaffolding is a
+__working__ starting point for your Perl application.  That's
+right...you should be able to build a deployment tarball for your
+application after running the utilities that create the project build
+tree.
 
-You use this template as a starting point for autoconfisicating Perl
-projects.  To do this, you might do something like:
+In order to create an autoconfiscated project you will need to first install
+this project from the GitHub repository or from CPAN.
+
+After installing this project, you should identify the artifacts needed
+by your project. Typically, this means you might have:
+
+* Perl modules (`.pm`)
+* Perl scripts (`.pl`)
+* CGI scripts (`.pl` or `.cgi`)
+* Configuration files (`.cfg`, `.json`, `.ini`, etc)
+* Resources - additional files you might need to install somewhere
+* Web application artifacts (`.html`, `.js`, `.css`, `.png`, etc)
+
+Once you have identified all of the artifacts that you'd like to include
+in your project, create a `manifest.yaml` file that looks something
+like this:
 
 ```
-wget https://github.com/rlauer6/autoconf-template-perl/archive/refs/master.zip
-gunzip master.zip
-mv autoconf-template-perl my-awesome-project
-cd my-awesome-project
-perl utils/init.pl --project my-awesome-project \
-  --name "Your Name" \
-  --email your-email@domain.com 
+project: {project name}
+description: {description}
+author: {author's name}
+email: {author's email address}
+perl:
+  bin: {list of .pl files}
+  lib: { list of .pm files }
+  cgi-bin: {list of .pl files that will be installed as .cgi files}
+resources: {list of files of any type}}
+html:
+  css: {list of .css files}
+  htdocs: { list of .html files }
+  javascript: { list of .js files}
+  images: { list of image files of any type}
 ```
 
-At this point you will have the template in your
-project directory and you can begin hacking on the project as
-described in this document.
+Files should be listed using their fully qualified pathname or a path
+relative to the directory in which you run the
+`autoconf-template-perl` utility. None of the file
+lists are required elements to run the utility.
+
+Once you have the manifest the `manifest.yaml` file, run the
+`autoconf-template-perl` utility to create your build tree.
+
+```
+autoconf-template-perl --dest-dir=/tmp`
+```
+
+* `dest-dir` is the root of the target directory for your build tree
+
+After running the utility, depending on what you have included in your
+manifest, your build tree will look something like this:
+
+```
+|-- autom4te.cache
+|-- autotools
+|-- config
+|-- includes
+|-- resources
+`-- src
+    `-- main
+        |-- bash
+        |   `-- bin
+        |-- html
+        |   |-- css
+        |   |-- htdocs
+        |   `-- javascript
+        `-- perl
+            |-- bin
+            |   `-- t
+            |-- cgi-bin
+            `-- lib
+                `-- t
+```
+
+...and if all goes well, you can try your first build:
+
+```
+./bootstrap
+./configure
+make
+```
+
+...if that succeeds, try installing the project and examine the
+deployment tree structure:
+
+```
+make install DESTDIR=/tmp/my-project
+tree /tmp/my-project | less
+```
 
 ## Project Structure
 
 Perl projects using this template are laid out as follows:
 
-```.
-├── autom4te.cache
-├── autotools
-├── config
-├── includes
-├── resources
-├── src
-│   └── main
-│       ├── bash
-│       │   └── bin
-│       └── perl
-│           ├── bin
-│           │   └── t
-│           └── lib
-│               └── t
-└── utils
-```
+## Root of the Project
+
+The root of the project will contain your `configure.ac` file which is
+used by `autoconf` to create your `configure` script. The `configure`
+script is then use do to create the `Makefile` in all of your
+subdirectories.
+
+The root also contains a stub `ChangeLog`, `README.md` and other files
+you can customize.
+
+## `config` Directory
+
+This directory should contain your configuration files. Typically
+configuration files might by `.ini`, `.cfg`, or `.json` files that
+contain values your program needs for proper operation. When you
+specify these files in your manifest, the `autoconf-template-perl`
+utility will rename them with a `.in` extension. See [Building From
+`.in` File](#building-from-in-files#).
+
 
 * `autom4te.cache` - automatically created by autoconf
 * `autotools` - contains m4 macros
@@ -121,13 +221,80 @@ Perl projects using this template are laid out as follows:
 * `src/perl/lib/t` - test scripts for Perl modules
 * `utils` - project utilities
 
-## Building Your Perl Scripts
+## Building From `.in` Files
 
-TBD
+When you specifiy configuration, scripts and Perl module files in your
+manifest, they will be installed in the project directories with a
+`.in` extension.  This is done because the various `Makefiles` create
+a target of the file without the extension.  In other words, a `.pl`
+file is built from a `.pl.in` file (similarly for the other types of
+files). Depending on the file type, the build recipe may be as simple
+as:
+
+```
+$(GCONFIG):
+    $(do_subst) $< > $@
+```
+
+...which simply takes your source file (`.cfg.in`) and uses `sed` to
+substitute values in your source that associated with `automake`
+variables.  These `automake` variables are the ones that are created
+by your `configure` script. The take the form of `@variable-name@`.
+
+For example, to specify the system configuration directory in one of
+your configuration files, you might include something like this in the
+`my-app.cfg.in` file.
+
+```
+db_config = @sysconfdir@/my-app/db-config.cfg
+log_dir   = @localstatedir@/log/my-app.log
+```
+
+During the build, those variables surrounded by the `@` symbol will be
+replace by the `automake` variable's value.
+
+```
+db_config = /etc/my-app/db-config.cfg
+log_dir   = /var/log/my-app.log
+```
+
+Why not just hard-code those paths? The beauty of using `autoconf` and
+`automake` is their ability to easily re-configure your project so that
+it can be installed anywhere.
+
+```
+./configure --prefix=/usr --localstatedir=/var --sysconfdir=/etc
+make
+make install DESTDIR=/tmp/foo
+```
+
+The above statements will cause the install process to prefix your
+configured directories with `/tmp/foo` so that you can alter the
+installation paths for different environments or for just examining
+the deployment structure without actually deploying to the intended
+targets.
 
 ## Building Your Perl Modules
 
-TBD
+The build recipes for Perl scripts and modules does a little bit more
+than just substitute `automake` variables for occurences words
+surrounded by `@`. When you build a Perl module or script from a
+`.pl.in` or `.pm.in` file, the build recipe will first perform any
+required substitutions using `$(do_subst)` and then run `perl -wc`
+against the result. If the syntax checking fails, the build will stop.
+
+When the build recipe runs `perl -wc` it also includes additional Perl
+paths that might be needed to check your script.  All files in the
+`src/main/perl/lib` directory are built first, in an order that
+guarantees that even modules contained in the project that are
+dependencies of other modules in the project are built first.
+
+If you have additional paths, other than those configured by Perl or
+the build recipe, you can add them when you configure the project.
+
+```
+./configure --with-perl-includes=$HOME/lib/perl5
+```
 
 ## Adding Resources to Your Project
 
@@ -180,10 +347,10 @@ rpmbuild -tb $(ls -1t *.tar.gz | head -1) --sign
 
 # FAQs
 
-1. Why do I have to use a .in extension for my Perl scripts and
-   modules?
+1. Why do I have to use a `.in` extension for my Perl scripts and
+   modules? (See []()).
 
-1. Whys is `make distcheck` failing?
+1. Why is `make distcheck` failing?
 
 * paths you are installing into based on configure time options need
   to be set properly.  This is because if you do not give them a value

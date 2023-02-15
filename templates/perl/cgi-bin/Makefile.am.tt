@@ -2,19 +2,17 @@
 
 SUBDIRS = .
 
+include $(top_srcdir)/includes/apache-directories.inc
 include $(top_srcdir)/includes/directories.inc
 include $(top_srcdir)/includes/perlcritic.inc
-include $(top_srcdir)/includes/perl-bin.inc
-
-.PHONY: test
-test: $(GPERLSCRIPTS)
-	test -d t/ && PERL5LIB=../lib prove -v t/
+include $(top_srcdir)/includes/perl-cgi-bin.inc
 
 all:
 
 CLEANFILES = \
     $(GPERLSCRIPTS) \
-    $(GPERLCRITIC_PL)
+    $(GPERLCRITIC_PL) \
+    $(GCGISCRIPTS)
 
 .PHONY: clean-local
 clean-local:

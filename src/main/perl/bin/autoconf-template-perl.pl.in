@@ -1,0 +1,1010 @@
+#!/usr/bin/env perl
+# -*- mode: perl -*-
+
+use strict;
+use warnings;
+
+use Carp qw(croak);
+use Cwd;
+use Data::Dumper;
+use Date::Format qw(time2str);
+
+use English qw(-no_match_vars);
+use File::Find;
+use File::Path qw(make_path);
+use File::Copy;
+use File::Basename qw(basename fileparse dirname);
+use Getopt::Long;
+use JSON qw(decode_json);
+
+use List::Util qw(none pairs);
+use Log::Log4perl qw(:easy get_logger);
+use Module::ScanDeps::Static;
+use Template;
+use YAML qw(LoadFile);
+
+our $VERSION = '@PACKAGE_VERSION@'; ## no critic (RequireInterpolation)
+
+use Readonly;
+
+Readonly our $TRUE         => 1;
+Readonly our $FALSE        => 0;
+Readonly our $SHARE_DIR    => '@datadir@/autoconf-template-perl'; ## no critic (RequireInterpolation)
+Readonly our $EMPTY        => q{};
+Readonly our $SPACE        => q{ };
+Readonly our $DASH         => q{-};
+Readonly our $SLASH        => q{/};
+Readonly our $INCLUDE_PATH => "$SHARE_DIR/templates";
+
+Readonly our $COPYRIGHT => <<"END_OF_COPYRIGHT";
+Copyright (C) 2023 TBC Development Group, LLC
+License GPLv2+: GNU GPL version 2 or later <https://gnu.org/licenses/gpl-2.0.html>
+This is free software: you are free to change and redistribute it.
+There is NO WARRANTY, to the extent permitted by law.
+
+Written by Rob Lauer <rlauer6\@comcast.net>
+END_OF_COPYRIGHT
+
+caller or __PACKAGE__->main();
+
+########################################################################
+sub main {
+########################################################################
+  init_logger();
+
+  my $file_list = decode_json( slurp_file("$SHARE_DIR/file_list.json") );
+
+  my %options = ( file_list => $file_list );
+
+  GetOptions(
+    \%options,   'scripts', 'project=s', 'author=s',
+    'email=s',   'help',    'version',   'manifest=s',
+    'destdir=s', 'force',   'refresh'
+  );
+
+  return help()
+    if $options{help};
+
+  return version()
+    if $options{version};
+
+  croak 'no destination dir, '
+    . "use --dest-dir to specify the locaiton for the build tree\n"
+    if !$options{destdir} && !$options{refresh};
+
+  # find manifest if not doing a refresh
+  if ( !$options{refresh} ) {
+    $options{manifest} //= 'manifest.yaml'; # check cwd for manifest.yaml
+
+    croak "no manifest, use --manifest to specify a YAML manifest\n"
+      if !-e $options{manifest};
+
+    $options{manifest} = check_manifest(%options);
+  }
+  else {
+    # see if we can figure out what project we are in...
+    #
+    # PACKAGE_NAME is the project name, so if you are anywhere in the
+    # build tree and have a 'Makefile' there I can probably find
+    # the project name...
+    if ( -e 'Makefile' ) {
+      my $makefile = slurp_file('Makefile');
+
+      if ( $makefile =~ /^PACKAGE_NAME\s=\s(.*)$/xsm ) {
+        $options{project} = $1;
+      }
+
+      if ( $makefile =~ /^abs_top_srcdir\s=\s(.*)$/xsm ) {
+        # init_parameters() will create destdir from project and
+        # destdir, so we want the the directory before the root of the
+        # project directory...
+        $options{destdir} = dirname $1;
+      }
+    }
+
+    croak q{I'm sorry I can't figure out what you want to refresh}
+      if !$options{project};
+  }
+
+  init_parameters( \%options );
+
+  DEBUG Dumper( [ 'options', \%options ] );
+
+  if ( !$options{refresh} ) {
+    create_build_tree(%options);
+
+    # copy files from manifest to target directories
+    copy_files(%options);
+  }
+
+  # find all the Perl modules under src/main/perl/lib and create a
+  # dependency tree. This will feed the perl-modules.inc.tt template
+  # that creates build rules based on dependencies within the project
+  # itself.
+  #
+  # If we want to syntactically check all Perl modules we need to
+  # build modules that are dependencies of other modules first within
+  # the build tree.
+  #
+  # 1. Find all of the Perl modules in the build tree and then call
+  # get_dependencies() which uses Module::ScanDeps::Static to find
+  # dependencies for each module that are satisfied locally.
+  #
+  # 2. Create dependency tree (more of a listing) for each module
+  #
+  # 3. Create an array of module names that will be used in the Makefile.am
+  #
+  # 4. perl-modules.inc is the rendered with all the other templates
+
+  my $root = $options{destdir} . '/src/main/perl/lib';
+  my $dirs = get_subdirs($root);
+
+  my $dependencies = get_dependencies( \%options );
+
+  $options{modules} = create_dependency_tree( $dirs, $dependencies, $root );
+
+  DEBUG Dumper(
+    [ 'dependencies', $dependencies, 'modules', $options{modules} ] );
+
+  $options{module_names} = [];
+
+  for ( @{ $options{modules} } ) {
+    push @{ $options{module_names} }, sprintf q{$} . q{(%sMODULES)},
+      $_->{name_uc};
+  }
+
+  # create unit test scaffolding for .pm, .pl, and .cgi files
+  my @unit_tests = (
+    ( sprintf '%s/%s', $options{destdir}, 'src/main/perl/lib' ) =>
+      [ keys %{$dependencies} ],
+    ( sprintf '%s/%s', $options{destdir}, 'src/main/perl/bin' ) =>
+      $options{perl_scripts},
+    ( sprintf '%s/%s', $options{destdir}, 'src/main/perl/cgi-bin' ) =>
+      $options{cgi_scripts},
+  );
+
+  for my $p ( pairs @unit_tests ) {
+    my ( $path, $files ) = @{$p};
+
+    DEBUG Dumper( [ 'creating tests ', $path, $files ] );
+
+    next if !$files || !@{$files};
+
+    create_unit_tests(
+      files => $files,
+      path  => $path,
+    );
+  }
+
+  # copy extra files that do not need to be rendered, but are required
+  # for the project's autoconfiscation to the project directory (see
+  # resources/file_list.json)
+
+  if ( !$options{refresh} ) {
+    copy_list(%options);
+  }
+
+  DEBUG Dumper( [ \%options ] );
+
+  # render the templates: parameters needed are set in the %options
+  # hash. templates are listed in 'file_list.json' and
+  # 'tempaltes//Makfile.am'.
+  render_templates( \%options );
+
+  # create an m4 macro which is called out in 'configure.ac' that
+  # checks to see if the required Perl modules are present in the
+  # target environment.
+
+  create_ax_requirements_check(%options);
+
+  # create changelog AFTER all files have been created in new project
+  # directory
+
+  if ( !$options{refresh} ) {
+    create_changelog(%options);
+  }
+
+  return;
+}
+
+########################################################################
+sub create_module_test {
+########################################################################
+  my (%args) = @_;
+
+  my ( $path, $file ) = @args{qw(path file)};
+
+  my $module_name = path_to_module($file);
+
+  my $test_name = lc $module_name;
+  $test_name =~ s/::/-/xsmg;
+
+  my $unit_test = sprintf '%s/t/00-%s.t', $path, $test_name;
+
+  DEBUG sprintf 'rendering unit test %s to %s', $module_name, $unit_test;
+
+  return _render_template( '00-module.t.tt', { module => $module_name },
+    $unit_test );
+}
+
+########################################################################
+sub slurp_file {
+########################################################################
+  my ($file) = @_;
+
+  local $RS = undef;
+
+  open my $fh, '<', $file
+    or croak "could not open $file";
+
+  my $content = <$fh>;
+
+  close $fh;
+
+  return $content;
+}
+
+########################################################################
+sub _render_template {
+########################################################################
+  my ( $template, $parameters, $outfile ) = @_;
+
+  my $tt = Template->new(
+    { INCLUDE_PATH => $INCLUDE_PATH,
+      ABSOLUTE     => $TRUE,
+      INTERPOLATE  => $FALSE,
+    }
+  );
+
+  my $content = $EMPTY;
+
+  croak sprintf "error rendering template: %s\n", $tt->error()
+    if !$tt->process( "$INCLUDE_PATH/$template", $parameters, \$content );
+
+  if ($outfile) {
+
+    create_path($outfile);
+
+    open my $fh, '>', $outfile
+      or croak "could open $outfile for writing";
+
+    print {$fh} $content;
+
+    close $fh;
+  }
+
+  return $content;
+}
+
+########################################################################
+sub strip_in {
+########################################################################
+  my ($name) = @_;
+
+  $name =~ s/[.]in$//xsm;
+  return $name;
+}
+
+########################################################################
+sub find_files {
+########################################################################
+  my ( $path, $type, $strip_in ) = @_;
+  $type //= 'pm';
+
+  my @files;
+
+  TRACE sprintf 'looking for files of type %s in %s', $type, $path;
+
+  find(
+    sub {
+      return
+        if !/[.]$type[.]in$/xsm;
+
+      my $name = $File::Find::name;
+
+      if ($strip_in) {
+        $name = strip_in($name);
+      }
+
+      push @files, $name;
+    },
+    $path
+  );
+
+  TRACE 'found files: ', join "\n", @files;
+
+  return @files;
+}
+
+########################################################################
+sub find_local_dependencies {
+########################################################################
+  my ( $modules, $path ) = @_;
+
+  my $output = {};
+
+  for my $file ( @{$modules} ) {
+    my $this = $file;
+    $this =~ s/$path\///xsm;
+
+    $output->{$this} = [];
+
+    if ( $file !~ /[.]in$/xsm ) {
+      $file = "$file.in";
+    }
+
+    my $scanner = Module::ScanDeps::Static->new(
+      { core => 0,
+        path => "$file",
+      }
+    );
+
+    $scanner->parse;
+
+    my @dependencies = $scanner->get_dependencies();
+
+    DEBUG Dumper( [ 'dependencies', \@dependencies, 'modules', $modules ] );
+
+    for my $d (@dependencies) {
+      my $name = module_to_path( $d->{name} );
+
+      TRACE 'looking for ' . $name;
+
+      next if none {/$name/xsm} @{$modules};
+
+      TRACE Dumper( [ $this, $name ] );
+
+      push @{ $output->{$this} }, "$name.in";
+    }
+
+  }
+
+  return { modules => $output };
+}
+
+########################################################################
+sub path_to_module {
+########################################################################
+  my ($path) = @_;
+
+  my $module = $path;
+
+  $module =~ s/\//::/gxsm;
+  $module =~ s/[.]pm.*$//xsm;
+
+  return $module;
+}
+
+########################################################################
+sub module_to_path {
+########################################################################
+  my ($module) = @_;
+
+  $module =~ s/::/\//gxsm;
+
+  return "$module.pm";
+}
+
+########################################################################
+sub get_subdirs {
+########################################################################
+  my ( $path, $dirs ) = @_;
+
+  opendir my $fh, "$path"
+    or croak "could not open directory: $OS_ERROR";
+
+  while ( my $file = readdir $fh ) {
+
+    next if $file =~ /^[t.][.]?$/xsm;
+
+    if ( -d "$path/$file" ) {
+      $dirs->{"$path/$file"} = [];
+      $dirs = get_subdirs( "$path/$file", $dirs );
+    }
+    else {
+      if ( $file =~ /[.]pm[.]in$/xsm ) {
+        push @{ $dirs->{$path} }, $file;
+      }
+    }
+  }
+
+  closedir $fh;
+
+  return $dirs;
+}
+
+########################################################################
+sub help {
+########################################################################
+  my $name = basename $PROGRAM_NAME;
+
+  return print <<"END_OF_HELP";
+usage: $name options
+
+Options
+-------
+-h, --help       help
+-a, --author     author's name
+-d, --destdir    root for project directory
+-e, --email      author's email
+-f, --force      force overwrite of project directory
+-m, --manifest   name of the YAML manifest file
+-p, --project    project name
+-r, --refresh    refresh after  addition of script or module
+-v, --version    report script version
+
+This utility is part of the autoconf-template toolchain. It will
+create an autoconfiscated Perl application based on the description
+contained in an manifest file.
+
+See `perldoc AUTOMAKE::Template` for more of the gory details.
+
+$COPYRIGHT
+END_OF_HELP
+}
+
+########################################################################
+sub version {
+########################################################################
+
+  print basename($PROGRAM_NAME) . " v$VERSION\n\n";
+  print $COPYRIGHT;
+
+  return;
+}
+
+########################################################################
+sub create_build_tree {
+########################################################################
+  my (%options) = @_;
+
+  my $main_prefix = sprintf '%s/src/main', $options{destdir};
+
+  croak "directory $main_prefix exists - use -f to force\n"
+    if -d $main_prefix && !$options{force};
+
+  for (qw(config resources)) {
+    make_path("$options{destdir}/$_");
+  }
+
+  for (qw(perl/bin perl/lib perl/cgi-bin bash/bin)) {
+    make_path("$main_prefix/$_");
+  }
+
+  my (@makefiles) = (
+    "$options{destdir}/src/Makefile.am"           => ['main'],
+    "$options{destdir}/src/main/Makefile.am"      => ['bash perl html'],
+    "$options{destdir}/src/main/bash/Makefile.am" => ['bin'],
+    "$options{destdir}/src/main/perl/Makefile.am" => ['lib bin cgi-bin'],
+  );
+
+  foreach my $p ( pairs @makefiles ) {
+    my ( $makefile, $subdirs ) = @{$p};
+    _render_template( 'Makefile.tt', { dir_list => $subdirs }, $makefile );
+  }
+
+  return;
+}
+
+########################################################################
+sub create_path {
+########################################################################
+  my ($file) = @_;
+
+  my ( $name, $path, $ext ) = fileparse( $file, qr/[.][^.]+$/xsm );
+
+  if ( !-d $path ) {
+    make_path($path);
+  }
+
+  return -d $path;
+}
+
+########################################################################
+sub _copy_files {
+########################################################################
+  my (%args) = @_;
+
+  my ( $prefix, $file_list, $add_in ) = @args{qw(prefix files add_in)};
+
+  for my $file ( @{$file_list} ) {
+    my $dest = basename $file;
+
+    if ( $add_in && $file !~ /[.]in$/xsm ) {
+      $dest = "$file.in";
+    }
+
+    # .pm files, we may have a directory hierarchy that we want to
+    # reflect in the build tree. IOW, so for Foo/Bar/Baz.pm it needs
+    # to be installed in:
+    #
+    #   src/main/perl/lib/Foo/Bar
+    #
+    # ...not src/main/perl/lib
+    #
+    # so use the package name to reflect the directory hierarchy
+    #
+    if ( $file =~ /[.]pm/xsm ) {
+      my $module = slurp_file($file);
+
+      if ( $module =~ /package\s+([^;]+)/xsm ) {
+        my $path = module_to_path($1);
+        $path = "$path.in";
+      }
+    }
+
+    create_path("$prefix/$dest");
+
+    copy( $file, "$prefix/$dest" );
+  }
+
+  return;
+}
+
+########################################################################
+sub copy_files {
+########################################################################
+  my (%args) = @_;
+
+  my $manifest = $args{manifest};
+
+  _copy_files(
+    prefix => $args{destdir},
+    files  => $manifest->{resources},
+    add_in => $FALSE,
+  );
+
+  _copy_files(
+    prefix => $args{destdir},
+    files  => $manifest->{config},
+    add_in => $TRUE,
+  );
+
+  my $main_prefix = sprintf '%s/src/main', $args{destdir};
+
+  for (qw(lib cgi-bin bin)) {
+    _copy_files(
+      prefix => "$main_prefix/perl/$_",
+      files  => $manifest->{perl}->{$_},
+      add_in => $TRUE,
+    );
+  }
+
+  _copy_files(
+    prefix => "$main_prefix/bash/bin",
+    files  => $manifest->{bash}->{bin},
+    add_in => $TRUE,
+  );
+
+  for (qw(htdocs javascript css images)) {
+    _copy_files(
+      prefix => "$main_prefix/html/$_",
+      files  => $manifest->{html}->{$_},
+      add_in => $FALSE,
+    );
+  }
+
+  return;
+}
+
+########################################################################
+sub init_logger {
+########################################################################
+  my $level = $INFO;
+
+  if ( $ENV{DEBUG} ) {
+    $level = $ENV{DEBUG} > 1 ? $TRACE : $DEBUG;
+  }
+
+  Log::Log4perl->easy_init(
+    { level  => $level,
+      layout => '[%d] (%r/%R) %M:%L - %m%n',
+    }
+  );
+
+  return get_logger();
+}
+
+########################################################################
+sub check_manifest {
+########################################################################
+  my (%options) = @_;
+
+  my $manifest = eval { LoadFile( $options{manifest} ); };
+
+  if ( !$manifest || $EVAL_ERROR ) {
+    croak "could not load manifest file: $EVAL_ERROR\n";
+  }
+
+  # check manifest
+  for (qw(config resources)) {
+    next if !$manifest->{$_};
+
+    for my $file ( @{ $manifest->{$_} } ) {
+      croak "$file does not exist"
+        if !-e $file;
+    }
+  }
+  for (qw(bin cgi-bin lib)) {
+    next if !$manifest->{perl}->{$_};
+
+    for my $file ( @{ $manifest->{perl}->{$_} } ) {
+      croak "$file does not exist"
+        if !-e $file;
+    }
+  }
+
+  return $manifest;
+}
+
+########################################################################
+sub get_dependencies {
+########################################################################
+  my ($options) = @_;
+
+  my $root = $options->{destdir} . '/src/main/perl/lib';
+
+  my @perl_modules;
+
+  croak q{this doesn't look much like a project directory}
+    if !-d $root;
+
+  @perl_modules = find_files( $root, 'pm', $FALSE );
+
+  my $dirs = get_subdirs($root);
+
+  my $all_dependencies
+    = eval { return find_local_dependencies( [@perl_modules], $root ); };
+
+  croak "error gathering dependencies: $EVAL_ERROR"
+    if !$all_dependencies || $EVAL_ERROR;
+
+  DEBUG Dumper( [ 'dependencies', $all_dependencies ] );
+
+  return $all_dependencies->{modules};
+}
+
+########################################################################
+sub makefile_am_list {
+########################################################################
+  my ( $file_list, $dir ) = @_;
+
+  return $EMPTY if !ref $file_list || !@{$file_list};
+
+  my @files = @{$file_list};
+
+  if ($dir) {
+    @files = map {"$dir/$_"} @files;
+  }
+
+  my $list = join " \\\n    ", @files;
+
+  return "\\\n    " . $list;
+}
+
+########################################################################
+sub init_parameters {
+########################################################################
+  my ($options) = @_;
+
+  my @now = localtime;
+  $now[5] += 1900;
+  $now[4] += 1;
+
+  $options->{date} = {
+    year  => $now[5],
+    month => $now[4],
+    day   => $now[3],
+  };
+
+  # Fri Feb 10 14:16:12 2023
+  $options->{timestamp} = time2str( '%a %b %e %H:%M:%S %Y', time );
+  $options->{version}   = '1.0.0';                                 ## no critic (RequireInterpolation)
+  $options->{generator} = basename $PROGRAM_NAME;
+
+  # convenience routines for TT
+  # creates a list that looks like this:
+  # FOO = \
+  #     ITEM \
+  #     ITEM \
+  #     ITEM
+  $options->{makefile_am_list} = \&makefile_am_list;
+
+  if ( $options->{refresh} ) {
+    my $root = getcwd . '/src/main/';
+
+    $options->{bash_scripts}
+      = [ find_files( "$root/bash/bin", 'sh', $TRUE ) ];
+
+    $options->{perl_scripts}
+      = [ find_files( "$root/perl/bin", 'pl', $TRUE ) ];
+
+    $options->{cgi_scripts}
+      = [ find_files( "$root/perl/cgi-bin", 'pl', $TRUE ) ];
+
+    for (qw(bash perl cgi)) {
+      $options->{ $_ . '_scripts' }
+        = [ map { ( basename $_) . '.in' }
+          @{ $options->{ $_ . '_scripts' } } ];
+    }
+  }
+  else {
+    my $manifest = $options->{manifest};
+
+    $options->{author}  //= $manifest->{author};
+    $options->{email}   //= $manifest->{email};
+    $options->{project} //= $manifest->{project};
+
+    $options->{description} = $manifest->{description};
+
+    my @file_lists = (
+      bash_scripts     => $manifest->{bash}->{bin},
+      perl_scripts     => $manifest->{perl}->{bin},
+      cgi_scripts      => $manifest->{perl}->{'cgi-bin'},
+      html_files       => $manifest->{html}->{htdocs},
+      javascript_files => $manifest->{html}->{javascript},
+      css_files        => $manifest->{html}->{css},
+      image_files      => $manifest->{html}->{images},
+    );
+
+    for my $p ( pairs @file_lists ) {
+      my ( $var, $list ) = @{$p};
+
+      $options->{$var} = [ map { basename $_ } @{$list} ];
+    }
+  }
+
+  # defaults
+  $options->{email}   //= $ENV{EMAIL} // 'anonymouse@example.com';
+  $options->{author}  //= 'Anonymouse';
+  $options->{project} //= 'noname';
+
+  $options->{destdir} = sprintf '%s/%s', @{$options}{qw(destdir project)};
+
+  return $options;
+}
+
+########################################################################
+sub render_templates {
+########################################################################
+  my ($parameters) = @_;
+
+  my $file_list = $parameters->{file_list};
+  my $templates = $file_list->{templates};
+
+  for my $template ( keys %{$templates} ) {
+
+    if ( $parameters->{refresh} ) {
+      next if none { $template eq $_ } @{ $file_list->{refresh} };
+    }
+
+    DEBUG 'rendering ' . $template;
+
+    my ( $mode, $out )
+      = ref $templates->{$template}
+      ? @{ $templates->{$template} }
+      : ( undef, $templates->{$template} );
+
+    $out = sprintf '%s/%s', $parameters->{destdir}, $out;
+
+    _render_template( $template, $parameters, $out );
+
+    if ( defined $mode ) {
+      chmod oct($mode), $out;
+    }
+  }
+
+  return;
+}
+
+########################################################################
+sub create_script_test {
+########################################################################
+  my (%args) = @_;
+
+  my ( $file, $path ) = @args{qw(file path)};
+
+  $file = basename $file;
+  $file =~ s/[.]pl[.]in$//xsm;
+
+  my $unit_test = sprintf '%s/t/00-%s.t', $path, $file;
+
+  return _render_template( '00-script.t.tt', { script => $file },
+    $unit_test );
+}
+
+########################################################################
+sub create_unit_tests {
+########################################################################
+  my (%args) = @_;
+
+  my ( $files, $path ) = @args{qw(files path)};
+
+  DEBUG Dumper( [ 'unit tests', $files, 'path', $path ] );
+
+  foreach ( @{$files} ) {
+    if (/[.]pm[.]in$/xsm) {
+      create_module_test( path => $path, file => $_ );
+    }
+    else {
+      create_script_test( path => $path, file => $_ );
+    }
+  }
+
+  return;
+}
+
+########################################################################
+sub create_ax_requirements_check {
+########################################################################
+  my (%options) = @_;
+
+  my $outfile = sprintf '%s/autotools/ax_requirements_check.m4',
+    $options{destdir};
+
+  ## no critic (RequireInterpolationOfMetachars)
+  return system '@bindir@/autoconf-ax-requirements-check.pl', '-r',
+    $options{destdir},
+    '-o',
+    $outfile;
+}
+
+########################################################################
+sub create_changelog {
+########################################################################
+  my (%options) = @_;
+
+  my @all_files;
+
+  find(
+    sub {
+      return if -d $File::Find::name;
+      push @all_files, $File::Find::name;
+    },
+    $options{destdir}
+  );
+
+  for (@all_files) {
+    s/^\/?$options{destdir}\///xsm;
+  }
+
+  _render_template(
+    'ChangeLog.tt',
+    { %options, files => [ sort { lc $a cmp lc $b } @all_files ] },
+    sprintf '%s/%s',
+    $options{destdir}, 'ChangeLog'
+  );
+
+  return;
+}
+
+########################################################################
+sub do_subst {
+########################################################################
+  my ( $arg, $parameters ) = @_;
+
+  DEBUG "do_subst($arg)";
+
+  while ( $arg =~ /\@([^\@]+)\@/xsm ) {
+    DEBUG "found substitution var $1";
+
+    die "$1 is not defined in your parameter list\n"
+      if !exists $parameters->{$1};
+
+    my $val = $parameters->{$1};
+    $arg =~ s/\@$1\@/$val/xsmg;
+
+    DEBUG "arg now [$arg]";
+  }
+
+  return $arg;
+}
+
+########################################################################
+sub copy_list {
+########################################################################
+  my (%options) = @_;
+
+  my $destdir   = $options{destdir};
+  my $file_list = $options{file_list}->{files};
+
+  TRACE Dumper( \%options );
+
+  foreach my $file ( keys %{$file_list} ) {
+    my $dest = $destdir;
+
+    my ( $mode, $out )
+      = ref $file_list->{$file}
+      ? @{ $file_list->{$file} }
+      : ( undef, $file_list->{$file} );
+
+    $out ||= $file;
+    $out = do_subst( $out, \%options );
+
+    if ( $out =~ /\/$/xsm ) {
+      $dest = sprintf '%s/%s/%s', $destdir, $out, $file;
+    }
+    else {
+      $dest = sprintf '%s/%s', $destdir, $out;
+    }
+
+    create_path($dest);
+
+    TRACE sprintf 'copying %s to %s', "$SHARE_DIR/$file", $dest;
+
+    croak "missing $file - perhaps you forgot to add it to Makefile.am?\n"
+      if !-e "$SHARE_DIR/$file";
+
+    copy( "$SHARE_DIR/$file", $dest );
+
+    if ( defined $mode ) {
+      TRACE sprintf 'chmod %s, %s', $mode, $dest;
+      chmod oct($mode), $dest;
+    }
+  }
+
+  return;
+}
+
+########################################################################
+sub create_dependency_tree {
+########################################################################
+  my ( $dirs, $all_dependencies, $root ) = @_;
+
+  my @modules;
+
+  foreach my $dir ( sort keys %{$dirs} ) {
+    my %module;
+
+    my $path = $dir;
+    $path =~ s{$root/?}{}xsm;
+
+    $module{path} = $path;
+
+    my $list = $dirs->{$dir};
+
+    $module{list} = [];
+
+    foreach my $file ( @{$list} ) {
+      push @{ $module{list} }, $path ? "$path/$file" : $file;
+    }
+
+    my $module_name = $path;
+    $module_name =~ s/\///xsm;
+    $module{name_uc} = uc $module_name || 'PERL';
+    $module{name_lc} = lc $module_name;
+
+    $module{files}        = $list;
+    $module{dependencies} = {};
+
+    foreach my $file ( @{$list} ) {
+      my $dependencies = [];
+
+      DEBUG 'looking for ' . $path . $SLASH . $file;
+
+      my $dep_file = $path . $SLASH . $file;
+      $dep_file = strip_in($dep_file);
+      $dep_file =~ s/^\///xsm;
+
+      my @local_dependencies
+        = @{ $all_dependencies->{$dep_file} || [] };
+
+      next if !@local_dependencies;
+
+      for my $dependency (@local_dependencies) {
+        $dependency = strip_in($dependency);
+        push @{$dependencies}, $dependency;
+      }
+
+      $module{dependencies}->{$file} = $dependencies;
+    }
+
+    push @modules, \%module;
+  }
+
+  return \@modules;
+}
+
+1;
+
+__END__

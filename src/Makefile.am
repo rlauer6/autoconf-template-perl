@@ -1,2 +1,1 @@
-SUBDIRS = . main 
-
+SUBDIRS = . main

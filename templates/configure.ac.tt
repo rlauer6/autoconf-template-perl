@@ -1,4 +1,4 @@
-AC_INIT([autoconf-template-perl],
+AC_INIT([[% project %]],
         m4_esyscmd_s([
 if test -z "$VERSION"; then \
   VERSION=$(test -e VERSION && cat VERSION); \
@@ -6,7 +6,7 @@ if test -z "$VERSION"; then \
 fi; \
 echo $VERSION
 ]),
-        m4_esyscmd_s([if test -z "$EMAIL"; then EMAIL=rlauer6@comcast.net; fi; echo $EMAIL]),[autoconf-template-perl])
+        m4_esyscmd_s([if test -z "$EMAIL"; then EMAIL=[% email %]; fi; echo $EMAIL]),[[% project %]])
 
 __poor_mans_expand_file_name () {
     _tmp_name=$1
@@ -109,7 +109,13 @@ AC_SUBST([do_subst_command])
 AC_CONFIG_AUX_DIR([autotools])
 AC_CONFIG_MACRO_DIR([autotools])
 
+[% IF strict %]
+AM_INIT_AUTOMAKE([-Wall -Wno-portability  -Wno-override foreign tar-ustar])
+[% ELSE %]
 AM_INIT_AUTOMAKE([foreign tar-ustar])
+[% END %]
+
+AC_PROG_MKDIR_P
 
 AC_PATH_PROG([BASHRUN],
 	[bash])
@@ -130,6 +136,13 @@ AC_PATH_PROG([POD2MARKDOWN],
 
 if test -z "$POD2MARKDOWN" ; then 
   AC_MSG_ERROR([pod2markdown found?])
+fi
+
+AC_PATH_PROG([RPMBUILD],
+	[rpmbuild])
+
+if test -z "$RPMBUILD" ; then 
+  AC_MSG_WARN([rpmbuild not found?])
 fi
 
 AC_PATH_PROG([POD2MAN],
@@ -169,13 +182,19 @@ AC_ARG_WITH(
 
 AC_SUBST([perl5libdir])
 
+dnl example macro that enables allows you to enable/disable some feature
+dnl --enable-some-thingy, --disable-some-thingy
+dnl See the autotools/ax_am_conditional_example.m4 macro
+dnl AX_SOME_THINGY
+
 AX_DISTCHECK_HACK
 AX_DEPS_CHECK
 AX_PERLDEPS_CHECK
 AX_REQUIREMENTS_CHECK
+APACHE_CONFIG
 RPM_BUILD_MODE
-
 PERLCRITIC_MODE
+AX_PERLCRITIC_CONFIG
 
 AC_ARG_WITH([license],[  --with-license (defaults to GNU Public License)],
 	[LICENSE=$withval],
@@ -197,9 +216,13 @@ AC_CONFIG_FILES([
     src/main/Makefile
     src/main/perl/Makefile
     src/main/perl/bin/Makefile
+    src/main/perl/cgi-bin/Makefile
     src/main/perl/lib/Makefile
+    src/main/bash/Makefile
+    src/main/bash/bin/Makefile
+    src/main/html/Makefile
+    config/Makefile
     resources/Makefile
-    templates/Makefile
     ${PACKAGE_NAME}.spec
 ])
 
@@ -214,6 +237,7 @@ printf "           Configuration files: %s\n" "`__poor_mans_expand_file_name sys
 printf "                  Manual pages: %s\n" "`__poor_mans_expand_file_name mandir`"
 printf "\n"
 printf "                   perl5libdir: %s\n" "`__poor_mans_expand_file_name perl5libdir`"
+dnl printf "            Enable some thingy: %s\n" "`__poor_mans_expand_file_name SOME_THINGY_ENABLED`"
 printf "\n"
 printf "                          perl: %s\n" "`__poor_mans_expand_file_name PERL`"
 printf "                          bash: %s\n" "`__poor_mans_expand_file_name BASHRUN`"

@@ -1,1 +1,1 @@
-SUBDIRS = . bash perl
+SUBDIRS = . perl

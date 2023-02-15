@@ -1,0 +1,25 @@
+[% INCLUDE "build-rules.tt" %]
+
+[% perl_scripts = cgi_scripts %]manifest.perl.bin %]
+
+PERLSCRIPTS = [% IF perl_scripts.size %]\[% END %]
+    [% perl_scripts.join(" \\\n    ") %]
+
+GPERLSCRIPTS = $(PERLSCRIPTS:.pl.in=.pl)
+
+ALLSCRIPTS = \
+    $(GPERLSCRIPTS)
+
+dist_noinst_DATA = \
+    $(PERLSCRIPTS)
+
+libexecdir = @libexecdir@
+
+libexec_SCRIPTS = \
+    $(GPERLSCRIPTS)
+
+PERLCRITIC_PL = \
+    $(GPERLSCRIPTS)
+
+G1MANPAGES = \
+    $(GPERLSCRIPTS:.pl=.1man)

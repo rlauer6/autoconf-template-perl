@@ -1,3 +1,102 @@
+Wed Feb 15 10:21:38 2023  Rob Lauer  <rlauer6@comcast.net>
+
+	[autoconf-template-perl: 2.0.0]:
+	- no longer a template, includes utilties for creating an
+	  autoconfiscated project
+ 
+	[deleted from project]:
+	* config/Makefile.am: deleted
+	* config/example.cfg.in: deleted
+	* init.sh: deleted
+	* perl-deps.yaml: deleted
+	* resources/example.txt: deleted
+	* src/main/bash/Makefile.am: deleted
+	* src/main/bash/bin/build-project: deleted
+	* src/main/perl/bin/example.pl.in: deleted
+	* src/main/perl/bin/example2.pl.in: deleted
+	* src/main/perl/bin/t/00-example.t: deleted
+	* src/main/perl/lib/Foo.pm.in: deleted
+	* src/main/perl/lib/Foo/Bar.pm.in: deleted
+	* src/main/perl/lib/Foo/Bar/Baz.pm.in: deleted
+	* src/main/perl/lib/Foo/Bar/Buz.pm.in: deleted
+	* src/main/perl/lib/t/00-foo.t: deleted
+	* utils/find-perl-requires.sh: deleted
+	* utils/get-module-version.sh: deleted
+	* utils/perl-deps.pl: deleted
+	* utils/perl-deps.sh: deleted
+	* utils/rpm-sign.tcl: deleted
+
+	[added to project]:
+	* autotools/ax_requirements_check.m4: new
+	* includes/bash-bin.inc: new
+	* includes/perl-bin.inc: new
+	* includes/perl-cgi-bin.inc: new
+	* resources/COPYING: new
+	* resources/VERSION: new
+	* resources/apache-directories.inc: new
+	* resources/autotools/ads_PERL_INCLUDES.m4: new
+	* resources/autotools/ads_PERL_MODULE.m4: new
+	* resources/autotools/ads_PROG_PERL.m4: new
+	* resources/autotools/am_build_mode.m4: new
+	* resources/autotools/am_perlcritic_mode.m4: new
+	* resources/autotools/apache_config.m4: new
+	* resources/autotools/ax_am_conditional_example.m4: new
+	* resources/autotools/ax_deps_check.m4: new
+	* resources/autotools/ax_distcheck_hack.m4: new
+	* resources/autotools/ax_perlcritic_config.m4: new
+	* resources/autotools/ax_perlcritic_severity.m4: new
+	* resources/bootstrap: new
+	* resources/directories.inc: new
+	* resources/file_list.json.in: new
+	* resources/gitignore: new
+	* resources/perlcritic.inc: new
+	* resources/perlcriticrc: new
+	* resources/perltidyrc: new
+	* resources/spec.in: new
+	* src/main/perl/bin/autoconf-ax-requirements-check.pl.in: new
+	* src/main/perl/bin/autoconf-template-perl.pl.in: new
+	* src/main/perl/lib/Autoconf/Template.pm.in: new
+	* templates/bash/bin/Makefile.am.tt: new
+	* templates/INSTALL.tt: new
+	* templates/00-module.t.tt: new
+	* templates/00-script.t.tt: new
+	* templates/COPYRIGHT.tt: new
+	* templates/ChangeLog.tt: new
+	* templates/Makefile.am: new
+	* templates/Makefile.am.tt: new
+	* templates/Makefile.tt: new
+	* templates/README.md.tt: new
+	* templates/bash/bin/bash-bin.inc.tt: new
+	* templates/bash/bin/bash-scripts.inc.tt: new
+	* templates/build-rules.tt: new
+	* templates/config/Makefile.am.tt: new
+	* templates/configure.ac.tt: new
+	* templates/html/Makefile.am.tt: new
+	* templates/perl/bin/#Makefile.am.tt#: new
+	* templates/perl/bin/#perl-bin.inc.tt#: new
+	* templates/perl/bin/Makefile.am.tt: new
+	* templates/perl/bin/perl-bin.inc.tt: new
+	* templates/perl/cgi-bin/Makefile.am.tt: new
+	* templates/perl/cgi-bin/perl-cgi-bin.inc.tt: new
+	* templates/perl/lib/Makefile.am.tt: new
+	* templates/perl/lib/perl-modules.inc.tt: new
+	* templates/resources/Makefile.am.tt: new
+	* templates/unit-test.t.tt: new
+
+	[modified]:
+	* Makefile.am
+	* README.md
+	* VERSION
+	* bootstrap
+	* configure.ac
+	* includes/directories.inc
+	* includes/perl-modules.inc
+	* resources/Makefile.am
+	* src/Makefile.am
+	* src/main/perl/Makefile.am
+	* src/main/perl/bin/Makefile.am
+	* src/main/perl/lib/Makefile.am
+
 Fri Sep 17 09:18:32 2021  Rob Lauer  <rlauer6@comcast.net>
 
 	* bootstrap: look for $VERSION in environment
