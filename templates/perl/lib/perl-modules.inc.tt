@@ -30,7 +30,7 @@ G[% module.name_uc %]MODULES = $([% module.name_uc %]MODULES:.pm.in=.pm)
 [%IF module.path %][% perl5lib %][% module.name_lc %]dir = $(perl5libdir)/[% module.path %][% END %]
 [% perl5lib %][% module.name_lc %]_DATA = $(G[% module.name_uc %]MODULES)
 
-[% FOREACH file IN module.files %][% IF module.dependencies.$file.size %][% file %]: % : %.in [% module.dependencies.$file.join(" ") %]
+[% FOREACH file IN module.files %][% IF dependencies.$file.size %][% file.replace('\.in$', '') %]: % : %.in [% dependencies.$file.join(" ") %]
 [% END %][% END %][% END %]
 ALLMODULES = [% makefile_am_list(module_names) %]
 

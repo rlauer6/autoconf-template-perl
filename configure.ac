@@ -153,6 +153,13 @@ if test -z "$SCANDEPS" ; then
   AC_MSG_WARN([scandeps-static.pl not found?])
 fi
 
+AC_PATH_PROG([MAKE_CPAN_DIST],
+	[make-cpan-dist.pl])
+
+if test -z "$MAKE_CPAN_DIST" ; then 
+  AC_MSG_WARN([make-cpan-dist not found...you won't be able to create a CPAN distribution])
+fi
+
 perl5libdir=\${datadir}/perl5
 AC_ARG_WITH(
 	[perl5libdir],[  --with-perl5libdir (defaults to [DATAROOTDIR]/perl5)],
@@ -199,6 +206,7 @@ AC_CONFIG_FILES([
     src/main/perl/Makefile
     src/main/perl/bin/Makefile
     src/main/perl/lib/Makefile
+    cpan/Makefile
     resources/Makefile
     templates/Makefile
     ${PACKAGE_NAME}.spec

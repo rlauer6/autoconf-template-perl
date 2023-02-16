@@ -1,0 +1,24 @@
+project: my-project
+description: |
+  Example project
+author: Rob Lauer
+email: rlauer6@comcast.net
+perl:
+  bin:
+    - foo.pl
+    - bar.pl
+  lib:
+    - Foo.pm
+    - Foo/Bar.pm
+config:
+  - foo.cfg
+resources:
+  - foo.txt
+html:
+  htdocs:
+    - foo.html
+  javascript:
+    - foo.js
+  css:
+    - foo.css
+  images:

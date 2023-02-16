@@ -144,9 +144,10 @@ sub remove_provided_modules {
 
     my $module_path = $module;
     $module_path =~ s/::/\//xsmg;
-    $module_path = sprintf '%s/%s.pm.in', $dependency->{path}, $module_path;
+    $module_path = sprintf '%s/src/main/perl/lib/%s.pm.in', $path,
+      $module_path;
 
-    TRACE 'testing ' . $module_path . ' for existence';
+    TRACE Dumper( [ 'testing ', $dependency, $module, $module_path, $path ] );
 
     next if -e $module_path;
 
@@ -210,7 +211,7 @@ sub main {
 
   DEBUG Dumper($dependencies);
 
-  my $required = remove_provided_modules($dependencies);
+  my $required = remove_provided_modules( $dependencies, $root );
 
   DEBUG Dumper($required);
 

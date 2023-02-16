@@ -94,7 +94,7 @@ AC_DEFUN([APACHE_CONFIG],[
 
     apache_vhostdir=${localstatedir}/www
     AC_ARG_WITH(
-    	[apache-vhost-dir],[  --with-apache-vhost-dir=DIR],
+    	[apache-vhostdir],[  --with-apache-vhostdir=DIR],
     	[apache_vhostdir=$withval]
     	)
     

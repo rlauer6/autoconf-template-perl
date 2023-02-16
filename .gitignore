@@ -42,3 +42,10 @@ src/main/perl/**/*.xml
 src/main/perl/lib/*.tpl
 config/*.xml
 src/main/bash/**/*.sh
+cpan/extra-files
+cpan/provides
+cpan/resources
+cpan/test-requires
+cpan/*.tar.gz
+src/main/perl/bin/autoconf-ax-requirements-check
+src/main/perl/bin/autoconf-template-perl

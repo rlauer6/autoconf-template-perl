@@ -1,3 +1,45 @@
+Wed Feb 15 12:51:29 2023  Rob Lauer  <rlauer6@comcast.net>
+
+	[2.0.1 - cpan]:
+	* VERSION: bump
+	* README.md: wip
+	* .gitignore: added files from cpan/ directory
+	* configure.ac
+	(AC_PATH_PROG): make-cpan-dist.pl
+	(AC_CONFIG_FILES): likewise
+	* cpan/README.md: new
+	* cpan/requires: new
+	* cpan/buildspec.yml: new
+	* cpan/Makefile.am: new
+	* templates/perl/lib/perl-modules.inc.tt
+	- fixed build rule when there are dependencies
+	* src/main/perl/bin/autoconf-ax-requirements-check.pl.in
+	(remove_provided_modules)
+	- module_path needs full path to source (src/main/perl/lib)
+	(main): pass $root to remove_provided_modules()
+	* src/main/perl/bin/autoconf-template-perl.in
+	- removed Carp::Always
+	- refactored (created new subroutines
+	- add support for .yaml files in config directory
+	- create unit test stubs
+	* templates/config/Makefile.am.tt: support for .yaml files
+	(help): tweaks
+	* src/main/perl/lib/Autoconf/Template.pm.in
+	- pod
+	* example-manifest.yaml: new
+	* src/main/perl/bin/Makefile.am
+	- install scripts without .pl in $(bindir)
+	* resources/autotools/apache_config.m4
+	- apache-vhostdir, not vhost-dir
+	* resources/file_list.json
+	(files)
+	- perlcritic -> perlcriticrc
+	- + ax_perlcritic_config.m4
+	- + VERSION
+	- + apache_config.m4
+	(templates)
+	- + html/Makefile.am.tt
+
 Wed Feb 15 10:21:38 2023  Rob Lauer  <rlauer6@comcast.net>
 
 	[autoconf-template-perl: 2.0.0]:

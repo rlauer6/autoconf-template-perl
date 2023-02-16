@@ -5,18 +5,21 @@
         "apache-directories.inc" : "includes/",
         "gitignore" : ".gitignore",
         "perlcritic.inc" : "includes/",
-        "perltidyrc" : ".perltidyrc",
-        "perlcriticrc" : ".perlcritic",
+        "perltidyrc" : "perltidyrc",
+        "perlcriticrc" : "perlcriticrc",
         "COPYING" : "",
+        "VERSION" : "",
+        "apache_config.m4" : "autotools/",
         "ads_PERL_INCLUDES.m4" : "autotools/",
         "ads_PERL_MODULE.m4" : "autotools/",
         "ads_PROG_PERL.m4" : "autotools/",
         "am_build_mode.m4" : "autotools/",
         "am_perlcritic_mode.m4" : "autotools/",
+        "ax_perlcritic_config.m4" : "autotools/",
         "ax_am_conditional_example.m4" : "autotools/",
         "ax_deps_check.m4" : "autotools/",
         "ax_distcheck_hack.m4" : "autotools/",
-        "spec.in" : "@PACKAGE@.spec.in" 
+        "spec.in" : "@project@.spec.in" 
     },
     "templates": {
         "ChangeLog.tt"                     : "ChangeLog",
@@ -26,6 +29,7 @@
         "README.md.tt"                     : "README.md",
         "perl/bin/Makefile.am.tt"          : "src/main/perl/bin/Makefile.am",
         "perl/cgi-bin/Makefile.am.tt"      : "src/main/perl/cgi-bin/Makefile.am",
+        "html/Makefile.am.tt"              : "src/main/html/Makefile.am",
         "perl/lib/Makefile.am.tt"          : "src/main/perl/lib/Makefile.am",
         "bash/bin/Makefile.am.tt"          : "src/main/bash/bin/Makefile.am",
         "bash/bin/bash-bin.inc.tt"         : "includes/bash-bin.inc",
@@ -39,6 +43,7 @@
         "bash/bin/bash-bin.inc.tt",
         "perl/bin/perl-bin.inc.tt",
         "perl/cgi-bin/perl-cgi-bin.inc.tt",
-        "perl/lib/perl-modules.inc.tt"
+        "perl/lib/perl-modules.inc.tt",
+        "config/Makefile.am.tt"
     ]
 }

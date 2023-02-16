@@ -35,4 +35,9 @@ endif
 if RPM_BUILD_MODE
 else
 install-data-hook:
+	for a in $(GPERLSCRIPTS); do \
+	  chmod +x $$a; \
+	  cp $$a $(DESTDIR)$(bindir)/; \
+	  cp $$a $(DESTDIR)$(bindir)/$$(basename $$a .pl); \
+	done
 endif

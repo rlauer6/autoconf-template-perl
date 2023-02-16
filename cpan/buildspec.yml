@@ -1,0 +1,24 @@
+project:
+  description: "autoconfiscation help scripts"
+  author:
+    name: Rob Lauer
+    mailto: rlauer6@comcast.net
+pm_module: Autoconf::Template
+min-perl-version: 5.010
+#dependencies:
+#  test_requires: test-requires
+#  requires: requires
+path:
+  pm_module: src/main/perl/lib
+  exe_files: src/main/perl/bin
+extra-files:
+  - ChangeLog
+resources:
+  homepage: 'http://github.com/rlauer6/autoconf-template-perl'
+  bugtracker:
+    web: 'http://github.com/rlauer6/autoconf-template-perl/issues'
+    mailto: rlauer6@comcast.net
+  repository:
+    url: 'git://github.com/rlauer6/autoconf-tempate-perl.git'
+    web: 'http://github.com/rlauer6/autoconf-template-perl'
+    type: 'git'
