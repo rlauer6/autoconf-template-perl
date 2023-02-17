@@ -17,6 +17,8 @@ CLEANFILES = \
     $(GPERLSCRIPTS) \
     $(GPERLCRITIC_PL)
 
+man1_MANS = $(G1MANPAGES)
+
 .PHONY: clean-local
 clean-local:
 	$(MAKE) clean-generated-man-pages
@@ -36,4 +38,6 @@ endif
 if RPM_BUILD_MODE
 else
 install-data-hook:
+
+uninstall-local:
 endif

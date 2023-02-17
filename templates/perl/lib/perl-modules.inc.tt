@@ -36,7 +36,9 @@ ALLMODULES = [% makefile_am_list(module_names) %]
 
 GALLMODULES = $(ALLMODULES:.pm.in=.pm)
 
-G1MANPAGES = $(GALLMODULES:.pm=.1man)
+man3_MANS = $(G3MANPAGES)
+
+G3MANPAGES = $(GALLMODULES:.pm=.3man)
 
 PERLCRITIC_PM = $(GALLMODULES)
 

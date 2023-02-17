@@ -11,8 +11,9 @@ last release.
 
 # Overview
 
-![GNU
-Autotools](https://upload.wikimedia.org/wikipedia/en/2/22/Heckert_GNU_white.svg)
+<img
+src="https://upload.wikimedia.org/wikipedia/en/2/22/Heckert_GNU_white.svg"
+width="33%" height="33%">
 
 Aurelio A. Heckert, CC BY-SA 2.0
 [https://creativecommons.org/licenses/by-sa/2.0], via Wikimedia
@@ -35,19 +36,22 @@ make
 make install
 ```
 
-This project will create the scaffolding for an autoconfiscated Perl
-application without requiring you to perform the tedious task of
-setting up your own build tree and `configure.ac`.  Using the
-autotools toolchain you can create *build rules* and specify
-*deployment targets* for all of your built artifacts.  Even if you are
-not familiar with the intricacies (and wonders) of autotools, you will
-be able to create a fairly sophisticated build environment for your
-application using this utility.
+This project will create the scaffolding for an
+[__autoconfiscated__](#why-autoconfiscate) Perl application without
+requiring you to perform the tedious task of setting up your own build
+tree and `configure.ac`.  Using the autotools toolchain you can create
+*build rules* and specify *deployment targets* for all of your built
+artifacts.  Even if you are not familiar with the intricacies (and
+wonders) of autotools, you will be able to create a fairly
+sophisticated build environment for your application using this
+utility.
 
 If you've ever wondered how software gets installed on a Linux system,
 then you'll want to learn more about autoconfiscated
 projects. Hopefully though, there is enough documentation here so you
 can use this framework effectively.
+
+[I have some familiarity with Autotools...skip ahead](#requirements)
 
 ## Quick Tutorial on Configuring Your Project
 
@@ -58,7 +62,7 @@ based on GNU Autotools (`autoconf`, `automake`, and `make`).
 * `make` helps us build and install the artifacts that make up our
 application
 
-When you run `./configure --help` you see comprehensive guide to
+When you run `./configure --help` you'll see a comprehensive guide to
 configuring your project.
 
 ```
@@ -487,11 +491,57 @@ when making those decisions.   Of course, it's not rocket science
 either. ;-)
  
 
-## Adding Resources to Your Project
+# Adding Resources to Your Project
 
-TBD
+Adding resources to your project is as simple as dropping a new file
+in the `resources/` directory and refreshing the project.
+
+```
+cp foo.txt my-project/resources/
+cd my-project
+autoconf-template-perl -r
+```
 
 # Creating Your Own Configuration Options
+
+Once you've created your project and `autoconf-template-perl` has
+created your `configure.ac` file, executing `./configure --help` will
+present you with the options available.
+
+If you want to create your own `automake` variables you can edit the
+`configure.ac` and add the necessary `autoconf` incantations to create
+new variable:
+
+```
+AC_ARG_WITH(
+  [foo-bar],[  --with-foo-bar=[foo bar stuff]],
+  [foo_bar=$withval],
+  [foo_bar=[foo]]
+)
+
+AC_SUBST([foo_bar])
+```
+...and update the `do_subst_command` in `configure.ac` by adding
+another `sed` command.
+
+```
+  -e '"'"'s,[@]foo[@],$(foo),g'"'"' \
+```
+
+By adding these snippets you will create an `automake` variable you
+can use in various ways. Most notably, you can use this is any source
+file (`.in`) as `@variable-name@` and it will be resolved during the
+build phase.
+
+...but wait! There is an __easier__ way!
+
+```
+autoconf-ax-extra-opts -m variable-name -d description -D default-value
+```
+
+This utility will add a new option to an m4 macro (`ax-extra-opts.m4`)
+and update the `configure.ac` automagically.  After executing this
+utility execute `./configure --help` and you will your new option!
 
 # Building an RPM
 
@@ -551,8 +601,7 @@ rpmbuild -tb $(ls -1t *.tar.gz | head -1) --sign
 # FAQs
 
 1. Why do I have to use a `.in` extension for my Perl scripts and
-   modules? (See []()).
-
+   modules? (See [Building from `.in` Files](#building-from-in-files)).
 1. Why is `make distcheck` failing?
    * `distcheck` can fail for various reasons, the most common reason
      being the tarball is missing an artifact required for building
@@ -561,7 +610,7 @@ rpmbuild -tb $(ls -1t *.tar.gz | head -1) --sign
      or used the `--refresh` option. If you've added new artifacts
      manually, you'll need to make sure they are included in the
      distribution. See [Adding Artifacts to Your
-     Project](#manually-adding-artifacts-to-your-project)
+     Project](#adding-artifacts-to-your-project)
   * It's also possible that `distcheck` will fail if built artifacts
     are not cleaned up proplery during the `make clean` phase of the
     check. In this case you may have failed to include some generated

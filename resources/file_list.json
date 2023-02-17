@@ -1,49 +1,74 @@
+# "files" 
+#    key:   source file name
+#    value: scalar or array
+#             scalar:
+#               relative path in destination directory (must end in /)
+#               name of the destination file ('' means use key as name)
+#             array:
+#               [0] mode
+#               [1] name ('' means use key as name)
+#
+#   Note that name may contain automake like template variables that
+#   will be satisfied from the
+#
+# "templates"
+#    key:   path of the template relative to the installation directory
+#           (@datadir@/@PACKAGE@)
+#    value: destination relative to project root directory
+# 
+# "refresh"
+#    array of templates that will be refreshed when --refresh option used
+# 
+
 {
-    "files" : {
-        "bootstrap" : ["0755"],
-        "directories.inc" : "includes/",
-        "apache-directories.inc" : "includes/",
-        "gitignore" : ".gitignore",
-        "perlcritic.inc" : "includes/",
-        "perltidyrc" : "perltidyrc",
-        "perlcriticrc" : "perlcriticrc",
-        "COPYING" : "",
-        "VERSION" : "",
-        "apache_config.m4" : "autotools/",
-        "ads_PERL_INCLUDES.m4" : "autotools/",
-        "ads_PERL_MODULE.m4" : "autotools/",
-        "ads_PROG_PERL.m4" : "autotools/",
-        "am_build_mode.m4" : "autotools/",
-        "am_perlcritic_mode.m4" : "autotools/",
-        "ax_perlcritic_config.m4" : "autotools/",
-        "ax_am_conditional_example.m4" : "autotools/",
-        "ax_deps_check.m4" : "autotools/",
-        "ax_distcheck_hack.m4" : "autotools/",
-        "spec.in" : "@project@.spec.in" 
-    },
-    "templates": {
-        "ChangeLog.tt"                     : "ChangeLog",
-        "COPYRIGHT.tt"                     : "COPYRIGHT",
-        "configure.ac.tt"                  : "configure.ac",
-        "Makefile.am.tt"                   : "Makefile.am",
-        "README.md.tt"                     : "README.md",
-        "perl/bin/Makefile.am.tt"          : "src/main/perl/bin/Makefile.am",
-        "perl/cgi-bin/Makefile.am.tt"      : "src/main/perl/cgi-bin/Makefile.am",
-        "html/Makefile.am.tt"              : "src/main/html/Makefile.am",
-        "perl/lib/Makefile.am.tt"          : "src/main/perl/lib/Makefile.am",
-        "bash/bin/Makefile.am.tt"          : "src/main/bash/bin/Makefile.am",
-        "bash/bin/bash-bin.inc.tt"         : "includes/bash-bin.inc",
-        "resources/Makefile.am.tt"         : "resources/Makefile.am",
-        "config/Makefile.am.tt"            : "config/Makefile.am",
-        "perl/bin/perl-bin.inc.tt"         : "includes/perl-bin.inc",
-        "perl/cgi-bin/perl-cgi-bin.inc.tt" : "includes/perl-cgi-bin.inc",
-        "perl/lib/perl-modules.inc.tt"     : "includes/perl-modules.inc"
-    },
-    "refresh" : [
-        "bash/bin/bash-bin.inc.tt",
-        "perl/bin/perl-bin.inc.tt",
-        "perl/cgi-bin/perl-cgi-bin.inc.tt",
-        "perl/lib/perl-modules.inc.tt",
-        "config/Makefile.am.tt"
-    ]
+  "files": {
+    "COPYING": "",
+    "VERSION": "",
+    "ads_PERL_INCLUDES.m4": "autotools/",
+    "ads_PERL_MODULE.m4": "autotools/",
+    "ads_PROG_PERL.m4": "autotools/",
+    "am_build_mode.m4": "autotools/",
+    "am_perlcritic_mode.m4": "autotools/",
+    "apache-directories.inc": "includes/",
+    "apache_config.m4": "autotools/",
+    "ax_am_conditional_example.m4": "autotools/",
+    "ax_deps_check.m4": "autotools/",
+    "ax_distcheck_hack.m4": "autotools/",
+    "ax_perlcritic_config.m4": "autotools/",
+    "bootstrap": [
+      "0755"
+    ],
+    "directories.inc": "includes/",
+    "gitignore": ".gitignore",
+    "perlcritic.inc": "includes/",
+    "perlcriticrc": "perlcriticrc",
+    "perltidyrc": "perltidyrc",
+    "spec.in": "@project@.spec.in"
+  },
+  "templates": {
+    "COPYRIGHT.tt": "COPYRIGHT",
+    "ChangeLog.tt": "ChangeLog",
+    "Makefile.am.tt": "Makefile.am",
+    "README.md.tt": "README.md",
+    "bash/bin/Makefile.am.tt": "src/main/bash/bin/Makefile.am",
+    "bash/bin/bash-bin.inc.tt": "includes/bash-bin.inc",
+    "config/Makefile.am.tt": "config/Makefile.am",
+    "configure.ac.tt": "configure.ac",
+    "html/Makefile.am.tt": "src/main/html/Makefile.am",
+    "perl/bin/Makefile.am.tt": "src/main/perl/bin/Makefile.am",
+    "perl/bin/perl-bin.inc.tt": "includes/perl-bin.inc",
+    "perl/cgi-bin/Makefile.am.tt": "src/main/perl/cgi-bin/Makefile.am",
+    "perl/cgi-bin/perl-cgi-bin.inc.tt": "includes/perl-cgi-bin.inc",
+    "perl/lib/Makefile.am.tt": "src/main/perl/lib/Makefile.am",
+    "perl/lib/perl-modules.inc.tt": "includes/perl-modules.inc",
+    "resources/Makefile.am.tt": "resources/Makefile.am"
+  },
+  "refresh": [
+    "bash/bin/bash-bin.inc.tt",
+    "config/Makefile.am.tt",
+    "perl/bin/perl-bin.inc.tt",
+    "perl/cgi-bin/perl-cgi-bin.inc.tt",
+    "perl/lib/perl-modules.inc.tt",
+    "resources/Makefile.am.tt"
+  ]
 }

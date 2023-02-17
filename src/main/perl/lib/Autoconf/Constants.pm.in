@@ -1,0 +1,87 @@
+package Autoconf::Constants;
+
+use strict;
+use warnings;
+
+use parent qw(Exporter);
+
+our $VERSION   = '@PACKAGE_VERSION@'; ## no critic (RequireInterpolation)
+our $PROJECT   = '@PACKAGE@';         ## no critic (RequireInterpolation)
+our $SHARE_DIR = '@datadir@';         ## no critic (RequireInterpolation)
+
+use Readonly;
+
+# booleans
+Readonly our $TRUE  => 1;
+Readonly our $FALSE => 0;
+
+# chars
+Readonly our $EMPTY => q{};
+Readonly our $SPACE => q{ };
+Readonly our $DASH  => q{-};
+Readonly our $SLASH => q{/};
+Readonly our $COMMA => q{,};
+
+# paths
+Readonly our $PROJECT_DIR  => "$SHARE_DIR/$PROJECT";
+Readonly our $INCLUDE_PATH => "$PROJECT_DIR/templates";
+Readonly our $FILE_LIST    => "$PROJECT_DIR/file_list.json";
+
+# other
+Readonly our $MANIFEST_FILE => 'manifest.yaml';
+
+Readonly our $COPYRIGHT => <<"END_OF_COPYRIGHT";
+Copyright (C) 2023 TBC Development Group, LLC
+License GPLv2+: GNU GPL version 2 or later <https://gnu.org/licenses/gpl-2.0.html>
+This is free software: you are free to change and redistribute it.
+There is NO WARRANTY, to the extent permitted by law.
+
+Written by Rob Lauer <rlauer6\@comcast.net>
+END_OF_COPYRIGHT
+
+Readonly::Hash our %CONFIG_FILE_EXTENSIONS => (
+  ini_files    => 'ini',
+  config_files => 'cfg',
+  json_files   => 'json',
+  yaml_files   => 'yaml',
+);
+
+our %EXPORT_TAGS = (
+  booleans => [
+    qw(
+      $TRUE
+      $FALSE
+    )
+  ],
+  chars => [
+    qw(
+      $EMPTY
+      $SPACE
+      $DASH
+      $SLASH
+      $COMMA
+    )
+  ],
+  paths => [
+    qw(
+      $PROJECT_DIR
+      $INCLUDE_PATH
+      $SHARE_DIR
+    )
+  ],
+  vars => [
+    qw(
+      $PROJECT
+      $FILE_LIST
+      $MANIFEST_FILE
+      $COPYRIGHT
+      %CONFIG_FILE_EXTENSIONS
+    )
+  ],
+);
+
+our @EXPORT_OK = map { @{ $EXPORT_TAGS{$_} } } keys %EXPORT_TAGS;
+
+$EXPORT_TAGS{all} = [@EXPORT_OK];
+
+1;

@@ -1,3 +1,50 @@
+Thu Feb 16 16:59:15 2023  Rob Lauer  <rlauer6@comcast.net>
+
+	[2.0.2 - extra options]:
+	* VERSION: bump
+	* README.md: wip
+	* includes/perl-modules.inc
+	- added Autoconf::Utils, Autoconf::Constants
+
+	[refactoring]:
+	* src/main/perl/lib/Autoconf/Constants.pm.in: new
+	* src/main/perl/lib/Autoconf/Utils.pm.in: new
+	* src/main/perl/bin/autoconf-ax-requirements-check.pl.in
+	- use above and remove redundant subs
+	* src/main/perl/bin/autoconf-template-perl.pl.in
+	- likewise
+	- write meta-data to project.yaml
+	- don't create unnecessary Makefiles
+	- generate stubs for missing files
+	* resources/file_list.json: comments
+
+	[stubs]:
+	templates/stub.cfg.tt: new
+	templates/stub.html.tt: new
+	templates/stub.js.tt: new
+	templates/stub.pl.tt: new
+	templates/stub.pm.tt: new
+	templates/Makefile.am: add above to build
+
+	[man pages]:
+	* templates/build-rules.tt: add target for .3man
+	* templates/perl/perl-modules.inc.tt
+	- module man pages to section 3
+	* templates/perl/lib/Makefile.am.tt
+	- install man pages for modules using module name (::)
+	* templates/perl/cgi-bin/Makefile.am.tt
+	- assign list of manpages to man1_MANS here
+	* templates/perl/bin/Makefile.am.tt: likewise
+	* templates/html/Makefile.am.tt: remove subdirs of htdocs first
+
+	[extra options]:
+	* src/main/perl/bin/autoconf-ax-extra-opts.pl.in: new
+	* includes/perl-bin.inc: add above to build
+	* templates/configure.ac.tt: AX_EXTRA_OPTIONS
+	* templates/ax-extra-opts.m4.tt: new
+	* templates/Makefile.am: add above to build
+	* templates/configure.ac.tt: update do_subst_command
+
 Wed Feb 15 12:51:29 2023  Rob Lauer  <rlauer6@comcast.net>
 
 	[2.0.1 - cpan]:

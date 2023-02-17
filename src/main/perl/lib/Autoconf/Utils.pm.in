@@ -1,0 +1,337 @@
+package Autoconf::Utils;
+
+use strict;
+use warnings;
+
+use Autoconf::Constants qw(:all);
+use Carp;
+use English qw(-no_match_vars);
+use Data::Dumper;
+use Date::Format qw(time2str);
+use File::Basename qw(fileparse basename dirname);
+use File::Path qw(make_path);
+use File::Find;
+use List::Util qw(any);
+use Log::Log4perl qw(:easy);
+use JSON;
+use Template;
+use YAML qw(Load);
+
+use parent qw(Exporter);
+
+our @EXPORT_OK = qw(
+  create_path
+  expand_filename
+  find_files
+  find_module_filename
+  find_root_dir
+  init_logger
+  module_to_path
+  path_to_module
+  render_tt_template
+  slurp_file
+  strip_in
+  timestamp
+  version
+);
+
+our %EXPORT_TAGS = ( all => [@EXPORT_OK] );
+
+########################################################################
+sub version {
+########################################################################
+  my ($version) = @_;
+
+  print basename($PROGRAM_NAME) . " v$version\n\n";
+  print $COPYRIGHT;
+
+  return;
+}
+
+########################################################################
+sub expand_filename {
+########################################################################
+  my ($file) = @_;
+
+  if ( $file =~ /^[~]/xsm ) {
+    croak "no \$HOME environment variable set\n"
+      if !$ENV{HOME};
+
+    $file =~ s/~/$ENV{HOME}/xsm;
+  }
+
+  return $file;
+}
+
+########################################################################
+sub strip_in {
+########################################################################
+  my ($arg) = @_;
+
+  if ( ref $arg ) {
+    for ( @{$arg} ) {
+      s/[.]in$//xsm;
+    }
+  }
+  else {
+    $arg =~ s/[.]in$//xsm;
+  }
+
+  DEBUG Dumper( 'strip_in', $arg );
+
+  return $arg;
+}
+
+########################################################################
+sub find_files {
+########################################################################
+  my ( $path, $type, $strip_in ) = @_;
+  $type //= 'pm';
+
+  my @files;
+
+  TRACE sprintf 'looking for files of type %s in %s', $type, $path;
+
+  find(
+    sub {
+      return
+        if !/[.]$type[.]in$/xsm;
+
+      my $name = $File::Find::name;
+
+      if ($strip_in) {
+        $name = strip_in($name);
+      }
+
+      push @files, $name;
+    },
+    $path
+  );
+
+  TRACE 'found files: ', join "\n", @files;
+
+  return @files;
+}
+
+########################################################################
+sub path_to_module {
+########################################################################
+  my ($path) = @_;
+
+  my $module = $path;
+
+  $module =~ s/\//::/gxsm;
+  $module =~ s/[.]pm.*$//xsm;
+
+  return $module;
+}
+
+########################################################################
+sub module_to_path {
+########################################################################
+  my ($module) = @_;
+
+  $module =~ s/::/\//gxsm;
+
+  return "$module.pm";
+}
+
+########################################################################
+sub timestamp {
+########################################################################
+  my @now = localtime;
+  $now[5] += 1900;
+  $now[4] += 1;
+
+  my %timestamp;
+
+  $timestamp{date} = {
+    year  => $now[5],
+    month => $now[4],
+    day   => $now[3],
+  };
+
+  # Fri Feb 10 14:16:12 2023
+  $timestamp{timestamp} = time2str( '%a %b %e %H:%M:%S %Y', time );
+
+  return %timestamp;
+}
+
+# give an fqp to a Perl module, we just want the portion of the path
+# that reflects the package name...so if Foo::Bar is found at
+# '/tmp/foo/Foo/Bar.pm' we return: 'Foo/Bar.pm'
+########################################################################
+sub find_module_filename {
+########################################################################
+  my ($file) = @_;
+
+  # if file does not exist it should be listed in manifest as something
+  # like: Foo/Bar.pm but we'll create it later
+  return path_to_module($file)
+    if !-e $file;
+
+  my $module = slurp_file($file);
+
+  if ( $module =~ /package\s+([^;]+)/xsm ) {
+    return module_to_path($1);
+  }
+
+  return;
+}
+
+########################################################################
+sub slurp_file {
+########################################################################
+  my ( $file, %options ) = @_;
+
+  my $type = lc( $options{type} // $EMPTY );
+
+  if ( any { $type eq $_ } qw(json yaml dmp) ) {
+    $options{comments} = $FALSE;
+  }
+
+  $options{comments} //= $TRUE; # leave comments
+
+  local $RS = undef;
+
+  open my $fh, '<', $file
+    or croak "could not open $file";
+
+  my $content = <$fh>;
+
+  close $fh;
+
+  if ( !$options{comments} ) {
+    while ( $content =~ s/^[\#][^\n]*$//gxsm ) { }
+  }
+
+  return decode_json($content)
+    if $type eq 'json';
+
+  return Load($content)
+    if $type eq 'yaml';
+
+  return eval "$content" ## no critic (ProhibitStringyEval)
+    if $type eq 'dmp';
+
+  return $content;
+}
+
+########################################################################
+sub render_tt_template {
+########################################################################
+  my ( $template, $parameters, $outfile ) = @_;
+
+  my $tt = Template->new(
+    { INCLUDE_PATH => $INCLUDE_PATH,
+      ABSOLUTE     => $TRUE,
+      INTERPOLATE  => $FALSE,
+    }
+  );
+
+  my $content = $EMPTY;
+
+  croak sprintf "error rendering template: %s\n", $tt->error()
+    if !$tt->process( $template, $parameters, \$content );
+
+  if ($outfile) {
+
+    create_path($outfile);
+
+    open my $fh, '>', $outfile
+      or croak "could open $outfile for writing";
+
+    print {$fh} $content;
+
+    close $fh;
+  }
+
+  return $content;
+}
+
+########################################################################
+sub find_root_dir {
+########################################################################
+  my ( $project, $destdir );
+
+  # see if we can figure out what project we are in...
+  #
+  # PACKAGE_NAME is the project name, so if you are anywhere in the
+  # build tree and have a 'Makefile' there I can probably find
+  # the project name...
+  if ( -e 'Makefile' ) {
+    my $makefile = slurp_file('Makefile');
+
+    if ( $makefile =~ /^PACKAGE_NAME\s=\s([^\n]+)$/xsm ) {
+      $project = $1;
+    }
+
+    if ( $makefile =~ /^abs_top_srcdir\s=\s([^\n]+)$/xsm ) {
+      # init_parameters() will create destdir from project and
+      # destdir, so we want the the directory preceding the root of the
+      # project directory...
+      $destdir = dirname $1;
+    }
+  }
+
+  croak q{I'm sorry I can't figure out what you want to refresh}
+    if !$project || !$destdir;
+
+  return ( $project, $destdir );
+}
+
+########################################################################
+sub init_logger {
+########################################################################
+  my $level = $INFO;
+
+  if ( $ENV{DEBUG} ) {
+    $level = $ENV{DEBUG} > 1 ? $TRACE : $DEBUG;
+  }
+
+  Log::Log4perl->easy_init(
+    { level  => $level,
+      layout => '[%d] (%r/%R) %M:%L - %m%n',
+    }
+  );
+
+  return get_logger();
+}
+
+########################################################################
+sub create_path {
+########################################################################
+  my ($file) = @_;
+
+  my ( $name, $path, $ext ) = fileparse( $file, qr/[.][^.]+$/xsm );
+
+  if ( !-d $path ) {
+    make_path($path);
+  }
+
+  return -d $path;
+}
+
+1;
+
+## no critic (RequirePodSections)
+
+__END__
+
+=pod
+
+=head1 NAME
+
+=head1 SYNOPSIS
+
+=head1 DESCRIPTION
+
+=head1 METHODS AND SUBROUTINES
+
+=head1 SEE ALSO
+
+=head1 AUTHOR
+
+Rob Lauer - <rlauer@usgn.net>
+
+=cut

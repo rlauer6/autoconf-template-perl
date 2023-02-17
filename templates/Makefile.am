@@ -17,16 +17,22 @@ templates_configdir    = $(templatesdir)/config
 templates_htmldir      = $(templatesdir)/html
 
 TEMPLATES = \
+    00-module.t.tt \
+    00-script.t.tt \
     COPYRIGHT.tt \
     ChangeLog.tt \
     INSTALL.tt \
     Makefile.am.tt \
     Makefile.tt \
     README.md.tt \
+    ax-extra-opts.m4.tt \
     build-rules.tt \
     configure.ac.tt \
-    00-script.t.tt \
-    00-module.t.tt
+    stub.cfg.tt \
+    stub.html.tt \
+    stub.js.tt \
+    stub.pl.tt \
+    stub.pm.tt
 
 TEMPLATES_PERL_BIN = \
     perl/bin/Makefile.am.tt \

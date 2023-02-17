@@ -60,10 +60,11 @@ install-data-local:
 	done
 
 uninstall-local:
+	for a in css javascript img; do \
+	  rmdir $(DESTDIR)$(apache_site_htdocsdir)/$$a 2>/dev/null || : ;\
+	done
+
 	for a in log session spool htdocs; do \
 	  rmdir $(DESTDIR)/$(apache_sitedir)/$$a 2>/dev/null || : ;\
 	done
 
-	for a in css javascript img; do \
-	  rmdir $(DESTDIR)$(apache_site_htdocsdir)/$$a 2>/dev/null || : ;\
-	done

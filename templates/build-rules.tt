@@ -54,9 +54,7 @@ define MAN_PAGE_BUILD_RECIPE
 	--section=1man > "$${target_name}" || true
 endef
 
-man1_MANS = $(G1MANPAGES)
-
-%.1man : %.pm
+%.3man : %.pm
 	$(MAN_PAGE_BUILD_RECIPE)
 
 %.1man : %.pl

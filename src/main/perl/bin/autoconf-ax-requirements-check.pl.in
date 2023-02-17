@@ -5,6 +5,8 @@ use warnings;
 
 # SCANDEPS=scandeps-static.pl --no-core --no-include-require
 
+use Autoconf::Constants qw(:all);
+use Autoconf::Utils qw(:all);
 use Carp;
 use Data::Dumper;
 use English qw(-no_match_vars);
@@ -14,7 +16,8 @@ use JSON::PP;
 use List::Util qw(pairs any);
 use Log::Log4perl qw(:easy);
 use Module::ScanDeps::Static;
-use Template;
+
+our $VERSION = '@PACKAGE_VERSION@'; ## no critic (RequireInterpolation)
 
 ########################################################################
 sub get_required_modules {
@@ -56,58 +59,12 @@ AC_DEFUN([AX_REQUIREMENTS_CHECK],[
 ])
 END_OF_TEMPLATE
 
-  my $content = q{};
-
   if ( @{$required} ) {
-    my $tt = Template->new();
-
-    croak 'could not process template ' . $tt->error
-      if !$tt->process( \$template, { required => $required }, \$content );
+    render_tt_template( \$template, { required => $required },
+      $options{'out-file'} );
   }
-
-  my $fh = *STDOUT;
-
-  if ( $options{'out-file'} ) {
-    open $fh, '>', $options{'out-file'} ## no critic (RequireBriefOpen)
-      or die sprintf 'could not open %s for writing', $options{'out-file'};
-  }
-
-  print {$fh} $content;
-
-  close $fh;
 
   return;
-}
-
-########################################################################
-sub find_files {
-########################################################################
-  my ( $path, $type, $strip_in ) = @_;
-  $type //= 'pm';
-
-  my @files;
-
-  TRACE sprintf 'looking for files of type %s in %s', $type, $path;
-
-  find(
-    sub {
-      return
-        if !/[.]$type[.]in$/xsm;
-
-      my $name = $File::Find::name;
-
-      if ($strip_in) {
-        $name = strip_in($name);
-      }
-
-      push @files, $name;
-    },
-    $path
-  );
-
-  TRACE 'found files: ', join "\n", @files;
-
-  return @files;
 }
 
 ########################################################################
@@ -158,24 +115,6 @@ sub remove_provided_modules {
 }
 
 ########################################################################
-sub init_logger {
-########################################################################
-  my $level = $INFO;
-
-  if ( $ENV{DEBUG} ) {
-    $level = $ENV{DEBUG} > 1 ? $TRACE : $DEBUG;
-  }
-
-  Log::Log4perl->easy_init(
-    { level  => $level,
-      layout => '[%d] (%r/%R) %M:%L - %m%n',
-    }
-  );
-
-  return get_logger();
-}
-
-########################################################################
 sub find_dependencies {
 ########################################################################
   my ($root) = @_;
@@ -195,12 +134,43 @@ sub find_dependencies {
 }
 
 ########################################################################
+sub help {
+########################################################################
+  my $name = basename $PROGRAM_NAME;
+
+  return print <<"END_OF_HELP";
+usage: $name options
+
+Options
+-------
+-h, --help        help
+-r, --root-dir    root directory of project
+-o, --out-file    name of the output file
+-v, --version     report script version
+
+This utility is part of the `autoconf-template-perl` toolchain. It will
+create an m4 macro that checks for your Perl module dependencies.
+
+See `perldoc Autoconf::Template` for more of the gory details.
+
+$COPYRIGHT
+END_OF_HELP
+}
+
+########################################################################
 sub main {
 ########################################################################
   my %options;
-  GetOptions( \%options, 'help', 'root-dir=s', 'out-file=s' );
 
-  my $root = $options{'root-dir'} //= q{.};
+  GetOptions( \%options, 'help', 'root-dir=s', 'out-file=s', 'version' );
+
+  return help()
+    if $options{help};
+
+  return version($VERSION)
+    if $options{version};
+
+  my $root = $options{'root-dir'} //= find_root_dir();
 
   init_logger();
 

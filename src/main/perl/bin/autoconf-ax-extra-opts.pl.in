@@ -1,0 +1,137 @@
+#!/usr/bin/env perl
+# -*- mode: perl; -*-
+
+# create an m4 macro for new options
+
+use strict;
+use warnings;
+
+use Autoconf::Constants qw(:all);
+use Autoconf::Utils qw(:all);
+use Carp;
+use Carp::Always;
+use Data::Dumper;
+use English qw(-no_match_vars);
+use File::Basename qw(basename fileparse dirname);
+use Getopt::Long qw(:config no_ignore_case);
+use Log::Log4perl qw(:easy get_logger);
+use JSON;
+use YAML qw(LoadFile);
+
+our $VERSION = '@PACKAGE_VERSION@'; ## no critic (RequireInterpolation)
+
+caller or __PACKAGE__->main();
+
+########################################################################
+sub main {
+########################################################################
+  init_logger();
+
+  my %options;
+
+  GetOptions( \%options, 'macro=s', 'description|d=s',
+    'default|D=s', 'root=s' );
+
+  return help()
+    if $options{help};
+
+  return version($VERSION)
+    if $options{version};
+
+  my $root = $options{root};
+
+  if ( !$root ) {
+    my ( $project, $destdir ) = find_root_dir();
+    $root = "$destdir/$project";
+  }
+
+  my $meta_data = eval { LoadFile("$root/project.yaml"); };
+  $meta_data //= {};
+
+  my $extra_opts      = [];
+  my $extra_opts_file = "$root/ax-extra-opts.json";
+
+  if ( -e "$extra_opts_file" ) {
+    $extra_opts = eval { decode_json( slurp_file($extra_opts_file) ); };
+
+    croak "could not read $extra_opts_file: $EVAL_ERROR\n"
+      if $EVAL_ERROR;
+  }
+
+  my $macro = $options{macro};
+
+  if ($macro) {
+    my $macro_name = $macro;
+    $macro_name =~ s/[_]/-/gxsm;
+
+    my %arg_with = (
+      am_variable_name        => $macro_name,
+      am_variable             => $macro,
+      am_variable_description => $options{description},
+      am_default              => $options{default},
+    );
+
+    push @{$extra_opts}, \%arg_with;
+  }
+
+  my %timestamp = timestamp();
+
+  my %parameters = (
+    timestamp  => $timestamp{timestamp},
+    generator  => basename($PROGRAM_NAME),
+    version    => $VERSION,
+    extra_opts => $extra_opts,
+    project    => $meta_data->{project},
+    email      => $meta_data->{email},
+  );
+
+  my $outfile = "$root/autotools/ax-extra-opts.m4";
+
+  render_tt_template( 'ax-extra-opts.m4.tt', \%parameters, $outfile );
+
+  # refresh configure.ac
+  render_tt_template( 'configure.ac.tt', \%parameters, "$root/configure.ac" );
+
+  if ($macro) {
+    # update ax-extra-opts.json
+    open my $fh, '>', $extra_opts_file
+      or croak "could not open $extra_opts_file for writing\n";
+
+    print {$fh} JSON->new->pretty->encode($extra_opts);
+
+    close $fh;
+
+    system 'autoreconf';
+  }
+
+  return;
+}
+
+########################################################################
+sub help {
+########################################################################
+  my $name = basename $PROGRAM_NAME;
+
+  return print <<"END_OF_HELP";
+usage: $name options
+
+Options
+-------
+-h, --help        help
+-r, --root        project root
+-d, --description description that will be shown
+-D, --default     default value
+-v, --version     report script version
+
+This utility is part of the `autoconf-template-perl` toolchain. It will
+create an m4 macro that add a new option to the `configure' script.
+
+See `perldoc Autoconf::Template` for more of the gory details.
+
+$COPYRIGHT
+END_OF_HELP
+}
+
+1;
+
+__END__

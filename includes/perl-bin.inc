@@ -88,7 +88,8 @@ man1_MANS = $(G1MANPAGES)
 
 PERLSCRIPTS = \
     autoconf-template-perl.pl.in \
-    autoconf-ax-requirements-check.pl.in
+    autoconf-ax-requirements-check.pl.in \
+    autoconf-ax-extra-opts.pl.in
 
 GPERLSCRIPTS = $(PERLSCRIPTS:.pl.in=.pl)
 

@@ -23,11 +23,12 @@ clean-local:
 
 .PHONY: clean-generated-man-pages
 clean-generated-man-pages:
-	for mpath in $(G1MANPAGES); do \
+	for mpath in $(G3MANPAGES); do \
 	echo "$${mpath}"; \
 	rm -f "$${mpath}" ;\
 	test $$? -eq 0 || exit 1 ;\
 	done
+
 
 if DISTCHECK_HACK
 else
@@ -36,4 +37,16 @@ endif
 if RPM_BUILD_MODE
 else
 install-data-hook:
+	for a in $(G3MANPAGES); do \
+	  target_name=$$(echo "$$a" | sed -e 's/\//::/g'); \
+	  mv $(DESTDIR)$(mandir)/man3/$$(basename $$a) \
+	     $(DESTDIR)$(mandir)/man3/$${target_name}; \
+	done
+
+uninstall-local:
+	for a in $(G3MANPAGES); do \
+	  target_name=$$(echo "$$a" | sed -e 's/\//::/g'); \
+	  rm -f $(DESTDIR)$(mandir)/man3/$${target_name}; \
+	done
+
 endif

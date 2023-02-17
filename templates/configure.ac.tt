@@ -100,7 +100,8 @@ do_subst_command='do_subst = sed \
   -e '"'"'s,[@]apache_vhost_domain[@],$(apache_vhost_domain),g'"'"' \
   -e '"'"'s,[@]apache_vhost_server[@],$(apache_vhost_server),g'"'"' \
   -e '"'"'s,[@]apache_vhost_alias[@],$(apache_vhost_alias),g'"'"' \
-\
+[% FOREACH option IN extra_opts %]  -e '"'"'s,[@][% option.am_variable %][@],$([% option.am_variable %]),g'"'"' \
+[% END %]\
 '
 ]
 
@@ -191,6 +192,7 @@ AX_DISTCHECK_HACK
 AX_DEPS_CHECK
 AX_PERLDEPS_CHECK
 AX_REQUIREMENTS_CHECK
+AX_EXTRA_OPTIONS
 APACHE_CONFIG
 RPM_BUILD_MODE
 PERLCRITIC_MODE
