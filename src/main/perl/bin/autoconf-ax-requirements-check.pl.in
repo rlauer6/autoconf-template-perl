@@ -11,11 +11,13 @@ use Carp;
 use Data::Dumper;
 use English qw(-no_match_vars);
 use File::Find;
+use File::Basename qw(basename);
 use Getopt::Long;
-use JSON::PP;
+use JSON;
 use List::Util qw(pairs any);
 use Log::Log4perl qw(:easy);
 use Module::ScanDeps::Static;
+use Scalar::Util qw(reftype);
 
 our $VERSION = '@PACKAGE_VERSION@'; ## no critic (RequireInterpolation)
 
@@ -50,7 +52,7 @@ sub get_required_modules {
 ########################################################################
 sub create_ax_requirements_check {
 ########################################################################
-  my ( $required, %options ) = @_;
+  my ( $required, $options ) = @_;
 
   my $template = <<'END_OF_TEMPLATE';
 AC_DEFUN([AX_REQUIREMENTS_CHECK],[
@@ -58,13 +60,17 @@ AC_DEFUN([AX_REQUIREMENTS_CHECK],[
   ads_PERL_MODULE([[% module.name %]], [], [[% module.version %]])[% END %]
 ])
 END_OF_TEMPLATE
+  my $output;
 
   if ( @{$required} ) {
-    render_tt_template( \$template, { required => $required },
-      $options{'out-file'} );
+    $output = render_tt_template(
+      \$template,
+      { required => $required },
+      $options->{'out-file'}
+    );
   }
 
-  return;
+  return $output;
 }
 
 ########################################################################
@@ -78,7 +84,7 @@ sub get_provided_modules {
 
   find(
     sub {
-      return if $File::Find::name !~ /[.]p[ml][.]in$/;
+      return if $File::Find::name !~ /[.]p[ml][.]in$/xsm;
       push @provided, $File::Find::name;
     },
     $path
@@ -141,16 +147,34 @@ sub help {
   return print <<"END_OF_HELP";
 usage: $name options
 
+Finds Perl module dependencies for the scripts and modules in your 
+project directories
+
+- use the --format m4 option to create or replace the m4 macro that
+  checks for your Perl module dependencies
+- use the --format json option to create a JSON formatted requirements file
+- use the --format text option to create a simple listing of requirements
+
 Options
 -------
 -h, --help        help
+-f, --format      format of output (default: m4)
+-i, --infile      either a .json or .txt requirements file (*)
+-o, --outfile     name of the output file
 -r, --root-dir    root directory of project
--o, --out-file    name of the output file
 -v, --version     report script version
 
-This utility is part of the `autoconf-template-perl` toolchain. It will
-create an m4 macro that checks for your Perl module dependencies.
+* - .txt requirements files should be of the form:
 
+    module version
+   
+  - .json requirements files should be an array of hashes containg th
+    name and version of the module
+
+    { "name" : "Module::Name", "version" : "0.01" }
+
+
+This utility is part of the `autoconf-template-perl` toolchain.
 See `perldoc Autoconf::Template` for more of the gory details.
 
 $COPYRIGHT
@@ -162,7 +186,10 @@ sub main {
 ########################################################################
   my %options;
 
-  GetOptions( \%options, 'help', 'root-dir=s', 'out-file=s', 'version' );
+  GetOptions(
+    \%options,   'help',    'format=s', 'root-dir=s',
+    'outfile=s', 'version', 'infile=s'
+  );
 
   return help()
     if $options{help};
@@ -170,22 +197,101 @@ sub main {
   return version($VERSION)
     if $options{version};
 
-  my $root = $options{'root-dir'} //= find_root_dir();
+  my $outfile = $options{'outfile'};
+  my $infile  = $options{'infile'};
+
+  my %actions = (
+    m4 => sub {
+      my $output = create_ax_requirements_check(@_);
+      return $outfile ? $EMPTY : $output;
+    },
+    json => sub {
+      my ($required) = @_;
+      my %output;
+
+      for ( @{$required} ) {
+        $output{ $_->{name} } = $_->{version};
+      }
+
+      return JSON->new->pretty->encode( \%output );
+    },
+    text => sub {
+      my ($required) = @_;
+
+      return join "\n", map {"$_->{name} $_->{version}"} @{$required};
+    },
+    dmp => sub {
+      my ($required) = @_;
+
+      local $Data::Dumper::Terse  = $FALSE;
+      local $Data::Dumper::Purity = $TRUE;
+
+      return Dumper($required);
+    },
+  );
+
+  my $format = lc( $options{format} //= 'm4' );
+
+  croak "unknown format $format"
+    if !$actions{$format};
 
   init_logger();
 
-  croak "this doesn't look much like a project directory\n"
-    if !-d "$root/src/main/perl/lib";
+  my $required;
 
-  my $dependencies = find_dependencies($root);
+  if ( !$infile ) {
+    my $root = $options{'root-dir'} //= find_root_dir();
 
-  DEBUG Dumper($dependencies);
+    croak "this doesn't look much like a project directory\n"
+      if !-d "$root/src/main/perl/lib";
 
-  my $required = remove_provided_modules( $dependencies, $root );
+    my $dependencies = find_dependencies($root);
+
+    DEBUG Dumper($dependencies);
+
+    $required = remove_provided_modules( $dependencies, $root );
+  }
+  else {
+    if ( $infile =~ /[.]json$/xsm ) {
+      $required = slurp_file( $infile, type => 'json' );
+
+      if ( ref $required && reftype($required) eq 'HASH' ) {
+        $required = [
+          map { { name => $_, version => $required->{$_} } }
+            keys %{$required}
+        ];
+      }
+    }
+    else {
+      my $modules = slurp_file($infile);
+
+      $required = [];
+
+      foreach ( split /\n/xsm, $modules ) {
+        my ( $name, $version ) = split /\s+/xsm, $_;
+        push @{$required}, { name => $name, version => $version };
+      }
+    }
+  }
 
   DEBUG Dumper($required);
 
-  create_ax_requirements_check( $required, %options );
+  my $output = $actions{$format}->( $required, \%options );
+
+  if ($output) {
+    if ($outfile) {
+      open my $fh, '>', $outfile
+        or croak "could not open $outfile for writing\n";
+
+      print {$fh} $output;
+
+      close $fh;
+
+    }
+    else {
+      print {*STDOUT} $output;
+    }
+  }
 
   return;
 }

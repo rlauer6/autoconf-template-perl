@@ -9,7 +9,6 @@ use warnings;
 use Autoconf::Constants qw(:all);
 use Autoconf::Utils qw(:all);
 use Carp qw(croak);
-use Carp::Always;
 use Cwd;
 use Data::Dumper;
 use Date::Format qw(time2str);
@@ -32,6 +31,9 @@ caller or __PACKAGE__->main();
 ########################################################################
 sub main {
 ########################################################################
+
+  check_for_autotools();
+
   init_logger();
 
   my $file_list = slurp_file( $FILE_LIST, type => 'json' );
@@ -164,6 +166,18 @@ See `perldoc Autoconf::Template` for more of the gory details.
 
 $COPYRIGHT
 END_OF_HELP
+}
+
+########################################################################
+sub check_for_autotools {
+########################################################################
+  for (qw(autoconf automake make)) {
+    `$_ --version >/dev/null 2>&1`;
+    croak "you're missing $_ or it's not your path\n"
+      if $CHILD_ERROR ne "0";
+  }
+
+  return;
 }
 
 ########################################################################
@@ -864,7 +878,7 @@ sub create_ax_requirements_check {
     $options->{destdir};
 
   ## no critic (RequireInterpolationOfMetachars)
-  return system '@bindir@/autoconf-ax-requirements-check.pl', '-r',
+  return system '@bindir@/autoconf-ax-requirements-check', '-r',
     $options->{destdir},
     '-o',
     $outfile;

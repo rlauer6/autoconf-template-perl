@@ -9,11 +9,13 @@ this project to create rpms.
 See `ChangeLog` for a listing of files that have changed since the
 last release.
 
+[I have some familiarity with Autotools...skip ahead](#quick-start)
+
 # Overview
 
 <img
 src="https://upload.wikimedia.org/wikipedia/en/2/22/Heckert_GNU_white.svg"
-width="33%" height="33%">
+width="25%" height="25%">
 
 Aurelio A. Heckert, CC BY-SA 2.0
 [https://creativecommons.org/licenses/by-sa/2.0], via Wikimedia
@@ -51,9 +53,9 @@ then you'll want to learn more about autoconfiscated
 projects. Hopefully though, there is enough documentation here so you
 can use this framework effectively.
 
-[I have some familiarity with Autotools...skip ahead](#requirements)
+[Ok, I get it skip ahead to the Quick Start](#quick-start)
 
-## Quick Tutorial on Configuring Your Project
+## Configuring Your Project
 
 Again, the goal of this utility is to create a build and deploy system
 based on GNU Autotools (`autoconf`, `automake`, and `make`).
@@ -134,7 +136,7 @@ Optional Packages:
 
 Using the options you provide to `configure` you can install your
 artifacts anywhere you'd like. The `autoconf-template-perl` utility,
-by convention will install your artifacts as shown below:
+by convention, will install your artifacts as shown below:
 
 | Artifact | Source Directory | Installation Directory |
 | -------- | ---------------- | ---------------------- |
@@ -171,38 +173,158 @@ environment for your application.  Coupling that with the use of the
 Redhat Package Manager and you are on your way to automated builds
 that are _organized_, _extensible_ and _scalable_.
 
+# Quick Start
+
+1. Install this project from GitHub or CPAN (__Hint:__  _unless you want to
+   dive into the gory details of this utility is built, install from CPAN_)
+1. Create a `manifest.yaml` file that describes the project and the
+   assets you want to include (they don't actually have to exist)
+   ```
+   project: foobar
+   description: The FooBar Project
+   author: Fred Flintstone
+   email: fred@openbedrock.org
+   perl:
+     bin:
+       - foo.pl
+       - bar.pl
+     lib:
+       - Foo.pm
+       - Foo/Bar.pm
+   ```
+1. run the `autoconf-template-perl` utility
+   ```
+   autoconf-template-perl -d .
+   ```
+1. initialize the build system
+   ```
+   ./bootstrap
+   ```
+1. configure the project
+   ```
+   ./configure --localstatedir=/var --prefix=/usr --sysconfdir=/etc/
+   ```
+1. build the project
+   ```
+   make
+   ```
+1. install the project to `/tmp` or somewhere of your choosing
+   ```
+   make install DESTDIR=/tmp
+   ```
+
+> As noted above, none of the assests listed above actually need to exist. The utility
+> will create stubs for you. [Perl scripts](#templates/stub.pl.tt) and
+> [module stubs](#templates/stubs.pm.tt)  will be
+> built from templates.
+
+If all goes well, you have installed a sample project that looks
+something like this:
+
+```
+/tmp
+|-- usr
+|   |-- bin
+|   |   |-- bar.pl
+|   |   `-- foo.pl
+|   `-- share
+|       |-- man
+|       |   |-- man1
+|       |   |   |-- bar.1man
+|       |   |   `-- foo.1man
+|       |   `-- man3
+|       |       |-- Foo.3man
+|       |       `-- Foo::Bar.3man
+|       `-- perl5
+|           |-- Foo
+|           |   `-- Bar.pm
+|           `-- Foo.pm
+`-- var
+    `-- www
+        |-- htdocs
+        |   |-- css
+        |   |-- img
+        |   `-- javascript
+        |-- log
+        |-- session
+        `-- spool
+```
+
+Next steps...take a look at the source tree created for you. First
+remove all of the built artifacts and files created by `configure`.
+
+```
+make distclean
+```
+
+```
+tree foobar/ | less
+```
+
+The source tree will contain all of your artifacts and a few extra
+goodies:
+
+* Stub unit test files will be created in `src/main/perl/bin/t`,
+  `src/main/perl/cgi-bin/t` and `src/main/perl/lib/t`.
+* `.gitignore` file has been added to your project that will filter out
+files and directories you probably don't want to put under source
+control.
+* a `.git` directory has been created with your name and email in the
+`config` file
+
+If you are using `git` for source control, now's a good time to
+initialize your repository and commit the Big Bang!
+
+```
+git init
+git add .
+git commit -m 'Big Bang!'
+```
+
 # Features of the `autoconf-template-perl` Utility
 
 * Organizes your application into an easily recognizable and navigable
   tree structure
 * Creation of __deployment tarballs__ or __RPMs__
 * __Syntactic checking__ of Perl scripts and modules ( `make` )
-* Best practice checking using `perlcritic` (`make check`)
+* __Best practice__ checking using `perlcritic` (`make check`)
 * Automatic creation of all target directories during deployment
 * Identification of __Perl module dependencies__
 * Automatic creation of __unit test stubs__ for scripts and modules
-* Variable substitution during builds from configured variables
+* Variable substitution during builds from `configure` options
 * Creation of __man pages__ from your module or script POD
+* Creation of stub _modules_, _scripts_, _html files_, etc from
+  templates
 
 # Requirements
 
 * `autoconf`
 * `automake`
 * `make`
-* ..and various other standard Linux utilities
+* Perl modules (in addition to core modules)
+  ```
+  Date::Format
+  JSON
+  Log::Log4perl'
+  Module::ScanDeps::Static
+  Readonly
+  Template
+  YAML
+  ```
+* ...and various other standard Linux utilities
 
 # Getting Started
 
 `autoconf-template-perl` started out life as a simple template that
 required that you _fill in the blanks_ yourself.  It has since morphed
 into a set of utilities for automatically creating the scaffolding of an
-autoconfiscated Perl application. The resulting scaffolding is a
+_autoconfiscated_ Perl application. The resulting scaffolding is a
 __working__ starting point for your Perl application.  That's
 right...you should be able to build a deployment tarball for your
 application after running the utilities that create the project build
 tree.
 
-In order to create an autoconfiscated project you will need to first install
+In order to create an _autoconfiscated_ project you will need to first install
 this project from the GitHub repository or from CPAN.
 
 After installing this project, you should identify the artifacts needed
@@ -211,7 +333,7 @@ by your project. Typically, this means you might have:
 * Perl modules (`.pm`)
 * Perl scripts (`.pl`)
 * CGI scripts (`.pl` or `.cgi`)
-* Configuration files (`.cfg`, `.json`, `.ini`, etc)
+* Configuration files (`.cfg`, `.json`, `.ini`, `.yaml`, etc)
 * Resources - additional files you might need to install somewhere
 * Web application artifacts (`.html`, `.js`, `.css`, `.png`, etc)
 
@@ -225,25 +347,42 @@ description: {description}
 author: {author's name}
 email: {author's email address}
 perl:
-  bin: {list of .pl files}
-  lib: { list of .pm files }
-  cgi-bin: {list of .pl files that will be installed as .cgi files}
-resources: {list of files of any type}}
+  bin:
+    - {list of .pl files}
+  lib:
+    - { list of .pm files }
+  cgi-bin:
+    - {list of .pl files that will be installed as .cgi files}
+resources:
+  - {list of files of any type}}
 html:
-  css: {list of .css files}
-  htdocs: { list of .html files }
-  javascript: { list of .js files}
-  images: { list of image files of any type}
+  css:
+    - {list of .css files}
+  htdocs:
+    - { list of .html files }
+  javascript:
+    - { list of .js files}
+  images:
+    - { list of image files of any type}
 ```
 
-Files should be listed using their fully qualified pathname or a path
+* Files should be listed using their fully qualified pathname or a path
 relative to the directory in which you run the
-`autoconf-template-perl` utility. None of the file
-lists are required elements to run the utility.
+`autoconf-template-perl` utility
+* None of the sections are required
+* If you your file begins with `~` (tilde) then the file path will be
+  prepended with the `$HOME` environment variable (if it exists).
+* if you list a file that does not exist, that's ok...the utility will
+  create the file from a set of stubs that were included with the
+  utility. Stubs exist for `.pm`, `.pl`, `.html`, `.cfg` and `.js`
+  files. These stubs are templates of the `Template::Toolkit` ilk. If
+  a stub does not exist for the file you listed, an empty file is
+  created.
 
 Perl modules, scripts and CGI scripts will be written to their target
-directories with and extesion of `.pm.in` for modules and `.pl.in` for
-scripts.
+directories with and extension of `.pm.in` for modules and `.pl.in` for
+scripts. (See [Building from `.in` Files](#building-from-in-files) to
+understand why the framework uses `.in` files as source.)
 
 Bash scripts will be written as `.sh.in` files.
 
@@ -258,7 +397,14 @@ Your source files can have any extension when listed in the
 manifest. The extension will be replaced using the convention describe
 above.
 
-Note that CGI scripts will also be copied to their target directory as
+> Reminder: if the file in the manifest does not exist, the utility
+> will try to find a template for the type of file you listed using
+> the extension of your source file. If your extensions do not look
+> like those in the table and you are trying to introduce a
+> non-existent file to the project, it will be created as an empty
+> file.
+
+CGI scripts will also be copied to their target directory as
 `.pl.in` files, but will have an extension of `.cgi` when
 installed.
 
@@ -269,12 +415,13 @@ Once you have created a manifest file, run the
 autoconf-template-perl --destdir=/tmp --manifest=manifest.yaml`
 ```
 
-* `destdir` is the root of the target directory for your build tree
+* `destdir` is the root of the target directory for your build
+  tree. This is a required argument.
 * `manifest` is the name of a YAML file that contains the manifest
 
 By default, `autoconf-template-perl` will look for a file name
 `manifest.yaml`. Try `autoconf-template-perl -h` to see all the
-options available.
+available options.
 
 After running the utility, depending on what you have included in your
 manifest, your build tree will look something like this:
@@ -316,11 +463,12 @@ deployment tree structure:
 make install DESTDIR=/tmp/my-project
 tree /tmp/my-project | less
 ```
+
 # Project Structure
 
 Your Perl application project is laid out in a specific, organized
-manner to create a standard layout that all of your team can use
-efficiently. It __does not__ reflect the way a project is installed in
+manner to create a standard layout that all of your team can navigate
+easily. It __does not__ reflect the way a project is eventually installed in
 the target environment. See [Deploying Your
 Project](#deploying-your-project) for details regarding where
 artifacts are installed.
@@ -330,7 +478,7 @@ artifacts are installed.
 The root of the project will contain your `configure.ac` file which is
 used by `autoconf` to create your `configure` script.  The `configure`
 script is then used to create the `Makefile` in all of your
-subdirectories from the `Makefile.am` created for you by
+subdirectories from the `Makefile.am` created automatically for you by
 `autoconf-template-perl`.
 
 The root also contains a stub `ChangeLog`, `README.md` and other files
@@ -349,9 +497,9 @@ configuration files might by `.ini`, `.cfg`, `yaml` or `.json` files
 that contain values your program needs for proper operation. When you
 specify these files in your manifest, the `autoconf-template-perl`
 utility will rename them with a `.in` extension. See [Building From
-`.in` File](#building-from-in-files#).
+`.in` Files](#building-from-in-files).
 
-To add new configuration files after initial project creation see
+To add new configuration files after the initial project creation see
 [Adding Artifacts to Your Project](#adding-artifacts-to-your-project).
 
 ## `resources` Directory
@@ -365,10 +513,14 @@ to `@datadir@/@PACKAGE_NAME@`. For example, if your project name is
 ```
 ...then your resources will be installed to `/opt/share/foobar`
 
+New resources can be added to the project at any time by dropping the
+file in the resources directory and running the
+`autoconf-template-perl` utility with the `--refresh` option.
+
 ## `src` Directory
 
-The `src` directory and all of the sub-directories of `src` contain
-the source files that will be built for you. You may or may not have
+The `src` directory and all of the sub-directories  under `src` contain
+the source files for the build. You may or may not have
 all of these directories in your build tree depending on what you
 included in the manifest.
 
@@ -394,12 +546,13 @@ included in the manifest.
 
 When you specify configuration files, scripts and Perl modules in your
 manifest, they are installed in their target source directories with a
-`.in` extension.  This is done because the various `Makefiles` specify
-the file without the extension as the build target and use the `.in`
-file as a the source.  In other words, a
-`.pl` file is built from a `.pl.in` file (similarly for  other
-types of files with a `.in` extension). Depending on the file type, the build recipe may be
-as simple as:
+`.in` extension.  This is done because the various `Makefile.am` files
+specify the file without the extension as the build target and use the `.in`
+file as the source.
+
+For example, a `.pl` file is built from a `.pl.in` file (similarly for
+other types of files with a `.in` extension). Depending on the file
+type, the build recipe may be as simple as:
 
 ```
 $(GCONFIG):
@@ -409,12 +562,12 @@ $(GCONFIG):
 ...which simply takes your source file (`.cfg.in`) and uses `sed` to
 substitute values in your source that are associated with `automake`
 variables.  These `automake` variables are the ones that are created
-by your `configure` script. You use them in your source files (`.in`)
+by your `configure` script when you say something like `./configure
+--with-foobar=bar`. You can use them in your source files (`.in`)
 using the convention `@variable-name@`.
 
 So, for example, to specify the system configuration directory in one of
-your configuration files, you might include something like this in 
-`my-app.cfg.in`.
+your configuration files (`my-app.cfg.in`), you might include something like this:
 
 ```
 db_config = @sysconfdir@/my-app/db-config.cfg
@@ -441,10 +594,10 @@ make install DESTDIR=/tmp/foo
 ```
 
 The above statements would direct the install process to prefix your
-configured directories with `/tmp/foo`. In this manner, you can alter the
-installation paths for different environments or for simply examining
-the deployment structure without actually deploying to the intended
-targets.
+configured directories with `/tmp/foo` during the intallation phase
+(`make install`). In this manner, you can alter the installation paths
+for different environments or for simply examining the deployment
+structure without actually deploying to the intended targets.
 
 See [Creating Your Own Configuration
 Options](#creating-your-own-configuration-options)

@@ -1,3 +1,32 @@
+Fri Feb 17 17:37:51 2023  Rob Lauer  <rlauer6@comcast.net>
+	[2.0.3]:
+	* VERSION: bump
+	* .gitignore: removed extra-files
+
+	[dependencies]:
+	* src/main/perl/bin/autoconf-ax-requirements-check.pl.in
+	- add -i, -f options for output of dependeny lists
+	* src/main/perl/bin/autoconf-template-perl.pl.in
+	- check for autotools
+	* src/main/perl/lib/Autoconf/Utils.pm.in
+	(render_tt_template): add dist dir to Template's INCLUDE_PATH
+	* src/main/perl/bin/autoconf-ax-extra-opts.pl.in
+	- remove Carp::Always
+	* requirements.json: new
+
+	[git]:
+	* resources/file_list.json
+	- comments
+	(templates): +git-config.tt
+	* templates/Makefile.am: add above to build
+
+	[cpan]:
+	* extra-files: new
+	* requires
+	- remove JSON::PP, + List::Util, + File::ShareDir
+	* buildspec.yml
+	- depedencies, extra-files
+
 Thu Feb 16 16:59:15 2023  Rob Lauer  <rlauer6@comcast.net>
 
 	[2.0.2 - extra options]:
@@ -16,7 +45,6 @@ Thu Feb 16 16:59:15 2023  Rob Lauer  <rlauer6@comcast.net>
 	- write meta-data to project.yaml
 	- don't create unnecessary Makefiles
 	- generate stubs for missing files
-	* resources/file_list.json: comments
 
 	[stubs]:
 	templates/stub.cfg.tt: new

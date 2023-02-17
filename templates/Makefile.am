@@ -28,6 +28,7 @@ TEMPLATES = \
     ax-extra-opts.m4.tt \
     build-rules.tt \
     configure.ac.tt \
+    git-config.tt \
     stub.cfg.tt \
     stub.html.tt \
     stub.js.tt \

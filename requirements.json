@@ -1,0 +1,11 @@
+{
+   "YAML" : "1.30",
+   "Template" : "3.100",
+   "JSON" : "4.07",
+   "Log::Log4perl" : "1.55",
+   "List::Util" : "1.33",
+   "Readonly" : "2.05",
+   "Date::Format" : "2.24",
+   "File::ShareDir" : "1.118",
+   "Module::ScanDeps::Static" : "0.10"
+}

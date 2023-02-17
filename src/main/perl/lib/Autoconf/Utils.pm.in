@@ -11,6 +11,7 @@ use Date::Format qw(time2str);
 use File::Basename qw(fileparse basename dirname);
 use File::Path qw(make_path);
 use File::Find;
+use File::ShareDir qw(dist_dir);
 use List::Util qw(any);
 use Log::Log4perl qw(:easy);
 use JSON;
@@ -223,7 +224,7 @@ sub render_tt_template {
   my ( $template, $parameters, $outfile ) = @_;
 
   my $tt = Template->new(
-    { INCLUDE_PATH => $INCLUDE_PATH,
+    { INCLUDE_PATH => [ $INCLUDE_PATH, dist_dir('Autoconf-Template') ],
       ABSOLUTE     => $TRUE,
       INTERPOLATE  => $FALSE,
     }

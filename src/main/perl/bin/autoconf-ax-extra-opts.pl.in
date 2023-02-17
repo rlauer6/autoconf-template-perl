@@ -9,7 +9,6 @@ use warnings;
 use Autoconf::Constants qw(:all);
 use Autoconf::Utils qw(:all);
 use Carp;
-use Carp::Always;
 use Data::Dumper;
 use English qw(-no_match_vars);
 use File::Basename qw(basename fileparse dirname);

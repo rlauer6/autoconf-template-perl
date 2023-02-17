@@ -1,6 +1,7 @@
 Date::Format 2.24
+File::ShareDir 1.118
 JSON 4.07
-JSON::PP 4.10
+List::Util 1.33
 Log::Log4perl 1.55
 Module::ScanDeps::Static 0.10
 Readonly 2.05

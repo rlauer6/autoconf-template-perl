@@ -50,6 +50,7 @@
     "ChangeLog.tt": "ChangeLog",
     "Makefile.am.tt": "Makefile.am",
     "README.md.tt": "README.md",
+    "git-config.tt": ".git/config",
     "bash/bin/Makefile.am.tt": "src/main/bash/bin/Makefile.am",
     "bash/bin/bash-bin.inc.tt": "includes/bash-bin.inc",
     "config/Makefile.am.tt": "config/Makefile.am",

@@ -5,14 +5,13 @@ project:
     mailto: rlauer6@comcast.net
 pm_module: Autoconf::Template
 min-perl-version: 5.010
-#dependencies:
+dependencies:
+  requires: requires
 #  test_requires: test-requires
-#  requires: requires
 path:
   pm_module: src/main/perl/lib
   exe_files: src/main/perl/bin
-extra-files:
-  - ChangeLog
+extra: extra-files
 resources:
   homepage: 'http://github.com/rlauer6/autoconf-template-perl'
   bugtracker:
