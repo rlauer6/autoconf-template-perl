@@ -1,0 +1,15 @@
+#!/usr/bin/env bash
+#-*- mode: sh; -*-
+set -ex
+
+destdir=@bindir@
+
+curl -L https://cpanmin.us -o ${destdir}/cpanm
+chmod +x ${destdir}/cpanm
+
+for a in $(cat @datadir@/@PACKAGE@/requires.txt | awk '{print $1}'); do
+  ${destdir}/cpanm -n -v $a | tee -a /var/log/cpanm-install.log;
+done
+
+exit 0
+

@@ -35,15 +35,14 @@
     "ax_deps_check.m4": "autotools/",
     "ax_distcheck_hack.m4": "autotools/",
     "ax_perlcritic_config.m4": "autotools/",
-    "bootstrap": [
-      "0755"
-    ],
+    "autoconf-template-perlrc" : ".autoconf-template-perlrc",
+    "install-from-cpan.in" : "",
+    "bootstrap": [ "0755" ],
     "directories.inc": "includes/",
     "gitignore": ".gitignore",
     "perlcritic.inc": "includes/",
     "perlcriticrc": "perlcriticrc",
-    "perltidyrc": "perltidyrc",
-    "spec.in": "@project@.spec.in"
+    "perltidyrc": "perltidyrc"
   },
   "templates": {
     "COPYRIGHT.tt": "COPYRIGHT",
@@ -54,7 +53,7 @@
     "bash/bin/Makefile.am.tt": "src/main/bash/bin/Makefile.am",
     "bash/bin/bash-bin.inc.tt": "includes/bash-bin.inc",
     "config/Makefile.am.tt": "config/Makefile.am",
-    "configure.ac.tt": "configure.ac",
+    "configure.ac.tt": [ 0, "configure.ac", [ "nl" ]],
     "html/Makefile.am.tt": "src/main/html/Makefile.am",
     "perl/bin/Makefile.am.tt": "src/main/perl/bin/Makefile.am",
     "perl/bin/perl-bin.inc.tt": "includes/perl-bin.inc",
@@ -62,7 +61,8 @@
     "perl/cgi-bin/perl-cgi-bin.inc.tt": "includes/perl-cgi-bin.inc",
     "perl/lib/Makefile.am.tt": "src/main/perl/lib/Makefile.am",
     "perl/lib/perl-modules.inc.tt": "includes/perl-modules.inc",
-    "resources/Makefile.am.tt": "resources/Makefile.am"
+    "resources/Makefile.am.tt": "resources/Makefile.am",
+    "spec.in.tt": [ 0, "@project@.spec.in", [ "nl" ]]
   },
   "refresh": [
     "bash/bin/bash-bin.inc.tt",

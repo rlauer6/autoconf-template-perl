@@ -1,4 +1,20 @@
-resourcesdir = @datadir@/@PACKAGE@
+SUBDIRS = .
+
+include $(top_srcdir)/includes/directories.inc
+
+@do_subst_command@
+
+CONFIG = \
+    autoconf-template-perlrc.in
+
+GCONFIG = $(CONFIG:.in=)
+
+$(GCONFIG): % : %.in
+	set -x; \
+	$(do_subst) $< > $@
+
+.autoconf-template-perlrc: $(GCONFIG)
+	cp $< "$@"
 
 RESOURCES = \
     COPYING \
@@ -18,10 +34,14 @@ RESOURCES = \
     directories.inc \
     file_list.json \
     gitignore \
+    install-from-cpan.in \
     perlcritic.inc \
     perlcriticrc \
     perltidyrc \
-    spec.in
+    autoconf-template-perlrc
 
-resources_DATA = $(RESOURCES)
+resources_DATA = \
+    $(RESOURCES) \
+    $(GCONFIG)
 
+CLEANFILES = $(GCONFIG)

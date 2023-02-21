@@ -3,22 +3,35 @@
 
 SUBDIRS = . src config resources
 
+include $(top_srcdir)/includes/directories.inc
+include $(top_srcdir)/includes/apache-directories.inc
+
+@do_subst_command@
+
 ACLOCAL_AMFLAGS = -I autotools
+
+requires.txt:
+	autoconf-ax-check-requirements -f text -o $@
+
+dist_resources_DATA = \
+    requires.txt
+
+install-from-cpan: install-from-cpan.in
+	$(do_subst) $< > $@
+	chmod +x $@
+
+bin_SCRIPTS = install-from-cpan
+
+$(PACKAGE_NAME).spec: % : %.in
+	$(do_subst) $< > $@
 
 dist_noinst_DATA = \
   ChangeLog \
   README.md \
+  install-from-cpan.in \
   perlcriticrc \
-  ${PACKAGE_NAME}.spec \
-  ${PACKAGE_NAME}.spec.in
-
-# install CPAN dependencies
-.PHONY: cpan
-cpan:
-	mkdir -p $(abs_builddir)/cpan
-	for a in $$(cat requirements.txt); do \
-	  cpanm -i -L $(abs_builddir)/cpan -n $$a; \
-	done
+  $(PACKAGE_NAME).spec \
+  $(PACKAGE_NAME).spec.in
 
 DISTCHECK_CONFIGURE_FLAGS = --disable-perlcritic-mode 
 #DISTCHECK_CONFIGURE_FLAGS = --with-perlcritic-severity=3

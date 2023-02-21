@@ -29,6 +29,7 @@ TEMPLATES = \
     build-rules.tt \
     configure.ac.tt \
     git-config.tt \
+    spec.in.tt \
     stub.cfg.tt \
     stub.html.tt \
     stub.js.tt \

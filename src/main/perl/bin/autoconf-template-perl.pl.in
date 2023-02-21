@@ -9,6 +9,7 @@ use warnings;
 use Autoconf::Constants qw(:all);
 use Autoconf::Utils qw(:all);
 use Carp qw(croak);
+use Config::IniFiles;
 use Cwd;
 use Data::Dumper;
 use Date::Format qw(time2str);
@@ -17,11 +18,14 @@ use File::Basename qw(basename fileparse dirname);
 use File::Copy;
 use File::Find;
 use File::Path qw(make_path);
-use Getopt::Long;
+use File::ShareDir qw(dist_dir);
+use Getopt::Long qw(:config no_ignore_case);
 use JSON qw(decode_json);
 use List::Util qw(any none pairs);
 use Log::Log4perl qw(:easy get_logger);
 use Module::ScanDeps::Static;
+use Scalar::Util qw(reftype);
+use Text::ASCIITable::EasyTable;
 use YAML qw(LoadFile DumpFile);
 
 our $VERSION = '@PACKAGE_VERSION@'; ## no critic (RequireInterpolation)
@@ -40,10 +44,19 @@ sub main {
 
   my %options = ( file_list => $file_list );
 
+  # options are defined with '-' to separate words to make it easy to
+  # type options on CLI
   GetOptions(
-    \%options,   'scripts', 'project=s', 'author=s',
-    'email=s',   'help',    'version',   'manifest=s',
-    'destdir=s', 'force',   'refresh',   'create-missing',
+    \%options,                'scripts',
+    'project=s',              'author=s',
+    'email=s',                'help|h',
+    'version',                'manifest=s',
+    'destdir=s',              'force',
+    'refresh',                'create-missing|c',
+    'list-stubs',             'conf|C=s',
+    'html|H!',                'bash!',
+    'unit-tests!',            'rpm-build-mode|R!',
+    'rpm-install-from-cpan!', 'rpm-requires=s@',
   );
 
   return help()
@@ -52,15 +65,25 @@ sub main {
   return version($VERSION)
     if $options{version};
 
+  $options{autoconf_templaterc} = load_autoconf_templaterc( \%options );
+
+  return list_stubs( \%options )
+    if $options{'list-stubs'};
+
   croak 'no destination dir, '
     . "use --destdir to specify the locaiton for the build tree\n"
     if !$options{destdir} && !$options{refresh};
 
-  my $meta_data;
+  TRACE Dumper( [ 'options', \%options ] );
+
+  set_defaults( \%options );
+
+  my %meta_data = %options;
+  delete $meta_data{autoconf_template_perlrc};
 
   # find manifest if not doing a refresh
   if ( !$options{refresh} ) {
-    $options{manifest} //= $MANIFEST_FILE; # check cwd for manifest.yaml
+    $options{manifest} ||= $MANIFEST_FILE; # check cwd for manifest.yaml
 
     croak "no manifest, use --manifest to specify a YAML manifest\n"
       if !-e $options{manifest};
@@ -73,16 +96,29 @@ sub main {
     my $meta_data_file = sprintf '%s/%s/%s', @options{qw( destdir project)},
       'project.yaml';
 
-    $meta_data = eval { LoadFile($meta_data_file) };
+    %meta_data = eval {
+      my $obj = LoadFile($meta_data_file);
+      return %{$obj};
+    };
   }
-
-  $meta_data //= {};
 
   init_parameters( \%options );
 
-  DEBUG Dumper( [ 'options', \%options ] );
+  TRACE Dumper( [ 'options after init_parameters()', \%options ] );
+
+  my $manifest = $options{manifest};
 
   if ( !$options{refresh} ) {
+
+    # override build mode options if we have something in the manifest
+    if ( $manifest->{bash} && keys %{ $manifest->{bash} } ) {
+      $options{bash_build_mode} = $TRUE;
+    }
+
+    if ( $manifest->{html} && keys %{ $manifest->{html} } ) {
+      $options{html_build_mode} = $TRUE;
+    }
+
     create_build_tree( \%options );
 
     # copy files from manifest to target directories
@@ -92,8 +128,9 @@ sub main {
   find_perl_modules( \%options );
 
   if ( !$options{refresh} ) {
-
-    create_unit_tests( \%options, $options{dependencies} );
+    if ( $options{'unit-tests'} ) {
+      create_unit_tests( \%options, $options{dependencies} );
+    }
 
     # copy extra files that do not need to be rendered, but are required
     # for the project's autoconfiscation to the project directory (see
@@ -102,39 +139,134 @@ sub main {
     copy_list( \%options );
   }
 
-  DEBUG Dumper( [ 'options', \%options ] );
+  # * create the Perl module requirement files
+  # - autotools/ax_requirements_check.m4
+  # - requirements.txt
+  # - requirements.json
+  create_requirement_files( \%options );
 
-  # render the templates: parameters needed are set in the %options
-  # hash. templates are listed in 'file_list.json' and
-  # 'tempaltes//Makfile.am'.
+  set_rpm_build_options( \%options );
+
+  # * render the templates: parameters needed are set in the %options
+  #   hash.
+  # * templates are listed in 'file_list.json' and
+  #   'templates/Makefile.am'.
+  TRACE Dumper( [ 'options before rendering', \%options ] );
+
   render_templates( \%options );
 
-  # create an m4 macro which is called out in 'configure.ac' that
-  # checks to see if the required Perl modules are present in the
-  # target environment.
-
-  create_ax_requirements_check( \%options );
-
-  # create ChangeLog AFTER all files have been created in new project
-  # directory
-
+  # * create ChangeLog AFTER all files have been created in new project
+  #   directory
   if ( !$options{refresh} ) {
-    $meta_data = {
+    %meta_data = (
+      %meta_data,
       project       => $options{project},
       email         => $options{email},
       author        => $options{author},
       creation_date => scalar localtime,
-    };
+    );
 
-    DumpFile( "$options{destdir}/project.yaml", $meta_data );
+    DumpFile( "$options{destdir}/project.yaml", \%meta_data );
 
     # create autotools/ax-extra-opts.m4
     system 'autoconf-ax-extra-opts', '--root', $options{destdir};
+
+    # refresh configure.ac
+    render_tt_template(
+      { template   => 'configure.ac.tt',
+        parameters => \%options,
+        outfile    => "$options{destdir}/configure.ac",
+        cleanup    => [qw(nl)],
+      }
+    );
+
+    my $cwd = getcwd;
+
+    eval {
+      chdir $options{destdir};
+      system 'autoreconf', '-f', '-i';
+    };
+
+    chdir $cwd;
 
     create_changelog( \%options );
   }
 
   return;
+}
+
+########################################################################
+sub set_rpm_build_options {
+########################################################################
+  my ($options) = @_;
+
+  return
+    if !$options->{'rpm-build-mode'};
+
+  my $requires = sprintf '%s/requires.txt', $options->{destdir};
+
+  my %rpm_options;
+  $options->{rpm} = \%rpm_options;
+
+  $rpm_options{install_cpan_files} = $options->{'rpm-install-from-cpan'};
+
+  DEBUG Dumper(
+    [ $rpm_options{install_cpan_files}, $requires, -e $requires ] );
+
+  if ( $rpm_options{install_cpan_files} && -e $requires ) {
+    my $provides = slurp_file($requires);
+
+    $provides = [ map { ( split /\s+/xsm )[0] } split /\n/xsm, $provides ];
+    $rpm_options{provides} = $provides;
+  }
+
+  $rpm_options{requires} = [qw(curl make gcc perl perl-core)];
+
+  if ( $options->{'rpm-requires'}
+    && reftype( $options->{'rpm-requires'} ) eq 'ARRAY' ) {
+    push @{ $rpm_options{requires} }, @{ $options->{'rpm-requires'} };
+  }
+
+  $rpm_options{man_pages}
+    = @{ $options->{perl_modules} } || @{ $options->{perl_scripts} };
+  $rpm_options{perl_modules} = @{ $options->{perl_modules} } ? $TRUE : $FALSE;
+  $rpm_options{bin_files} = @{ $options->{bash_scripts} } ? $TRUE : $FALSE;
+  $rpm_options{bin_files} ||= @{ $options->{perl_scripts} } ? $TRUE : $FALSE;
+
+  $rpm_options{resources}    = @{ $options->{resources} };
+  $rpm_options{config_files} = @{ $options->{config} };
+
+  $rpm_options{cgi_bin}    = @{ $options->{cgi_scripts} };
+  $rpm_options{html}       = @{ $options->{html_files} };
+  $rpm_options{javascript} = @{ $options->{javascript_files} };
+  $rpm_options{css}        = @{ $options->{css_files} };
+  $rpm_options{images}     = @{ $options->{image_files} };
+
+  return $options;
+}
+
+########################################################################
+sub set_defaults {
+########################################################################
+  my ($options) = @_;
+
+  # templates that should not be rendered
+  $options->{'exclude-templates'} = [];
+
+  $options->{html} //= $TRUE;
+  $options->{bash} //= $TRUE;
+
+  $options->{html_build_mode} = delete $options->{html};
+  $options->{bash_build_mode} = delete $options->{bash};
+
+  $options->{'rpm-build-mode'}        //= $TRUE;
+  $options->{'rpm-install-from-cpan'} //= $TRUE;
+
+  if ( !$options->{'rpm-build-mode'} ) {
+    push @{ $options->{exclude_templates} }, 'spec.in.tt';
+  }
+
+  return $options;
 }
 
 ########################################################################
@@ -149,13 +281,17 @@ Options
 -------
 -h, --help            help
 -a, --author          author's name
+-b, --bash            build bash directories (default: true, use --no-bash to disable)
 -c, --create-missing  create any files in manifest that do not exist
 -d, --destdir         root for project directory
 -e, --email           author's email
 -f, --force           force overwrite of project directory
+-h, --html            build html directories (default: true, use --no-html to disable)
 -m, --manifest        name of the YAML manifest file
 -p, --project         project name
 -r, --refresh         refresh after  addition of script or module
+-R, --rpm-build       enable or disable RPM spec file
+-u, --unit-tests      create unit test stubs (default: true, use --no-unit-tests to disable)
 -v, --version         report script version
 
 This utility is part of the `autoconf-template-perl` toolchain. It will
@@ -169,12 +305,79 @@ END_OF_HELP
 }
 
 ########################################################################
+sub load_autoconf_templaterc {
+########################################################################
+  my ($options) = @_;
+
+  my $rc_file = $options->{conf};
+
+  if ( !$rc_file ) {
+    my @paths = ( $ENV{HOME}, $PROJECT_DIR );
+
+    eval {
+      find(
+        { no_chdir => $TRUE,
+          wanted   => sub {
+            return if !/[.]autoconf-template-perlrc/xsm;
+            $rc_file = $File::Find::name;
+
+            die 'found';
+          }
+        },
+        @paths
+      );
+    };
+
+  }
+
+  croak "could not find your configuration file ($rc_file)\n"
+    if $rc_file && !-e $rc_file;
+
+  $options->{conf} = $rc_file;
+
+  if ( -e "$rc_file" ) {
+    $options->{autoconf_template_perlrc}
+      = Config::IniFiles->new( -file => $rc_file );
+  }
+
+  return;
+}
+
+########################################################################
+sub list_stubs {
+########################################################################
+  my ($options) = @_;
+
+  my $config = $options->{autoconf_template_perlrc};
+
+  my @stubs;
+
+  foreach ( $config->Parameters('stubs') ) {
+    push @stubs,
+      {
+      type => sprintf( '%5s', ".$_" ),
+      path => $config->val( 'stubs', $_ )
+      };
+  }
+
+  my $dist_dir = dist_dir('Autoconf-Template');
+
+  print easy_table(
+    data          => \@stubs,
+    table_options => { headingText => 'Artifact Templates' },
+    rows          => [ 'Type', 'type', 'Path', 'path' ],
+  );
+
+  return \@stubs;
+}
+
+########################################################################
 sub check_for_autotools {
 ########################################################################
   for (qw(autoconf automake make)) {
     `$_ --version >/dev/null 2>&1`;
     croak "you're missing $_ or it's not your path\n"
-      if $CHILD_ERROR ne "0";
+      if $CHILD_ERROR ne '0';
   }
 
   return;
@@ -321,7 +524,17 @@ sub create_build_tree {
 
   my $manifest = $options->{manifest};
 
-  my @main_dirs = qw(bash perl html);
+  my @main_dirs = qw(perl);
+
+  DEBUG Dumper( [ 'manifest', $manifest ] );
+
+  DEBUG Dumper( [ 'build tree options', [ @{$options}{qw(bash html)} ] ] );
+
+  for (qw(bash html)) {
+    if ( $options->{ $_ . '_build_mode' } ) {
+      push @main_dirs, $_;
+    }
+  }
 
   foreach (@main_dirs) {
     make_path("$main_prefix/$_");
@@ -333,11 +546,17 @@ sub create_build_tree {
     make_path("$main_prefix/perl/$_");
   }
 
-  my @bash_dirs = qw(bin);
+  my @bash_dirs;
 
-  foreach (@bash_dirs) {
-    make_path("$main_prefix/bash/$_");
+  if ( $options->{bash_build_mode} ) {
+    @bash_dirs = 'bin';
+
+    foreach (@bash_dirs) {
+      make_path("$main_prefix/bash/$_");
+    }
   }
+
+  DEBUG Dumper( [ 'dirs', \@main_dirs, \@bash_dirs, \@perl_dirs ] );
 
   my (@makefiles) = (
     "$options->{destdir}/src/Makefile.am"           => ['main'],
@@ -502,7 +721,6 @@ sub check_manifest {
 
       croak "$file does not exist"
         if !-e $file && !$options->{'create-missing'};
-
     }
   }
 
@@ -754,24 +972,43 @@ sub render_templates {
   my $file_list = $parameters->{file_list};
   my $templates = $file_list->{templates};
 
+  my $exclude_templates = $parameters->{exclude_templates};
+
   for my $template ( keys %{$templates} ) {
+    TRACE 'next template: ' . $template;
+
+    next if any { $template eq $_ } @{$exclude_templates};
 
     if ( $parameters->{refresh} ) {
+      TRACE 'refresh mode: checking against refresh list';
       next if none { $template eq $_ } @{ $file_list->{refresh} };
     }
 
-    DEBUG 'rendering ' . $template;
+    my ( $mode, $out, $cleanup );
 
-    my ( $mode, $out )
-      = ref $templates->{$template}
-      ? @{ $templates->{$template} }
-      : ( undef, $templates->{$template} );
+    if ( ref $templates->{$template} ) {
+      ( $mode, $out, $cleanup ) = @{ $templates->{$template} };
+    }
+    else {
+      ( $mode, $out ) = ( undef, $templates->{$template} );
+    }
 
     $out = sprintf '%s/%s', $parameters->{destdir}, $out;
 
-    render_tt_template( $template, $parameters, $out );
+    # resolve any variables in file names (@project@.spec.in), e.g.
+    $out = do_subst( $out, $parameters );
 
-    if ( defined $mode ) {
+    render_tt_template(
+      { template   => $template,
+        parameters => $parameters,
+        outfile    => $out,
+        cleanup    => $cleanup,
+      }
+    );
+
+    TRACE sprintf 'setting permissions of  %s to %s', $out, $mode // $EMPTY;
+
+    if ( defined $mode && $mode ) {
       chmod oct($mode), $out;
     }
   }
@@ -793,7 +1030,8 @@ sub create_module_test_stub {
 
   my $unit_test = sprintf '%s/t/00-%s.t', $path, $test_name;
 
-  DEBUG sprintf 'rendering unit test %s to %s', $module_name, $unit_test;
+  TRACE sprintf 'rendering module unit test %s to %s', $module_name,
+    $unit_test;
 
   return render_tt_template( '00-module.t.tt', { module => $module_name },
     $unit_test );
@@ -811,7 +1049,7 @@ sub create_script_test_stub {
 
   my $unit_test = sprintf '%s/t/00-%s.t', $path, $file;
 
-  DEBUG sprintf 'rendering unit test %s to %s', $file, $unit_test;
+  TRACE sprintf 'rendering script unit test %s to %s', $file, $unit_test;
 
   return render_tt_template( '00-script.t.tt', { script => $file },
     $unit_test );
@@ -835,7 +1073,7 @@ sub create_unit_tests {
   for my $p ( pairs @unit_tests ) {
     my ( $path, $files ) = @{$p};
 
-    DEBUG Dumper( [ 'creating tests ', $path, $files ] );
+    TRACE Dumper( [ 'creating unit tests ', $path, $files ] );
 
     next if !$files || !@{$files};
 
@@ -855,7 +1093,7 @@ sub create_unit_test_stub {
 
   my ( $files, $path ) = @args{qw(files path)};
 
-  DEBUG Dumper( [ 'unit tests', $files, 'path', $path ] );
+  TRACE Dumper( [ 'unit tests', $files, 'path', $path ] );
 
   foreach ( @{$files} ) {
     if (/[.]pm$/xsm) {
@@ -870,18 +1108,33 @@ sub create_unit_test_stub {
 }
 
 ########################################################################
-sub create_ax_requirements_check {
+sub create_requirement_files {
 ########################################################################
   my ($options) = @_;
 
-  my $outfile = sprintf '%s/autotools/ax_requirements_check.m4',
+  my $m4_macro = sprintf '%s/autotools/ax_requirements_check.m4',
     $options->{destdir};
+  my $requirements_text = sprintf '%s/requires.txt',  $options->{destdir};
+  my $requirements_json = sprintf '%s/requires.json', $options->{destdir};
+
+  my %outfiles = (
+    m4   => $m4_macro,
+    text => $requirements_text,
+    json => $requirements_json,
+  );
 
   ## no critic (RequireInterpolationOfMetachars)
-  return system '@bindir@/autoconf-ax-requirements-check', '-r',
-    $options->{destdir},
-    '-o',
-    $outfile;
+  my @ax_requirements_check = '@bindir@/autoconf-ax-requirements-check';
+
+  # set rootdir option
+  push @ax_requirements_check, '-r', $options->{destdir};
+
+  # create requirements file for each format
+  for my $format ( keys %outfiles ) {
+    system @ax_requirements_check, '-o', $outfiles{$format}, '-f', $format;
+  }
+
+  return;
 }
 
 ########################################################################
@@ -918,10 +1171,10 @@ sub do_subst {
 ########################################################################
   my ( $arg, $parameters ) = @_;
 
-  DEBUG "do_subst($arg)";
+  TRACE "do_subst($arg)";
 
   while ( $arg =~ /\@([^\@]+)\@/xsm ) {
-    DEBUG "found substitution var $1";
+    TRACE "found substitution var $1";
 
     die "$1 is not defined in your parameter list\n"
       if !exists $parameters->{$1};
@@ -929,7 +1182,7 @@ sub do_subst {
     my $val = $parameters->{$1};
     $arg =~ s/\@$1\@/$val/xsmg;
 
-    DEBUG "arg now [$arg]";
+    TRACE "arg now [$arg]";
   }
 
   return $arg;
@@ -942,8 +1195,6 @@ sub copy_list {
 
   my $destdir   = $options->{destdir};
   my $file_list = $options->{file_list}->{files};
-
-  TRACE Dumper($options);
 
   foreach my $file ( keys %{$file_list} ) {
     my $dest = $destdir;

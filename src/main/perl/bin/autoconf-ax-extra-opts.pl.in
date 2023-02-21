@@ -88,9 +88,6 @@ sub main {
 
   render_tt_template( 'ax-extra-opts.m4.tt', \%parameters, $outfile );
 
-  # refresh configure.ac
-  render_tt_template( 'configure.ac.tt', \%parameters, "$root/configure.ac" );
-
   if ($macro) {
     # update ax-extra-opts.json
     open my $fh, '>', $extra_opts_file
@@ -99,8 +96,6 @@ sub main {
     print {$fh} JSON->new->pretty->encode($extra_opts);
 
     close $fh;
-
-    system 'autoreconf';
   }
 
   return;

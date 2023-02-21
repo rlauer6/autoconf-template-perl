@@ -1,13 +1,21 @@
 # README
 
-This is the README  for the `autoconf-template-perl` project.  It
+This is the README for the `autoconf-template-perl` project.  It
 contains, among other things a collection of useful tools for creating
-autoconfiscated Perl based projects.  If you are on a system that uses
+_autoconfiscated_ Perl based projects.  If you are on a system that uses
 the Redhat Package Manager, you can also use the `.spec` file in
 this project to create rpms.
 
-See `ChangeLog` for a listing of files that have changed since the
+See [`ChangeLog`](ChangeLog) for a listing of files that have changed since the
 last release.
+
+See [`NEWS`](NEWS.md) for the lastest news on releases.
+
+# TODO
+
+* [x] add web assets to RPM
+* [ ] make cpan for tarball distributions
+* [ ]
 
 [I have some familiarity with Autotools...skip ahead](#quick-start)
 
@@ -176,7 +184,7 @@ that are _organized_, _extensible_ and _scalable_.
 # Quick Start
 
 1. Install this project from GitHub or CPAN (__Hint:__  _unless you want to
-   dive into the gory details of this utility is built, install from CPAN_)
+   dive into the gory details of how this utility is built, install from CPAN_)
 1. Create a `manifest.yaml` file that describes the project and the
    assets you want to include (they don't actually have to exist)
    ```
@@ -257,6 +265,8 @@ remove all of the built artifacts and files created by `configure`.
 make distclean
 ```
 
+...and now inspect the source tree
+
 ```
 tree foobar/ | less
 ```
@@ -264,15 +274,17 @@ tree foobar/ | less
 The source tree will contain all of your artifacts and a few extra
 goodies:
 
-* Stub unit test files will be created in `src/main/perl/bin/t`,
-  `src/main/perl/cgi-bin/t` and `src/main/perl/lib/t`.
+* Stub unit test files will be created in:
+  * `src/main/perl/bin/t`
+  * `src/main/perl/cgi-bin/t`
+  * `src/main/perl/lib/t`.
 * `.gitignore` file has been added to your project that will filter out
 files and directories you probably don't want to put under source
 control.
 * a `.git` directory has been created with your name and email in the
 `config` file
 
-If you are using `git` for source control, now's a good time to
+If you are using `git` for source control, now is a good time to
 initialize your repository and commit the Big Bang!
 
 ```
@@ -283,18 +295,23 @@ git commit -m 'Big Bang!'
 
 # Features of the `autoconf-template-perl` Utility
 
-* Organizes your application into an easily recognizable and navigable
-  tree structure
+* Organizes your applications and scripts into an __easily recognizable and navigable
+  tree structure__
+  * Perl modules
+  * Perl scripts
+  * CGI scripts
+  * Web application assets (`.html`, `.js`, `.css`, etc)
 * Creation of __deployment tarballs__ or __RPMs__
 * __Syntactic checking__ of Perl scripts and modules ( `make` )
 * __Best practice__ checking using `perlcritic` (`make check`)
-* Automatic creation of all target directories during deployment
+* Automatic __creation of all target directories__ during deployment
 * Identification of __Perl module dependencies__
 * Automatic creation of __unit test stubs__ for scripts and modules
-* Variable substitution during builds from `configure` options
+* __Variable substitution during builds__ from `configure` options
 * Creation of __man pages__ from your module or script POD
 * Creation of stub _modules_, _scripts_, _html files_, etc from
   templates
+* Creation of an __RPM file__ for deployment on RedHat flavored systems
 
 # Requirements
 
@@ -304,8 +321,9 @@ git commit -m 'Big Bang!'
 * Perl modules (in addition to core modules)
   ```
   Date::Format
+  File::ShareDir
   JSON
-  Log::Log4perl'
+  Log::Log4perl
   Module::ScanDeps::Static
   Readonly
   Template
@@ -370,14 +388,15 @@ html:
 relative to the directory in which you run the
 `autoconf-template-perl` utility
 * None of the sections are required
-* If you your file begins with `~` (tilde) then the file path will be
+* If the file path begins with `~` (tilde) then the path will be
   prepended with the `$HOME` environment variable (if it exists).
-* if you list a file that does not exist, that's ok...the utility will
+* If the file listed does not exist, _that's ok_...the utility will
   create the file from a set of stubs that were included with the
   utility. Stubs exist for `.pm`, `.pl`, `.html`, `.cfg` and `.js`
   files. These stubs are templates of the `Template::Toolkit` ilk. If
   a stub does not exist for the file you listed, an empty file is
-  created.
+  created (run `autoconf-template-perl --list-stubs` to see all stub
+  files and their locations).
 
 Perl modules, scripts and CGI scripts will be written to their target
 directories with and extension of `.pm.in` for modules and `.pl.in` for
@@ -698,52 +717,248 @@ utility execute `./configure --help` and you will your new option!
 
 # Building an RPM
 
+This section contains details regarding packaging your application as
+an RPM. This is a _potentially_ good way to package your Perl
+applications on RedHat systems.  It is probably not a good strategy if
+you do not plan on using the _system_ provided `perl` (assuming the
+target environment even has such a thing). While it is possible to use
+a vendored version of Perl, and package your application as an RPM,
+you are likely to run into dependency issues if you do not prevent the
+`rpmbuild` process from trying to find your Perl dependencies. You may
+also find it a particularly frustrating experience if your application
+uses Perl modules that do not have RPM packages readily available (See
+[Building RPMs from CPAN](#building-rpms-from-cpan)).
+
+The alternatives, using the `autoconf-template-perl` system, is to use
+the tarball created by `make dist` to build your application directly
+on the target system or in a Docker container.
+
 In general, RPM building is done on RedHat flavored systems, however
 it is possible to build RPMs on Debian systems if you install the
 `rpm` package and other necessary utilities. Where you may get tripped
 up is if your `.spec` file includes a `BuildRequires` argument (which
 your generated `.spec` from `autoconf-template-perl` in fact does). In
 this case you can build RPMs without `rpmbuild` exiting by including
-the `--nodeps` option.
-
+the `--nodeps` option to `rpmbuild`. See the discussion later in this
+section discussing building RPMs in non-RedHat environments.
 
 ## Quick Start
 
-Get the `rpm-build` package.
+> RPMs are built using the instructions in a spec file (`.spec`). The
+> default `.spec` file created for you has been somewhat customized so
+> that it should work _out of the box_. That is, if haven't changed the basic
+> structure of your project that was defined when you ran
+> `autoconf-template-perl` the first time. If you don't know anything
+> about RPMs or RPM spec files, you'll want to [learn
+> more](https://docs.fedoraproject.org/en-US/package-maintainers/Packaging_Tutorial_GNU_Hello/)
+> about packging applications using `rpmbuild`, especially if you run into any
+> difficulties or want to customize your RPMs.
+
+Assuming you have your project in a state ready to build an RPM,
+follow the quick start recipe below.
+
+1. Get the `rpm-build` package.
+   ```
+   sudo yum install -y rpm-build
+   ```
+   ...or 
+   ```
+   sudo apt-get install rpm
+   ```
+1. Create RPM build directory and create a `.rpmmacros` file.
+   ```
+   test -d "$HOME/rpmbuild"  || mkdir $HOME/rpmbuild
+   echo -e "%_topdir %{getenv:HOME}/rpmbuild >$HOME/.rpmmacros
+   ```
+1. Build the tarball from your project directory and check the
+   distribution to make sure that all assets are present.
+   ```
+   make distcheck
+   ```
+1. Build the rpm.
+   ```
+   rpmbuild -tb $(ls -1t *.tar.gz | head -1)
+   ```
+
+## Perl Modules and RPMs
+
+A reminder that our goal is to package a Perl application for
+deployment and ensure that dependencies are satisfied one way or
+another when the package is installed in the target environment.
+
+> Spoiler alert: `autoconf-template-perl` employs strategy #1.3
+
+There are several strategies available to ensure dependencies are
+available when your application runs.
+
+1. Don't package any dependencies, only package application artifacts.
+   1. Let the `rpmbuild` process identify dependencies and hope that
+     `yum` can find all the required dependencies as RPMs.
+   1. Kick the can down the road and prevent `rpmbuild` from
+      identifying dependencies so that `yum` does not attempt to pull
+      in RPMs that do not exist. Let another process (or person) worry
+      about installing Perl module dependencies in the target
+      environment, but don't let `yum` end up trying to install RPMs
+      that might not exist!
+   1. Build dependencies at the time of _deployment_ in a `%post`
+      section of the RPM package (_to be clear...in this strategy
+      dependencies themselves are __NOT__ packaged, but are built from
+      a manifest of required modules when the package is installed)
+1. Package dependencies inside your RPM
+   1. Prevent `rpmbuild` from identifying dependencies and build
+      dependencies yourself at the time you build your RPM
+
+Each of these strategies has its _pros_ and _cons_.
+
+| Strategy | Pros | Cons | 
+| -------- | ---- | ---- |
+| 1.1 | easy, no effort | RPM packages may not be available for all dependencies |
+| 1.2 | easy, no effort | requires support from SysAdmins or another step in deployment | 
+| 1.3 | easy, some effort | may fail if building modules at time of deployment requires additional libraries or special installtion instructions for CPAN modules |
+| 2.1 | complete RPM ready for deployment | not supported by this utilty, lot's of effort, must be built in same environment as target |
+
+Strategy #1 is typically the way you build an RPM, letting `rpmbuild`
+find your dependencies. In some cases you might add additional
+dependencies manually when `rpmbuild` fails to find them. This happens
+occassionally when your script or modules are using `require` in a way
+that hides the module name from `rpmbuild`.
+
+While packaging your application as an RPM using strategy #1 is
+_easy_, you may encounter problems with missing RPMs. While all of
+the core modules can be found as RPMs there are many other modules you
+may require that have not been packaged yet (or will never be
+packaged).  Of course, you [can build RPMs from CPAN
+yourself](#building-rpms-from-cpan)  and store
+them in a private `yum` repository.
+
+By default howeer, the spec file created by this utility employs
+strategy #1.3. `autoconf-template-perl` prevents `rpmbuild` from
+including those dependencies by removing them when they are found by
+`rpmbuild`'s scanner. The spec file then includes a `%post` section
+that executes the [`install-from-cpan`](install-from-cpan.in) script
+that will install the required modules directly from CPAN using
+`cpanm`.  `autoconf-template-perl` identifies dependencies when your
+project is being configured and then creates several files that list
+those dependencies.
+
+| Dependency File | Description |
+| --------------- | ----------- |
+| `autotools/ax_requirements_check.m4` | m4 macro that checks for  required modules |
+| `requirements.txt` | plain text file listing requirements |
+| `requiremetns.json` | requirements file in JSON format |
+
+These files can be refreshed by running `autconf-tempalte-perl -r` in
+the project's root directory.
+
+Building dependencies in the `%post` section ensures that dependencies
+are built __in the target deployment environment__. This becomes
+important when you are building Perl modules that use XS (compiled
+C/C++ subroutines).
+
+In order to install a broad range of modules from CPAN a few
+dependencies have been added in the `Requires:` sections of the spec
+file. These additional dependences (`gcc`, `make`, etc) are commonly
+required to build may Perl modules. Other utilities and libraries may
+also be required to build your particular CPAN module. 
+
+> Some common libaries required include `openssl`, `libxml2`, `expat`
+> and their `-devel` development RPMs as well.
+
+While building your modules in the `%post` section you may still run
+into issues when the required Perl modules have additional
+dependencies not detected or known to `rpmbuild` (typically libraries
+like `libxml2`, etc).  In that case you have two alternatives;
+
+1. Add the requirements to the list of already in the spec file:
+   ```
+   Requires: gcc make
+   ```
+   You can automatically add dependencies to your spec file when you
+   create your project using the `--rpm-requires` option.
+   ```
+   autoconf-template-perl -d . --rpm-requires libxml2 --rpm-requires libxml2-devel
+   ```
+1. _prevent dependency checking_ altogether and revert to (Strategy
+   #1), letting `yum` try resolve to the dependencies for your Perl
+   modules. This strategy will work if you know that all of your Perl
+   module dependencies can be satisfied from some `yum` repository you
+   have enabled.
+   
+   To employ this strategy and prevent the specfile from
+   blocking dependency checking (_the default_) use the
+   `--no-rpm-install-from-cpan` option when you build your project
+   with `autoconf-template-perl`. `rpmbuild` will then add the
+   dependencies to the package so that `yum` will attempt to satisfy
+   those dependencies from enabled repositories at install time.
+
+Strategy #1.2 usually takes the form of handing your dependency list
+to the _SysAdmins_ and asking them to add these dependencies using
+whatever tools they use to install Perl modules.
+
+Another technique I have used in the past when creating Docker
+containers, is to create a base image that contains the required
+dependencies. In this manner, I separate the two resposibilities;
+__building the depdendencies_ and __building the application__.  Over
+time I can refine the process of creating base images, learning from
+the experience of building many CPAN modules. Here's an example of
+creating a base image for some Perl modules that were required for an
+application that required a specific version.
 
 ```
-sudo yum install -y rpm-build
-```
-...or
-
-```
-sudo apt-get install rpm
-```
-
-Create build directory and create a `.rpmmacros` file.
-
-```
-test -d "$HOME/rpmbuild"  || mkdir $HOME/rpmbuild
-echo -e "%_topdir $HOME/rpmbuild" >$HOME/.rpmmacros
+FROM amazonlinux:1
+RUN yum install -y epel-release
+RUN yum groupinstall -y --enablerepo epel 'Development Tools'
+RUN yum install -y --enablerepo epel v8 v8-devel 'perl(App::cpanminus)'
+RUN cpanm -v App::cpanminus
+RUN cpanm -v JavaScript::V8@0.09 \
+    HTTP::Server::Simple \
+    Class::Accessor::Fast \
+    Readonly
 ```
 
-Build the tarball from your project directory.
+Base image creation can be maintained and supported independently from
+the application (perhaps even by different people). Ultimately
+however, from my application's perspective, this is still strategy
+#1.2. I've kicked the can down the road, delegating the responsibility
+of dependency resolution to a different process.
 
-```
-make dist
-```
+Strategy #2 _can_ work if you keep in mind a few things. First, you
+have to prevent `rpmbuild` from identifying Perl dependencies so that
+it does include the `Requires:` statements that will cause `yum` to
+attempt resolution. Second, you need to be aware that you are building
+what should be a _binary compatible RPM_ that will be deployed in your
+target environment. In other words, *your build environment must
+reflect your target environment*. You can't build your Perl modules on
+a system using Perl 5.36 and expect it work on a system that contains
+Perl 5.18. You _might_ have some luck building modules and RPMs on
+one platorm and deploying on another _if you those modules do not
+require any binary library bindings_. Likewise you _might_ have some
+luck building vanilla RPMs on Debian systems and deploying them to a
+RedHat flavored operating system. In general however, you are probably
+better off not attempting that trick.
 
-Build the rpm.
+The best strategy I have come up with these days is to create Docker
+containers where you can control all of the parameters and
+dependencies required for the buildusing Docker containers I
+can still couple that with building RPMs for my applications.
 
-```
-rpmbuild -tb $(ls -1t *.tar.gz | head -1)
-```
+## Building RPMs from CPAN
 
-## The rpm .spec file
+There have been multiple attempts to create scripts that package CPAN
+modules as RPMs. The most recent and most robust of which appears to be `cpantorpm`.
 
-## Signing an rpm
+| Script | Notes | Repo | 
+| ------ | ----- | ---- |
+| `cpantorpm` | loosely based on `cpan2rpm`| https://metacpan.org/dist/App-CPANtoRPM/view/bin/cpantorpm.pod |
+| `cpan2rpm` | | https://github.com/ekkis/cpan2rpm |
+| `cpanspec` | old and crufty | https://src.fedoraproject.org/rpms/cpanspec |
 
-Optionally sign the rpm. Make sure you have set `%_gpg_name` in your
+If you are going to package your application as an RPM you should
+become familiar with these tools.
+
+## Signing an RPM
+
+Optionally sign the RPM. Make sure you have set `%_gpg_name` in your
 `.rpmmacros` file.
 
 

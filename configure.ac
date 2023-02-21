@@ -35,6 +35,8 @@ __poor_mans_expand_file_name () {
 [
 do_subst_command='do_subst = sed \
   -e '"'"'s,[@]PACKAGE[@],$(PACKAGE),g'"'"' \
+  -e '"'"'s,[@]PACKAGE_NAME[@],$(PACKAGE_NAME),g'"'"' \
+  -e '"'"'s,[@]PACKAGE_DESCRIPTION[@],$(PACKAGE_DESCRIPTION),g'"'"' \
   -e '"'"'s,[@]VERSION[@],$(VERSION),g'"'"' \
   -e '"'"'s,[@]LICENSE[@],$(LICENSE),g'"'"' \
   -e '"'"'s,[@]PACKAGE_VERSION[@],$(PACKAGE_VERSION),g'"'"' \
@@ -68,6 +70,7 @@ do_subst_command='do_subst = sed \
   -e '"'"'s,[@]top_srcdir[@],$(top_srcdir),g'"'"' \
 \
   -e '"'"'s,[@]perl5libdir[@],$(perl5libdir),g'"'"' \
+  -e '"'"'s,[@]perl5sharedir[@],$(perl5sharedir),g'"'"' \
   -e '"'"'s,[@]perlrun[@],$(perlrun),g'"'"' \
   -e '"'"'s,[@]ksh[@],$(ksh),g'"'"' \
   -e '"'"'s,[@]bashrun[@],$(bashrun),g'"'"' \
@@ -161,6 +164,7 @@ if test -z "$MAKE_CPAN_DIST" ; then
 fi
 
 perl5libdir=\${datadir}/perl5
+
 AC_ARG_WITH(
 	[perl5libdir],[  --with-perl5libdir (defaults to [DATAROOTDIR]/perl5)],
 	[
@@ -174,14 +178,17 @@ AC_ARG_WITH(
         ]
 )
 
+perl5sharedir=\${perl5libdir}/auto/share
+
 AC_SUBST([perl5libdir])
+
+AC_SUBST([perl5sharedir])
 
 AX_DISTCHECK_HACK
 AX_DEPS_CHECK
 AX_PERLDEPS_CHECK
 AX_REQUIREMENTS_CHECK
 RPM_BUILD_MODE
-
 PERLCRITIC_MODE
 AX_PERLCRITIC_CONFIG
 
@@ -223,12 +230,14 @@ printf "           Configuration files: %s\n" "`__poor_mans_expand_file_name sys
 printf "                  Manual pages: %s\n" "`__poor_mans_expand_file_name mandir`"
 printf "\n"
 printf "                   perl5libdir: %s\n" "`__poor_mans_expand_file_name perl5libdir`"
+printf "                 perl5sharedir: %s\n" "`__poor_mans_expand_file_name perl5sharedir`"
 printf "\n"
 printf "                          perl: %s\n" "`__poor_mans_expand_file_name PERL`"
 printf "                          bash: %s\n" "`__poor_mans_expand_file_name BASHRUN`"
 printf "\n"
 printf "                    Maintainer: ${PACKAGE_BUGREPORT}\n"
 printf "                       Version: ${PACKAGE_VERSION}\n\n"
+printf "                       Version: ${PACKAGE_DESCRIPTION}\n\n"
 printf "                  Architecture: %s\n" "`__poor_mans_expand_file_name ARCHITECTURE`"
 printf "                       License: %s\n" "`__poor_mans_expand_file_name LICENSE`"
 printf "\n"

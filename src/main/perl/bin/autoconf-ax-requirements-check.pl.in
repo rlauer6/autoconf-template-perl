@@ -63,11 +63,8 @@ END_OF_TEMPLATE
   my $output;
 
   if ( @{$required} ) {
-    $output = render_tt_template(
-      \$template,
-      { required => $required },
-      $options->{'out-file'}
-    );
+    $output = render_tt_template( \$template, { required => $required },
+      $options->{outfile} );
   }
 
   return $output;
@@ -278,8 +275,13 @@ sub main {
 
   my $output = $actions{$format}->( $required, \%options );
 
+  DEBUG 'creating ' . $outfile . ' with ' . $output;
+
   if ($output) {
     if ($outfile) {
+
+      DEBUG 'creating ' . $outfile . ' with ' . $output;
+
       open my $fh, '>', $outfile
         or croak "could not open $outfile for writing\n";
 

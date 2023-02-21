@@ -35,6 +35,8 @@ __poor_mans_expand_file_name () {
 [
 do_subst_command='do_subst = sed \
   -e '"'"'s,[@]PACKAGE[@],$(PACKAGE),g'"'"' \
+  -e '"'"'s,[@]PACKAGE_NAME[@],$(PACKAGE_NAME),g'"'"' \
+  -e '"'"'s,[@]PACKAGE_DESCRIPTION[@],$(PACKAGE_DESCRIPTION),g'"'"' \
   -e '"'"'s,[@]VERSION[@],$(VERSION),g'"'"' \
   -e '"'"'s,[@]LICENSE[@],$(LICENSE),g'"'"' \
   -e '"'"'s,[@]PACKAGE_VERSION[@],$(PACKAGE_VERSION),g'"'"' \
@@ -167,7 +169,8 @@ if test -z "$SCANDEPS" ; then
   AC_MSG_WARN([scandeps-static.pl not found?])
 fi
 
-perl5libdir=\${datadir}/perl5
+perl5libdir=$($PERL -MConfig -wle 'print $Config{installsitelib};')
+
 AC_ARG_WITH(
 	[perl5libdir],[  --with-perl5libdir (defaults to [DATAROOTDIR]/perl5)],
 	[
@@ -219,13 +222,12 @@ AC_CONFIG_FILES([
     src/main/perl/Makefile
     src/main/perl/bin/Makefile
     src/main/perl/cgi-bin/Makefile
-    src/main/perl/lib/Makefile
+    src/main/perl/lib/Makefile[% IF bash_build_mode %]
     src/main/bash/Makefile
-    src/main/bash/bin/Makefile
-    src/main/html/Makefile
+    src/main/bash/bin/Makefile[% END %][% IF html_build_mode %]
+    src/main/html/Makefile[% END %]
     config/Makefile
     resources/Makefile
-    ${PACKAGE_NAME}.spec
 ])
 
 AC_OUTPUT

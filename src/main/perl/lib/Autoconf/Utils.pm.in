@@ -13,6 +13,7 @@ use File::Path qw(make_path);
 use File::Find;
 use File::ShareDir qw(dist_dir);
 use List::Util qw(any);
+use Scalar::Util qw(reftype);
 use Log::Log4perl qw(:easy);
 use JSON;
 use Template;
@@ -168,7 +169,7 @@ sub find_module_filename {
 
   # if file does not exist it should be listed in manifest as something
   # like: Foo/Bar.pm but we'll create it later
-  return path_to_module($file)
+  return $file
     if !-e $file;
 
   my $module = slurp_file($file);
@@ -221,7 +222,23 @@ sub slurp_file {
 ########################################################################
 sub render_tt_template {
 ########################################################################
-  my ( $template, $parameters, $outfile ) = @_;
+  my (@in) = @_;
+
+  my %args;
+
+  if ( ref $in[0] && reftype( $in[0] ) eq 'HASH' ) {
+    %args = %{ $in[0] };
+  }
+  else {
+    @args{qw(template parameters outfile)} = @in;
+  }
+
+  my ( $template, $parameters, $outfile )
+    = @args{qw( template parameters outfile)};
+
+  my @cleanup = @{ $args{cleanup} || [] };
+
+  DEBUG Dumper( [ 'cleanup', $args{cleanup}, \@cleanup, $template ] );
 
   my $tt = Template->new(
     { INCLUDE_PATH => [ $INCLUDE_PATH, dist_dir('Autoconf-Template') ],
@@ -232,8 +249,20 @@ sub render_tt_template {
 
   my $content = $EMPTY;
 
+  TRACE sprintf 'rendering %s to %s;', $args{template},
+    $args{outfile} // $EMPTY;
+
+  TRACE
+    sub { return Dumper( [ "template parameters\n", $args{parameters} ] ) };
+
   croak sprintf "error rendering template: %s\n", $tt->error()
     if !$tt->process( $template, $parameters, \$content );
+
+  if ( any { $_ eq 'nl' } @cleanup ) {
+    DEBUG 'cleaning up multiple new lines...';
+
+    while ( $content =~ s/\n\n\n/\n/xsmg ) { }
+  }
 
   if ($outfile) {
 

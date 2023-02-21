@@ -1,4 +1,70 @@
+Sat Feb 18 18:37:40 2023  Rob Lauer  <rlauer6@comcast.net>
+
+	[2.0.4]:
+	* VERSION: bump
+	* README.md
+	- more info RPM building
+	* configure.ac
+	(do_subst_command)
+	- @perl5sharedir@
+	- PACKAGE_NAME, PACKAGE_DESCRIPTION
+	* include/directories.inc: @perl5sharedir@
+	* resources/Makefile.am
+	- build autoconf-template-perlrc
+	- add above to build
+	- + install-from-cpan
+	- moved spec.in -> templates/spec.in.tt
+	* resources/file_list.json
+	- + autoconf-template-perlrc.in
+	- + install-from-cpan.in
+	- moved files."spec.in" -> templates."spec.in.tt"
+	- clean nl for configure.ac.tt, spec.in.tt
+	* resources/autoconf-template-perlrc.in: new
+
+	[scripts]:
+	* src/main/perl/bin/autoconf-ax-requirements-check.pl.in:
+	- option is 'outfile', not 'out-file' now
+	* src/main/perl/bin/autoconf-template-perl.pl.in
+	- use .autoconf-templte-perlrc file for options
+	(main)
+	- new options to disable html, bash builds
+	- new options for rpm building
+	- add options set on CLI to metadata (future use)
+	(set_rpm_options): new
+	(render_templates)
+	- resolve template vars in filenames
+	- use exclude_templates list to potentially exclude rendering
+	(create_requirements_file)
+	- renamed from	create_ax_requirements_check
+	- create m4, text and JSON files
+	* src/main/perl/bin/autoconf-ax-extra-opts.pl.in
+	- moved final rendering of configure.ac to autconf-template-perl
+	- moved autoreconf to autoconf-template-perl
+	* src/main/perl/lib/Autoconf/Utils.pm.in
+	(find_module_filename): return $file if not found
+	(render_tt_template)
+	- allow array ref of mode, name, options
+	- cleanup extra newlines if nl option set
+
+	[templates]:
+	* templates/Makefile.am
+	- added spec.in.tt to templates
+	* templates/configure.ac.tt
+	- conditionally include html/Makefile and bash/Makefile
+	* templates/spec.in.tt
+	- moved from resources/spec.in
+	- added web app support
+	- only add sections if we have files there
+	- setup macro variables from automake variables at top for clarity
+	- configure with macro variables
+	* templates/Makefile.am.tt
+	- add requires.txt to distribution
+	- build spec file here, not in configure.ac
+	* templates/html/Makefile.am.tt
+	- create additional directories (cgi-bin, config, include)
+
 Fri Feb 17 17:37:51 2023  Rob Lauer  <rlauer6@comcast.net>
+
 	[2.0.3]:
 	* VERSION: bump
 	* .gitignore: removed extra-files

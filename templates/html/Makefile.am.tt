@@ -51,7 +51,7 @@ install-exec-hook:
 	done
 
 install-data-local:
-	for a in log session spool htdocs; do \
+	for a in log session spool htdocs cgi-bin config include; do \
 	  $(MKDIR_P) $(DESTDIR)$(apache_sitedir)/$$a; \
 	done
 
@@ -64,7 +64,7 @@ uninstall-local:
 	  rmdir $(DESTDIR)$(apache_site_htdocsdir)/$$a 2>/dev/null || : ;\
 	done
 
-	for a in log session spool htdocs; do \
+	for a in log session spool htdocs cgi-bin config include; do \
 	  rmdir $(DESTDIR)/$(apache_sitedir)/$$a 2>/dev/null || : ;\
 	done
 
