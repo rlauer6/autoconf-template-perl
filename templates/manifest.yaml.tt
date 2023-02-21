@@ -1,0 +1,34 @@
+project: [% project %]
+description: [% description %]
+author: [% author %]
+email: [% email %]
+resources:
+[% FOREACH resource IN resources %]  - [% resource %]
+[% END %]
+config:
+[% FOREACH config IN config_files %]  - [% config %]
+[% END %]
+perl:
+  bin:
+[% FOREACH script IN perl_scripts %]    - [% script %]
+[% END %]
+  lib:
+[% FOREACH module IN modules %]    - [% module %]
+[% END %]
+bash:
+  bin:
+[% FOREACH script IN bash_scripts %]    - [% script %]
+[% END %]
+html:
+  htdocs:
+[% FOREACH html IN html_files %]    - [% html %]
+[% END %]
+  javascript:
+[% FOREACH script IN javascript_files %]    - [% script %]
+[% END %]
+  css:
+[% FOREACH css IN css_files %]    - [% css %]
+[% END %]
+  images:
+[% FOREACH image IN image_files %]    - [% image %]
+[% END %]

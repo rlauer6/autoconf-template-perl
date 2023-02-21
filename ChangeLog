@@ -1,3 +1,37 @@
+Tue Feb 21 17:35:57 2023  Rob Lauer  <rlauer6@comcast.net>
+
+	[2.0.5 - create manifest]:
+	* src/main/perl/bin/autoconf-ax-requirements-check.pl.in
+	(get_required_modules)
+	- set 0 versions to empty
+	- add log messages
+	(main)
+	- log-level option
+	- pass log-level to init_logger()
+	* src/main/perl/bin/autoconf-template-perl.pl.in
+	- --create-manifest, --log-level
+	- pass log-level to init_logger()
+	(set_defaults): set project, author, etc here
+	(help): new options
+	(make_absolute): new
+	(check_manifest)
+	- use above to make source paths absolute
+	(init_parameters): set email, author, project in set_defaults()
+	(create_requirements_files)
+	- create JSON requirements file, then use that to create other formats
+	* resources/Makefile.am
+	- install .autconfig-templaterc to resources directory
+	- build above from autoconf-template-rc.in
+	* src/main/perl/lib/Autoconf/Utils.pm.in
+	(init_logger)
+	- accept stringy log-level
+	(find_files_of_type): new, refactored find_files()
+	(find_files): use above
+	* templates/manifest.yaml.tt: new
+	* templates/Makefile.am: add above to build
+	* README.md.in: new
+	* .gitignore: added some built files
+
 Sat Feb 18 18:37:40 2023  Rob Lauer  <rlauer6@comcast.net>
 
 	[2.0.4]:

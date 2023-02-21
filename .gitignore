@@ -49,3 +49,6 @@ cpan/*.tar.gz
 src/main/perl/bin/autoconf-ax-requirements-check
 src/main/perl/bin/autoconf-ax-extra-opts
 src/main/perl/bin/autoconf-template-perl
+install-from-cpan
+resources/autoconf-template-perlrc
+resources/.autoconf-template-perlrc

@@ -15,6 +15,7 @@ use File::ShareDir qw(dist_dir);
 use List::Util qw(any);
 use Scalar::Util qw(reftype);
 use Log::Log4perl qw(:easy);
+use Log::Log4perl::Level;
 use JSON;
 use Template;
 use YAML qw(Load);
@@ -25,6 +26,7 @@ our @EXPORT_OK = qw(
   create_path
   expand_filename
   find_files
+  find_files_of_type
   find_module_filename
   find_root_dir
   init_logger
@@ -38,6 +40,14 @@ our @EXPORT_OK = qw(
 );
 
 our %EXPORT_TAGS = ( all => [@EXPORT_OK] );
+
+our %LOG4PERL_LEVELS = (
+  trace => $TRACE,
+  debug => $DEBUG,
+  info  => $INFO,
+  warn  => $WARN,
+  error => $ERROR,
+);
 
 ########################################################################
 sub version {
@@ -90,6 +100,23 @@ sub find_files {
   my ( $path, $type, $strip_in ) = @_;
   $type //= 'pm';
 
+  return find_files_of_type(
+    path  => $path,
+    type  => $type,
+    ext   => '.in',
+    strip => $strip_in
+  );
+}
+
+########################################################################
+sub find_files_of_type {
+########################################################################
+  my (%args) = @_;
+
+  my ( $path, $type, $ext, $strip_in ) = @args{qw(path type ext strip)};
+
+  $ext //= $EMPTY;
+
   my @files;
 
   TRACE sprintf 'looking for files of type %s in %s', $type, $path;
@@ -97,7 +124,7 @@ sub find_files {
   find(
     sub {
       return
-        if !/[.]$type[.]in$/xsm;
+        if -d $_ || !/[.]$type$ext$/xsm;
 
       my $name = $File::Find::name;
 
@@ -313,7 +340,11 @@ sub find_root_dir {
 ########################################################################
 sub init_logger {
 ########################################################################
-  my $level = $INFO;
+  my ($level) = @_;
+
+  $level //= 'info';
+
+  $level = $LOG4PERL_LEVELS{$level} || $INFO;
 
   if ( $ENV{DEBUG} ) {
     $level = $ENV{DEBUG} > 1 ? $TRACE : $DEBUG;

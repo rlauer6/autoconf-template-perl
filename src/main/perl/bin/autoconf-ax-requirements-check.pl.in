@@ -26,12 +26,20 @@ sub get_required_modules {
 ########################################################################
   my ( $path, $type ) = @_;
 
+  my $logger = Log::Log4perl->get_logger;
+
   my @files = find_files( $path, $type );
+
+  $logger->debug( sprintf "scanning %d files:\n%s",
+    scalar(@files), join "\n", @files );
 
   my @dependencies;
   my @names;
 
   foreach my $file (@files) {
+
+    $logger->debug( sprintf 'dependency scan for %s:', $file );
+
     my $scanner
       = Module::ScanDeps::Static->new( { core => 0, path => $file } );
 
@@ -40,7 +48,9 @@ sub get_required_modules {
     my @required;
 
     for my $r ( $scanner->get_dependencies() ) {
+
       next if any { $r->{name} eq $_ } map { $_->{name} } @dependencies;
+      $r->{version} ||= $EMPTY;
 
       push @dependencies, $r;
     }
@@ -128,7 +138,7 @@ sub find_dependencies {
     my $path = sprintf '%s/src/main/perl/%s', $root, $p->[0];
     next if !-d $path;
 
-    DEBUG 'looking for files in ' . $path;
+    DEBUG 'looking for dependencies for files in ' . $path;
 
     push @{$dependencies}, @{ get_required_modules( $path, $p->[1] ) };
   }
@@ -185,7 +195,7 @@ sub main {
 
   GetOptions(
     \%options,   'help',    'format=s', 'root-dir=s',
-    'outfile=s', 'version', 'infile=s'
+    'outfile=s', 'version', 'infile=s', 'log-level=s',
   );
 
   return help()
@@ -215,7 +225,9 @@ sub main {
     text => sub {
       my ($required) = @_;
 
-      return join "\n", map {"$_->{name} $_->{version}"} @{$required};
+      return join "\n",
+        map { sprintf '%s %s', $_->{name}, $_->{version} || '0' }
+        sort { $a->{name} cmp $b->{name} } @{$required};
     },
     dmp => sub {
       my ($required) = @_;
@@ -232,7 +244,7 @@ sub main {
   croak "unknown format $format"
     if !$actions{$format};
 
-  init_logger();
+  init_logger( $options{'log-level'} );
 
   my $required;
 

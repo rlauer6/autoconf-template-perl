@@ -1,6 +1,6 @@
-# README
+!# README
 
-Last Updated: 02/21/23
+Last Updated: @DATE(%m/%d/%y)@
 
 <p align="center">
 <img src="https://upload.wikimedia.org/wikipedia/en/2/22/Heckert_GNU_white.svg"
@@ -26,45 +26,13 @@ See [`NEWS`](NEWS.md) for the lastest news on releases.
 
 ---
 
-# TODO for Version Next
+!# TODO for Version Next
 
 * [x] add web assets to RPM
 * [x] index for documentation
 * [ ] `make cpan` for tarball distributions
 
-# Table of Contents
-
-* [Overview](#overview)
-  * [Configuring Your Build](#configuring-your-build)
-* [Why Autoconfiscate?](#why-autoconfiscate?)
-* [Quick Start](#quick-start)
-* [Features of the `autoconf-template-perl` Utility](#features-of-the-autoconf-template-perl-utility)
-* [Requirements](#requirements)
-* [Getting Started](#getting-started)
-* [Configuring `autoconf-template-perl`](#configuring-autoconf-template-perl)
-* [Project Structure](#project-structure)
-  * [Root Directory](#root-directory)
-  * [`autotools` Directory](#autotools-directory)
-  * [`config` Directory](#config-directory)
-  * [`resources` Directory](#resources-directory)
-  * [`src` Directory](#src-directory)
-* [Adding Resources to Your Project](#adding-resources-to-your-project)
-* [Creating Your Own Configuration Options](#creating-your-own-configuration-options)
-* [Building From `.in` Files](#building-from-.in-files)
-* [Building Perl Modules](#building-perl-modules)
-* [Building an RPM](#building-an-rpm)
-  * [Quick Start](#quick-start)
-  * [Perl Modules and RPMs](#perl-modules-and-rpms)
-  * [Building RPMs from CPAN](#building-rpms-from-cpan)
-  * [Signing an RPM](#signing-an-rpm)
-* [Deploying Your Application](#deploying-your-application)
-  * [RPMs](#rpms)
-  * [Tarballs](#tarballs)
-  * [Standard Deployment Tree](#standard-deployment-tree)
-* [FAQs](#faqs)
-* [Additional Hints](#additional-hints)
-  * [Adding Artifacts to Your Project](#adding-artifacts-to-your-project)
-  * [Disabling Dependency Checking](#disabling-dependency-checking)
+@TOC@
 
 # Overview
 Building and packaging software is an important step in the software
@@ -101,7 +69,7 @@ can use this framework effectively.
 
 [Ok, I get it skip ahead to the Quick Start](#quick-start)
 
-[Back to Table of Contents](#table-of-contents)
+@TOC_BACK@
 
 ## Configuring Your Build
 
@@ -201,7 +169,7 @@ by convention, will install your artifacts as shown below:
 > Perl modules in Perl's path use `--with-perl5libdir` without
 > specifying a path
 
-[Back to Table of Contents](#table-of-contents) 
+@TOC_BACK@ 
 
 # Why Autoconfiscate?
 
@@ -223,7 +191,7 @@ environment for your application.  Coupling that with the use of the
 Redhat Package Manager and you are on your way to automated builds
 that are _organized_, _extensible_ and _scalable_.
 
-[Back to Table of Contents](#table-of-contents) 
+@TOC_BACK@ 
 
 # Quick Start
 
@@ -337,7 +305,7 @@ git add .
 git commit -m 'Big Bang!'
 ```
 
-[Back to Table of Contents](#table-of-contents) 
+@TOC_BACK@ 
 
 # Features of the `autoconf-template-perl` Utility
 
@@ -359,7 +327,7 @@ git commit -m 'Big Bang!'
   templates
 * Creation of an __RPM file__ for deployment on RedHat flavored systems
 
-[Back to Table of Contents](#table-of-contents) 
+@TOC_BACK@ 
 
 # Requirements
 
@@ -379,7 +347,7 @@ git commit -m 'Big Bang!'
   ```
 * ...and various other standard Linux utilities
 
-[Back to Table of Contents](#table-of-contents) 
+@TOC_BACK@ 
 
 # Getting Started
 
@@ -545,7 +513,7 @@ for you and create a manifest!
 autoconf-template-perl --create-manifest --source-dir .
 ```
 
-[Back to Table of Contents](#table-of-contents) 
+@TOC_BACK@ 
 
 # Project Structure
 
@@ -636,7 +604,7 @@ cd my-project
 autoconf-template-perl -r
 ```
 
-[Back to Table of Contents](#table-of-contents) 
+@TOC_BACK@ 
 
 # Creating Your Own Configuration Options
 
@@ -680,7 +648,7 @@ This utility will add a new option to an `m4` macro (`ax-extra-opts.m4`)
 and update the `configure.ac` _automagically_.  After executing this
 utility execute `./configure --help` to see new option!
 
-[Back to Table of Contents](#table-of-contents) 
+@TOC_BACK@ 
 
 # Building From `.in` Files
 
@@ -742,7 +710,7 @@ structure without actually deploying to the intended targets.
 See [Creating Your Own Configuration
 Options](#creating-your-own-configuration-options)
 
-[Back to Table of Contents](#table-of-contents) 
+@TOC_BACK@ 
 
 # Building Perl Modules
 
@@ -808,7 +776,7 @@ consider the intradependencies of the components within the project
 when making those decisions.   Of course, it's not rocket science
 either. ;-)
 
-[Back to Table of Contents](#table-of-contents) 
+@TOC_BACK@ 
 
 # Building an RPM
 
@@ -1046,7 +1014,7 @@ containers you can control all of the parameters and dependencies
 required for the build...and you can still couple a containerized
 build with the use of RPMs.
 
-[Back to Table of Contents](#table-of-contents) 
+@TOC_BACK@ 
 
 ## Building RPMs from CPAN
 
@@ -1072,7 +1040,7 @@ Optionally sign the RPM. Make sure you have set `%_gpg_name` in your
 rpmbuild -tb $(ls -1t *.tar.gz | head -1) --sign
 ```
 
-[Back to Table of Contents](#table-of-contents) 
+@TOC_BACK@ 
 
 # Deploying Your Application
 
@@ -1134,7 +1102,7 @@ application being installed in the locations shown in the table.
 > * `$Config{installsitelib}` is Perl's module site directory
 > * Web application artifacts are all installed under `${apache_vhostdir}/htdocs`
 
-[Back to Table of Contents](#table-of-contents) 
+@TOC_BACK@ 
 
 # FAQs
 
@@ -1165,7 +1133,7 @@ application being installed in the locations shown in the table.
     DISTCHECK_CONFIGURE_FLAGS = 
     ```
  
-[Back to Table of Contents](#table-of-contents) 
+@TOC_BACK@ 
 
 # Additional Hints
 
@@ -1206,4 +1174,4 @@ their existence in the target environment during the build..
 
 TBD
 
-[Back to Table of Contents](#table-of-contents) 
+@TOC_BACK@ 

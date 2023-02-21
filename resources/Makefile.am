@@ -38,10 +38,13 @@ RESOURCES = \
     perlcritic.inc \
     perlcriticrc \
     perltidyrc \
-    autoconf-template-perlrc
+    .autoconf-template-perlrc
 
 resources_DATA = \
     $(RESOURCES) \
     $(GCONFIG)
+
+dist_noinst_DATA = \
+    autoconf-template-perlrc.in
 
 CLEANFILES = $(GCONFIG)
