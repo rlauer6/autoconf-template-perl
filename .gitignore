@@ -52,3 +52,4 @@ src/main/perl/bin/autoconf-template-perl
 install-from-cpan
 resources/autoconf-template-perlrc
 resources/.autoconf-template-perlrc
+templates/extra-files

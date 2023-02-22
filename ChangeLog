@@ -1,3 +1,53 @@
+Wed Feb 22 11:00:56 2023  Rob Lauer  <rlauer6@comcast.net>
+
+	[2.0.6 - stub creation]:
+	* VERSION: bump
+	* .gitignore: extra-files
+	* README.md.in: updates for stub creation
+	* README.md: generated
+	* configure.ac
+	(perl5sharedir): auto/share/Autoconf-Template
+	* cpan/Makefile.am: build extra-files from templates/
+	* cpan/extra-files: removed
+	* resources/autoconf-template-perlrc.in
+	- added stub.cgi.tt
+	- fixed paths
+	* src/main/perl/bin/autoconf-ax-requirements-check.pl.in
+	(main): added --log-level option
+	(get_required_modules): log at info level for dependency scanning
+	* src/main/perl/bin/autoconf-template-perl.pl.in
+	(main)
+	-  --create-stub option
+	- call create_stub() then refresh
+	(create_stub): new
+	(help)
+	- new --create-stub option
+	- add arg column
+	(get_stubs): new
+	(list_stubs): use above
+	(copy_files): images -> image
+	(init_parameters)
+	- refresh html directory
+	- refresh .pm files
+	- set $options->{config}
+	- image from manifest now, not images
+	(create_requirements_file)
+	- pass along log-level to ax_requirements_check
+	* src/main/perl/lib/Autoconf/Constants.pm.in
+	($PERL5SHARE_DIR): new
+	($INCLUDE_DIR): $PERL5SHARE_DIR/templates
+	* src/main/perl/lib/Autoconf/Utils.pm.in
+	(find_files_of_type): return empty list if ! -d
+	(render_tt_template): neater log messages
+	(init_logger): cleanup layout
+	* templates/Makefile.am
+	(TEMPLATES): + stub.cgi.tt
+	(templatesdir): perl5sharedir
+	(ALLTEMPLATES): new
+	* templates/stub.cgi.tt: new
+	* templates/manifest.yaml: images -> image
+	* templates/html/Makefile.am.tt: likewise
+
 Tue Feb 21 17:35:57 2023  Rob Lauer  <rlauer6@comcast.net>
 
 	[2.0.5 - create manifest]:

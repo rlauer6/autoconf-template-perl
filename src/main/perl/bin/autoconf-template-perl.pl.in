@@ -45,18 +45,18 @@ sub main {
   # options are defined with '-' to separate words to make it easy to
   # type options on CLI
   GetOptions(
-    \%options,           'author=s',
-    'bash!',             'conf|C=s',
-    'create-manifest|M', 'create-missing|c',
-    'destdir=s',         'email=s',
-    'force',             'help|h',
-    'html|H!',           'list-stubs|L',
-    'log-level|l=s',     'manifest|m=s',
-    'project=s',         'refresh',
-    'rpm-build-mode|R!', 'rpm-install-from-cpan!',
-    'rpm-requires=s@',   'scripts|S',
-    'source-dir|S',      'unit-tests!',
-    'version',
+    \%options,                'author=s',
+    'bash!',                  'conf|C=s',
+    'create-manifest|M',      'create-missing|c',
+    'create-stub=s',          'destdir=s',
+    'email=s',                'force',
+    'help|h',                 'html|H!',
+    'list-stubs|L',           'log-level|l=s',
+    'manifest|m=s',           'project=s',
+    'refresh|r',              'rpm-build-mode|R!',
+    'rpm-install-from-cpan!', 'rpm-requires|q=s@',
+    'scripts|S',              'source-dir|S',
+    'unit-tests!',            'version',
   );
 
   return help()
@@ -78,8 +78,8 @@ sub main {
     if $options{'create-manifest'};
 
   croak 'no destination dir, '
-    . "use --destdir to specify the locaiton for the build tree\n"
-    if !$options{destdir} && !$options{refresh};
+    . "use --destdir to specify the location for the build tree\n"
+    if !$options{destdir} && !$options{refresh} && !$options{'create-stub'};
 
   TRACE Dumper( [ 'options', \%options ] );
 
@@ -87,7 +87,7 @@ sub main {
   delete $meta_data{autoconf_template_perlrc};
 
   # find manifest if not doing a refresh
-  if ( !$options{refresh} ) {
+  if ( !$options{refresh} && !$options{'create-stub'} ) {
     $options{manifest} ||= $MANIFEST_FILE; # check cwd for manifest.yaml
 
     croak "no manifest, use --manifest to specify a YAML manifest\n"
@@ -109,6 +109,16 @@ sub main {
   }
 
   init_parameters( \%options );
+
+  if ( $options{'create-stub'} ) {
+    create_stub( \%options );
+
+    INFO 'refereshing project...';
+    system $PROGRAM_NAME, '--refresh',
+      '--log-level', $options{'log-level'} || 'info';
+
+    return;
+  }
 
   TRACE Dumper( [ 'options after init_parameters()', \%options ] );
 
@@ -276,6 +286,97 @@ sub create_manifest {
 }
 
 ########################################################################
+sub create_stub {
+########################################################################
+  my ($options) = @_;
+
+  my $file = $options->{'create-stub'};
+
+  croak "no stub file specified - --create-stub filename\n"
+    if !$file;
+
+  @{$options}{qw(project destdir)} = find_root_dir();
+
+  my %subdirs = (
+    '.html' => 'src/main/html/htdocs',
+    '.css'  => 'src/main/html/css',
+    '.js'   => 'src/main/html/javascript',
+    '.pm'   => 'src/main/perl/lib',
+    '.pl'   => 'src/main/perl/bin',
+    '.sh'   => 'src/main/bash/bin',
+    '.cgi'  => 'src/main/perl/cgi-bin',
+  );
+
+  # get the extension so we can find a stub
+  my ( $name, $path, $ext ) = fileparse( $file, qr/[.][^.]+$/xsm );
+
+  my $target_ext = $ext eq '.cgi' ? '.pl' : $ext;
+
+  DEBUG Dumper(
+    [ project => $options->{project},
+      destdir => $options->{destdir},
+      file    => $file,
+      name    => $name,
+      path    => $path,
+      ext     => $ext
+    ]
+  );
+
+  my @stubs = get_stubs($options);
+
+  for (@stubs) {
+    $_->{type} =~ s/\s//gxsm;
+  }
+
+  DEBUG Dumper( [ 'ext', $ext, 'stubs', \@stubs ] );
+
+  croak "no template for that type type ($ext)\n"
+    if none { $ext eq $_->{type} } @stubs;
+
+  my ($stub) = grep { $target_ext eq $_->{type} } @stubs;
+
+  DEBUG Dumper( [ 'found a stub' => $stub ] );
+
+  my %parameters = %{$options};
+
+  $parameters{template_name} = $stub->{path};
+
+  DEBUG Dumper( [ 'found a template' => $parameters{template_name} ] );
+
+  # for the template - package [% module_name %];
+  if ( $ext eq '.pm' ) {
+    my $module_name = path_to_module($file);
+    $parameters{module_name} = $module_name;
+  }
+
+  DEBUG Dumper(
+    [ destdir => $options->{destdir},
+      project => $options->{project},
+      path    => $subdirs{$ext},
+      name    => $name,
+      ext     => $target_ext,
+    ]
+  );
+
+  my $destdir = sprintf '%s/%s/%s/%s%s.in', $options->{destdir},
+    $options->{project},
+    $subdirs{$ext},
+    $name, $target_ext;
+
+  croak "$destdir already exists...use -f to force\n"
+    if -e $destdir && !$options->{force};
+
+  render_tt_template(
+    { template   => $parameters{template_name},
+      parameters => \%parameters,
+      outfile    => $destdir,
+    }
+  );
+
+  return;
+}
+
+########################################################################
 sub set_rpm_build_options {
 ########################################################################
   my ($options) = @_;
@@ -320,7 +421,7 @@ sub set_rpm_build_options {
   $rpm_options{html}       = @{ $options->{html_files} };
   $rpm_options{javascript} = @{ $options->{javascript_files} };
   $rpm_options{css}        = @{ $options->{css_files} };
-  $rpm_options{images}     = @{ $options->{image_files} };
+  $rpm_options{image}      = @{ $options->{image_files} };
 
   return $options;
 }
@@ -363,31 +464,34 @@ sub help {
   return print <<"END_OF_HELP";
 usage: $name options
 
-Options
--------
--h, --help            help
--a, --author          author's name (default: "anonymouse")
--b, --bash            build bash directories (default: true)
--c, --create-missing  create any files in manifest that do not exist (default: false)
--C, --create-manifest create a manifest file from the current directory
--d, --destdir         root for project directory
--e, --email           author's email (default: $ENV{EMAIL} || anonymouse\@example.com)
--f, --force           force overwrite of project directory
--h, --html            build html directories (default: true)
--l, --log-level       logging level, error, warn, info, debug, trace  (default: error)
--L, --list-stubs      lists the stub templates available
--m, --manifest        name of the YAML manifest file
--p, --project         project name (default: "noname")
--r, --refresh         refresh after  addition of script or module
--R, --rpm-build       enable or disable RPM spec file
--s, --source-dir      source for files in manifest or when creating manifest (default: pwd)
--u, --unit-tests      create unit test stubs (default: true)
--v, --version         report script version
+Options               Arg
+-------               ---- 
+-h, --help                      help
+-a, --author          name      author's name (default: "anonymouse")
+-b, --bash                      build bash directories (default: true)
+-c, --create-missing            create any files in manifest that do not exist (default: false)
+-C, --create-manifest           create a manifest file from the current directory
+-S, --create-stub     filename  create a stub file
+-d, --destdir         directory root for project directory
+-e, --email           email     author's email (default: $ENV{EMAIL} || anonymouse\@example.com)
+-f, --force                     force overwrite of project directory
+-h, --html                      build html directories (default: true)
+-l, --log-level       level     logging level, error, warn, info, debug, trace  (default: error)
+-L, --list-stubs                lists the stub templates available
+-m, --manifest        filename  name of the YAML manifest file
+-p, --project         name      project name (default: "noname")
+-r, --refresh                   refresh after  addition of script or module
+-R, --rpm-build                 enable or disable RPM spec file
+-s, --source-dir      directory source directory for files in manifest or when creating manifest
+                                (default: pwd)
+-u, --unit-tests                create unit test stubs (default: true)
+-v, --version                   report script version
 
-These options default true, use --no-{option} to disable
+These options default to true, use --no-{option} to disable
 
 --bash
 --html
+--rpm-build
 --unit-tests
 
 This utility is part of the `autoconf-template-perl` toolchain. It will
@@ -440,7 +544,7 @@ sub load_autoconf_templaterc {
 }
 
 ########################################################################
-sub list_stubs {
+sub get_stubs {
 ########################################################################
   my ($options) = @_;
 
@@ -455,6 +559,16 @@ sub list_stubs {
       path => $config->val( 'stubs', $_ )
       };
   }
+
+  return @stubs;
+}
+
+########################################################################
+sub list_stubs {
+########################################################################
+  my ($options) = @_;
+
+  my @stubs = get_stubs($options);
 
   my $dist_dir = dist_dir('Autoconf-Template');
 
@@ -711,6 +825,7 @@ sub _copy_files {
     }
     else {
       # see if we have a stub for this type...
+
       my ( $name, $path, $ext ) = fileparse( $file, qr/[.][^.]+$/xsm );
 
       DEBUG Dumper( [ 'creating file ', $file, $name, $path, $ext ] );
@@ -784,7 +899,7 @@ sub copy_files {
   # create the directory structure and 'Makefile.am' even
   # if we don't have files if html is include it the manifest
   if ( $manifest->{html} ) {
-    for (qw(htdocs javascript css images)) {
+    for (qw(htdocs javascript css image)) {
       _copy_files(
         prefix  => "$main_prefix/html/$_",
         files   => $manifest->{html}->{$_},
@@ -973,6 +1088,30 @@ sub init_parameters {
     # refresh the list of files for 'built' assets look for .in files
     # in each directory, presumably someone dropped a new .in file in
     # one of these and wants to refresh the Makefile.am
+
+    my %html_files = (
+      html       => [ 'htdocs',     ['html'] ],
+      javascript => [ 'javascript', ['js'] ],
+      css        => [ 'css',        ['css'] ],
+      image      => [ 'image',      [qw(png gif jpeg jpg)] ],
+    );
+
+    foreach ( keys %html_files ) {
+      my $file_list = $_ . '_files';
+
+      $options->{$file_list} = [];
+
+      my ( $subdir, $ext_list ) = @{ $html_files{$_} };
+
+      foreach my $file_type ( @{$ext_list} ) {
+        push @{ $options->{$file_list} },
+          find_files_of_type(
+          path => "$root/src/main/html/$subdir",
+          type => $file_type,
+          );
+      }
+    }
+
     $options->{bash_scripts}
       = [ find_files( "$root/src/main/bash/bin", 'sh', $TRUE ) ];
 
@@ -982,9 +1121,20 @@ sub init_parameters {
     $options->{cgi_scripts}
       = [ find_files( "$root/src/main/perl/cgi-bin", 'pl', $TRUE ) ];
 
+    $options->{perl_modules}
+      = [ find_files( "$root/src/main/perl/lib", 'pm', $TRUE ) ];
+
+    $options->{perl_modules}
+      = [ map { find_module_filename($_) . '.in' }
+        basename @{ $options->{perl_modules} } ];
+
     DEBUG Dumper(
       [ 'refreshing',
-        @{$options}{qw(bash_scripts perl_scripts cgi_scripts resources)}
+        bash_scripts => $options->{bash_scripts},
+        perl_scripts => $options->{perl_scripts},
+        perl_modules => $options->{perl_modules},
+        cgi_scripts  => $options->{cgi_scripts},
+        resources    => $options->{resources},
       ]
     );
 
@@ -996,7 +1146,11 @@ sub init_parameters {
 
     DEBUG Dumper(
       [ 'refreshed',
-        @{$options}{qw(bash_scripts perl_scripts cgi_scripts resources)}
+        bash_scripts => $options->{bash_scripts},
+        perl_scripts => $options->{perl_scripts},
+        perl_modules => $options->{perl_modules},
+        cgi_scripts  => $options->{cgi_scripts},
+        resources    => $options->{resources},
       ]
     );
 
@@ -1006,6 +1160,8 @@ sub init_parameters {
     foreach ( values %CONFIG_FILE_EXTENSIONS ) {
       push @config_files, find_files( "$root/config", $_, $TRUE );
     }
+
+    $options->{config} = [@config_files];
 
     init_config_sections( $options, \@config_files );
 
@@ -1027,7 +1183,7 @@ sub init_parameters {
       html_files       => $manifest->{html}->{htdocs},
       javascript_files => $manifest->{html}->{javascript},
       css_files        => $manifest->{html}->{css},
-      image_files      => $manifest->{html}->{images},
+      image_files      => $manifest->{html}->{image},
       resources        => $manifest->{resources},
       config           => $manifest->{config},
     );
@@ -1249,10 +1405,13 @@ sub create_requirement_files {
   # set rootdir option
   push @ax_requirements_check, '-r', $options->{destdir};
 
+  # pass along log-level
+  push @ax_requirements_check, '-l', $options->{'log-level'} // 'info';
+
   # create the JSON file first
   system @ax_requirements_check, '-o', $outfiles{'json'}, '-f', 'json';
 
-  # create requirements file for each format
+  # create requirements file for each format using JSON file as input
   for my $format (qw( text m4 )) {
     system @ax_requirements_check, '-o', $outfiles{$format}, '-f', $format,
       '-i', $outfiles{'json'};

@@ -12,7 +12,7 @@ CSS = [% makefile_am_list(css_files, 'css') %]
 
 HTML = [% makefile_am_list(html_files, 'htdocs') %]
 
-IMAGES = [% makefile_am_list(image_files, 'images') %]
+IMAGES = [% makefile_am_list(image_files, 'image') %]
 
 JAVASCRIPT = [% makefile_am_list(javascript_files, 'javascript') %]
 

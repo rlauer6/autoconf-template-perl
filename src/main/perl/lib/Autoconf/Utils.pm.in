@@ -115,6 +115,9 @@ sub find_files_of_type {
 
   my ( $path, $type, $ext, $strip_in ) = @args{qw(path type ext strip)};
 
+  return ()
+    if !-d $path;
+
   $ext //= $EMPTY;
 
   my @files;
@@ -265,7 +268,13 @@ sub render_tt_template {
 
   my @cleanup = @{ $args{cleanup} || [] };
 
-  DEBUG Dumper( [ 'cleanup', $args{cleanup}, \@cleanup, $template ] );
+  TRACE Dumper(
+    [ 'rendering template:' => $template,
+      'to outfile:'         => $outfile,
+      'cleanup:'            => $args{cleanup},
+      'parameters:'         => $parameters
+    ]
+  );
 
   my $tt = Template->new(
     { INCLUDE_PATH => [ $INCLUDE_PATH, dist_dir('Autoconf-Template') ],
@@ -275,12 +284,6 @@ sub render_tt_template {
   );
 
   my $content = $EMPTY;
-
-  TRACE sprintf 'rendering %s to %s;', $args{template},
-    $args{outfile} // $EMPTY;
-
-  TRACE
-    sub { return Dumper( [ "template parameters\n", $args{parameters} ] ) };
 
   croak sprintf "error rendering template: %s\n", $tt->error()
     if !$tt->process( $template, $parameters, \$content );
@@ -352,7 +355,7 @@ sub init_logger {
 
   Log::Log4perl->easy_init(
     { level  => $level,
-      layout => '[%d] (%r/%R) %M:%L - %m%n',
+      layout => '%d (%r/%R) (%p) %l %m%n',
     }
   );
 

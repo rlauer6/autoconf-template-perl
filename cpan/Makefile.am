@@ -6,8 +6,11 @@ package_version=@PACKAGE_VERSION@
 
 package=@PACKAGE@
 
+extra-files: $(top_srcdir)/templates/extra-files
+	cp $< $@
+
 # builds the distribution tarball and renames based on package version
-cpan: buildspec.yml
+cpan: buildspec.yml extra-files
 	cd ..; \
 	$(MAKE)
 

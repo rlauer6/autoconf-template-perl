@@ -1,10 +1,11 @@
 [stubs]
 
-pm   = @perl5sharedir@/Autoconf-Template/stub.pm
-pl   = @perl5sharedir@/Autoconf-Template/stub.pl
-cfg  = @perl5sharedir@/Autoconf-Template/stub.cfg
-js   = @perl5sharedir@/Autoconf-Template/stub.js
-html = @perl5sharedir@/Autoconf-Template/stub.html
+pm   = @perl5sharedir@/templates/stub.pm.tt
+pl   = @perl5sharedir@/templates/stub.pl.tt
+cgi  = @perl5sharedir@/templates/stub.cgi.tt
+cfg  = @perl5sharedir@/templates/stub.cfg.tt
+js   = @perl5sharedir@/templates/stub.js.tt
+html = @perl5sharedir@/templates/stub.html.tt
 
 [global]
 

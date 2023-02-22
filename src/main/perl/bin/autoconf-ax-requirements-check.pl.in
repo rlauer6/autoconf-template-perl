@@ -38,7 +38,7 @@ sub get_required_modules {
 
   foreach my $file (@files) {
 
-    $logger->debug( sprintf 'dependency scan for %s:', $file );
+    $logger->info( sprintf 'dependency scan for %s:', $file );
 
     my $scanner
       = Module::ScanDeps::Static->new( { core => 0, path => $file } );
@@ -167,6 +167,7 @@ Options
 -h, --help        help
 -f, --format      format of output (default: m4)
 -i, --infile      either a .json or .txt requirements file (*)
+-l, --log-level   logging level, (default: info)
 -o, --outfile     name of the output file
 -r, --root-dir    root directory of project
 -v, --version     report script version
