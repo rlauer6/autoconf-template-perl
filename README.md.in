@@ -568,33 +568,38 @@ template for Perl modules.
 
 # Configuring `autoconf-template-perl`
 
-`autoconf-template-perl` can create a valid project with no options
-all you need is a `manifest.yaml` file.  It can even find your assets
-for you and create a manifest.
+`autoconf-template-perl` can create a valid project with no options.
+All you need to provide is a `manifest.yaml` file.  You can create
+your own manifest or let `autoconf-template-perl` generate one for
+you.
 
 ```
 autoconf-template-perl --create-manifest --source-dir .
 ```
 
+@TOC_BACK@
+
 # Customizing Your Stub Files
 
-When files do not exist in your manifest `autoconf-template-perl` will
-create new files for automatically using a template. You can create
-your own template that will be used instead of the one that are
-provided in this distribution.
+When files do not exist in your manifest or you want to use
+`--create-stub` option, `autoconf-template-perl` will create new files
+for automatically using a _stub_ template. You can create your own
+templates that will be used to create these stubs instead of the ones
+that are provided in this distribution.
 
-Create a `.autoconf-template-perl` file in your home directory or the
-root of your project. Replace the paths associated with the file types
-you want to customize with your own template.
+An `.autoconf-template-perlrc` file was created in you project
+directory when you created the project. Edit the file and replace the
+path for the stub files you wish to customize.
 
 ```
 [stubs]
 
-pm   = /usr/local/share/perl/5.32.1/auto/share/Autoconf-Template/stub.pm
-pl   = /usr/local/share/perl/5.32.1/auto/share/Autoconf-Template/stub.pl
-cfg  = /usr/local/share/perl/5.32.1/auto/share/Autoconf-Template/stub.cfg
-js   = /usr/local/share/perl/5.32.1/auto/share/Autoconf-Template/stub.js
-html = /usr/local/share/perl/5.32.1/auto/share/Autoconf-Template/stub.html
+cgi  = /usr/local/share/perl/5.32.1/auto/share/Autoconf-Template/templates/stub.cgi
+pm   = /usr/local/share/perl/5.32.1/auto/share/Autoconf-Template/templates/stub.pm
+pl   = /usr/local/share/perl/5.32.1/auto/share/Autoconf-Template/templates/stub.pl
+cfg  = /usr/local/share/perl/5.32.1/auto/share/Autoconf-Template/templates/stub.cfg
+js   = /usr/local/share/perl/5.32.1/auto/share/Autoconf-Template/templates/stub.js
+html = /usr/local/share/perl/5.32.1/auto/share/Autoconf-Template/templates/stub.html
 
 [global]
 
@@ -690,6 +695,8 @@ included in the manifest.
              `-- t
 ```
 
+@TOC_BACK@
+
 # Adding Artifacts to Your Project
 
 Adding additional files and resources to your project can be done by 
@@ -761,15 +768,31 @@ can use in various ways. Most notably, you can use this is any source
 file (`.in`) as `@variable-name@` and it will be resolved during the
 build phase.
 
-...but wait! There is an __easier__ way!
+...but wait! There IS an __easier__ way!
+
+Use the `autoconf-ax-extra-opts` utility to add a new option. It will
+automatically update an `m4` macro (`ax-extra-opts.m4`) and
+`configure.ac` for you.
 
 ```
-autoconf-ax-extra-opts -m variable-name -d description -D default-value
+autoconf-ax-extra-opts -o s3-bucket-name \
+      -t "bucket name" \
+      -d "The bucket used store stuff" \
+      -D my-private-bucket-name
+```
+...then
+
+```
+./configure -h | grep s3
+--with-s3-bucket-name=bucket-name The bucket to store stuff in (default: my-private-bucket-name)
 ```
 
-This utility will add a new option to an `m4` macro (`ax-extra-opts.m4`)
-and update the `configure.ac` _automagically_.  After executing this
-utility execute `./configure --help` to see new option!
+To use this a configuration file for example:
+
+```
+[s3]
+bucket_name = @s3_bucket_name@
+```
 
 @TOC_BACK@ 
 
@@ -832,6 +855,120 @@ structure without actually deploying to the intended targets.
 
 See [Creating Your Own Configuration
 Options](#creating-your-own-configuration-options)
+
+## Automake Configuration Variables
+
+Here's a list of some of the `automake` configuration variables you
+can use in any file that is built using `$(do_subst)` (config files,
+scripts, modules).
+
+| Variable Name | Description |
+| ------------- | ----------- |
+| `@ARCHITECTURE@` | architecture (noarch or X86_64) |
+| `@BUILD_DATE@` | build date |
+| `@LICENSE@` | license |
+| `@PACKAGE_DESCRIPTION@` | package description |
+| `@PACKAGE_NAME@` | package name |
+| `@PACKAGE_VERSION@` | package version |
+
+* Apache Site Directories
+
+These directories are rooted by the configuration value
+(`--with-apache-vhostdir=`) made available by the m4 macro
+[`autotools/apache_config.m4`](autotools/apache_config.m4).
+
+Without modification, the directories below
+are set relative to the value you provided for `apache-vhostdir`. These
+directories are defined in `includes/apache-directories.inc`. Feel free to
+modify them based on your needs.
+
+These directories contain web application artifacts or are used by the
+web application in some way. Note that descriptions are how these
+directories are _typcially_ used, however you can use or not use them
+as you please. Only a subsert of these directories are actualy created
+for you when your web application is installed.
+
+| Variable Name | Description |
+| ------------- | ----------- |
+| `@apache_site_cachedir@` | cached assets |
+| `@apache_site_cgibindir@` | CGI scripts |
+| `@apache_site_configdir@` | configuration files |
+| `@apache_site_cssdir@` | CSS files |
+| `@apache_site_htdocsdir@` | HTML files|
+| `@apache_site_imgdir@` | Image files |
+| `@apache_site_javascriptdir@` | Javascript files |
+| `@apache_site_logdir@` | Log files |
+| `@apache_site_perl5libdir@` | Perl modules |
+| `@apache_site_reportsdir@` | Report files |
+| `@apache_site_sessiondir@` | Session files |
+| `@apache_site_spooldir@` | Spool files |
+| `@apache_site_workdir@` | A work dir? |
+| `@apache_sitedir@` | Same as `@apache_vhostdir@` ||
+| `@apache_vhostdir@` | root directory for web application |
+
+* Apache Domain and Virtual Server
+
+You can potentially use these values in the table below to alter
+the directories in the table above so that you might, for example
+support multiple applications in different virtual hosts or domains on
+the same platform. In the default setup, defined in
+`includes/apache-directories.inc`, these values are not used. However
+if for example, you wanted to support a virtual host configuration you
+might alter `apache_sitedir` in the `includes/apache-directories.inc`
+file.
+
+```
+ # Apache Virtual Host site directories
+ apache_vhostdir           = @apache_vhostdir@
+ apache_sitedir            = $(apache_vhostdir)/@apache_vhost_server@
+```
+
+...and then configure the project thusly...
+
+```
+./configure --with-apache-vhost-server=www.foobar.com --with-apache-vhostdir=/var/www/vhosts
+```
+...so that your web application might be installed in `/var/www/vhosts/www.foobar.com`
+
+| Variable Name | Description |
+| ------------- | ----------- |
+| `@apache_vhost_alias@` | possibly used for _ServerAlias_ directive in a _VirtualHost_ section of an Apache configuration file |
+| @apache_vhost_confdir@  | the directory where all the virtaul host configuration files reside
+|                         | examples: /etc/httpd/conf.d, /etc/apache2/sites-available, /usr/local/bin/conf/conf.d |
+| @apache_vhost_domain@  | the domain name of the website |
+|                         | examples: example.com | 
+| @apache_vhost_server@ | the fully qualified domain name (including subdomain) of the website |
+|                     | examples: www.example.com, api.example.com |
+
+* Apache User/Group 
+
+These variable can be set when you configure the application or the m4
+macro will create defaults based on the system flavor (RedHat vs
+Debian) you are building on.
+
+| Variable Name | Description |
+| ------------- | ----------- |
+| `@apache_user@` | the user that runs the apache server |
+|                 | examples: www-data, apache, nobody |
+| `@apache_group@` | the group the user that runs apache belongs to |
+|                  | examples: www-data, apache, nobody |
+
+* Miscellaneous Files
+
+| Variable Name | Description |
+| ------------- | ----------- |
+| `@bashrun@` | bash executable path |
+| `@bindir@` | scripts and binaries |
+| `@configure_input@` | the input to `configure` script |
+| `@datadir@` | data files |
+| `@libexecdir@` | scripts not meant for user consumption |
+| `@localstatedir@` | stateful files (typcially  `/var`) |
+| `@perl5libdir@` | Perl modules |
+| `@perlrun@` | Perl executable path |
+| `@prefix@` | prefix for file system hierarch (typicall `/usr/`) |
+| `@sysconfdir@` | Configuration files |
+
+*TODO:* _Provide templates for virtual host and Apache configurations_
 
 @TOC_BACK@ 
 

@@ -199,7 +199,7 @@ AC_ARG_WITH([license],[  --with-license (defaults to GNU Public License)],
 
 AC_SUBST([LICENSE])
 
-AC_ARG_WITH([architecture],[  --with-architecture (defaults to noarch)],
+AC_ARG_WITH([architecture],[  --with-architecture=architecture (defaults to noarch)],
 	[ARCHITECTURE=$withval],
         [ARCHITECTURE=noarch]
 )

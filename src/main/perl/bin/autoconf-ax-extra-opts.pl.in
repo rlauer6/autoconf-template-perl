@@ -13,6 +13,7 @@ use Data::Dumper;
 use English qw(-no_match_vars);
 use File::Basename qw(basename fileparse dirname);
 use Getopt::Long qw(:config no_ignore_case);
+use List::Util qw(none any);
 use Log::Log4perl qw(:easy get_logger);
 use JSON;
 use YAML qw(LoadFile);
@@ -24,12 +25,23 @@ caller or __PACKAGE__->main();
 ########################################################################
 sub main {
 ########################################################################
-  init_logger();
-
   my %options;
 
-  GetOptions( \%options, 'macro=s', 'description|d=s',
-    'default|D=s', 'root=s' );
+  my @option_specs = qw(
+    default|D=s
+    description|d=s
+    force|f
+    help
+    log-level|l=s
+    option|o=s
+    reconf|r!
+    root=s
+    target-description|t=s
+  );
+
+  GetOptions( \%options, @option_specs );
+
+  init_logger( $options{'log-level'} );
 
   return help()
     if $options{help};
@@ -57,20 +69,32 @@ sub main {
       if $EVAL_ERROR;
   }
 
-  my $macro = $options{macro};
+  my $ac_option = $options{option};
+  $ac_option =~ s/\-/_/gxsm;
 
-  if ($macro) {
-    my $macro_name = $macro;
-    $macro_name =~ s/[_]/-/gxsm;
+  croak "option already exists - use -f to replace\n"
+    if !$options{force} && any { $ac_option eq $_->{am_variable} }
+    @{$extra_opts};
+
+  if ($ac_option) {
+    my $ac_option_name = $ac_option;
+    $ac_option_name =~ s/[_]/-/gxsm;
 
     my %arg_with = (
-      am_variable_name        => $macro_name,
-      am_variable             => $macro,
+      am_variable_name        => $ac_option_name,
+      am_variable             => $ac_option,
       am_variable_description => $options{description},
-      am_default              => $options{default},
+      am_variable_default     => $options{default},
+      am_variable_target      => $options{'target-description'},
     );
 
-    push @{$extra_opts}, \%arg_with;
+    # remove dupes
+    my @options_list
+      = grep { $_->{am_variable} ne $ac_option } @{$extra_opts};
+
+    push @options_list, \%arg_with;
+
+    $extra_opts = \@options_list;
   }
 
   my %timestamp = timestamp();
@@ -88,7 +112,9 @@ sub main {
 
   render_tt_template( 'ax-extra-opts.m4.tt', \%parameters, $outfile );
 
-  if ($macro) {
+  system 'autoreconf', '-f', '-i';
+
+  if ($ac_option) {
     # update ax-extra-opts.json
     open my $fh, '>', $extra_opts_file
       or croak "could not open $extra_opts_file for writing\n";
@@ -109,16 +135,34 @@ sub help {
   return print <<"END_OF_HELP";
 usage: $name options
 
+This utility is part of the `autoconf-template-perl` toolchain. It will
+create an m4 macro that adds a new option to the `configure' script.
+
 Options
 -------
--h, --help        help
--r, --root        project root
--d, --description description that will be shown
--D, --default     default value
--v, --version     report script version
+-h, --help                 help
+-d, --default              default value
+-D, --description          description that will be shown
+-f, --force                replace existing option
+-o, --option               option name - Example: s3-bucket-name
+-r, --root                 project root
+-R, --reconf               re-run autoreconf (default: true)
+-t, --target-description   the stuff after '='
+-v, --version              script version
 
-This utility is part of the `autoconf-template-perl` toolchain. It will
-create an m4 macro that add a new option to the `configure' script.
+* project root will be automatically detected if you are in the project hierarchy
+* only -o is a required option
+
+Example: autoconf-ax-extra-opts -o s3-bucket-name \
+                                -t 'bucket-name' \
+                                -d none \
+                                -D "S3 bucket name"
+
+Use ./configure --help to see the new option...
+
+ --with-s3-bucket-name=bucket-name S3 bucket name (default: none)
+
+Use it your config files as \@s3_bucket_name\@
 
 See `perldoc Autoconf::Template` for more of the gory details.
 

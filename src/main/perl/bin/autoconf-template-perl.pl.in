@@ -193,7 +193,8 @@ sub main {
     DumpFile( "$options{destdir}/project.yaml", \%meta_data );
 
     # create autotools/ax-extra-opts.m4
-    system 'autoconf-ax-extra-opts', '--root', $options{destdir};
+    system 'autoconf-ax-extra-opts', '--root', $options{destdir},
+      '--no-reconf';
 
     INFO 're-rendering configure.ac...';
     # refresh configure.ac
