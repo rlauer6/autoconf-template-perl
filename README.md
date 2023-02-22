@@ -1,6 +1,6 @@
 # README
 
-Last Updated: 02/21/23
+Last Updated: 02/22/23
 
 <p align="center">
 <img src="https://upload.wikimedia.org/wikipedia/en/2/22/Heckert_GNU_white.svg"
@@ -18,6 +18,9 @@ contains, among other things a collection of useful tools for creating
 _autoconfiscated_ Perl based projects.  If you are on a system that uses
 the Redhat Package Manager, you can also use the `.spec` file in
 this project to create rpms.
+
+> I guess the fancy word I learned working with one of my employers for frameworks
+> like this is __accelerator__.
 
 See [`ChangeLog`](ChangeLog) for a listing of files that have changed since the
 last release.
@@ -41,14 +44,16 @@ See [`NEWS`](NEWS.md) for the lastest news on releases.
 * [Features of the `autoconf-template-perl` Utility](#features-of-the-autoconf-template-perl-utility)
 * [Requirements](#requirements)
 * [Getting Started](#getting-started)
+  * [Automatically Creating A Manifest File](#automatically-creating-a-manifest-file)
 * [Configuring `autoconf-template-perl`](#configuring-autoconf-template-perl)
+* [Customizing Your Stub Files](#customizing-your-stub-files)
 * [Project Structure](#project-structure)
   * [Root Directory](#root-directory)
   * [`autotools` Directory](#autotools-directory)
   * [`config` Directory](#config-directory)
   * [`resources` Directory](#resources-directory)
   * [`src` Directory](#src-directory)
-* [Adding Resources to Your Project](#adding-resources-to-your-project)
+* [Adding Artifacts to Your Project](#adding-artifacts-to-your-project)
 * [Creating Your Own Configuration Options](#creating-your-own-configuration-options)
 * [Building From `.in` Files](#building-from-.in-files)
 * [Building Perl Modules](#building-perl-modules)
@@ -63,7 +68,7 @@ See [`NEWS`](NEWS.md) for the lastest news on releases.
   * [Standard Deployment Tree](#standard-deployment-tree)
 * [FAQs](#faqs)
 * [Additional Hints](#additional-hints)
-  * [Adding Artifacts to Your Project](#adding-artifacts-to-your-project)
+  * [Adding Files to the Distribution](#adding-files-to-the-distribution)
   * [Disabling Dependency Checking](#disabling-dependency-checking)
 
 # Overview
@@ -81,7 +86,7 @@ this:
 ```
 ./configure
 make
-make install
+sudo make install
 ```
 
 This project will create the scaffolding for an
@@ -194,7 +199,7 @@ by convention, will install your artifacts as shown below:
 | Bash scripts (`.sh`) | `src/main/bash/bin` | `bindir` | 
 | HTML files (`.html`) | `src/main/html/htdocs` | `apache-vhostdir/htdocs` |
 | CSS files (`.css`) | `src/main/css/htdocs` | `apache-vhostdir/htdocs/css` |
-| Image files (`.png`, etc) | `src/main/html/htdocs/images` | `apache-vhostdir/htdocs/img` |
+| Image files (`.png`, etc) | `src/main/html/htdocs/image` | `apache-vhostdir/htdocs/img` |
 | Javascript files (`.js`) | `src/main/html/javascript` | `apache-vhostdir/htdocs/` |
 
 > Note: `perl5libdir` defaults to `datadir/perl5`. To install your
@@ -230,7 +235,9 @@ that are _organized_, _extensible_ and _scalable_.
 1. Install this project from GitHub or CPAN (_Hint:_  _unless you want to
    dive into the gory details of how this utility is built, install from [CPAN](https://metacpan.org/pod/Autoconf::Template)_)
 1. Create a `manifest.yaml` file that describes the project and the
-   assets you want to include (_they don't actually have to exist!_)
+   assets you want to include (_they don't actually have to
+   exist!_). You can also use the utility to [_automagically_ create a
+   `manifest.yaml`](#automatically-creating-a-manifest-file) file from your project directory.
    ```
    project: foobar
    description: The FooBar Project
@@ -430,7 +437,7 @@ html:
     - { list of .html files }
   javascript:
     - { list of .js files}
-  images:
+  image:
     - { list of image files of any type}
 ```
 
@@ -535,14 +542,125 @@ make install DESTDIR=/tmp/my-project
 tree /tmp/my-project | less
 ```
 
+## Automatically Creating A Manifest File
+
+To create a `manifest.yaml` that contains your project assets, you use
+the `--create-manifest` option of `autoconf-template-perl`. Assuming
+your are in a directory that contains Perl scripts, modules and other
+assets you want to include in your project, creating a manifest is as
+easy as:
+
+```
+autoconf-template-perl --create-manifest --source-dir . > manifest.yaml
+```
+
+`autoconf-template-perl` will look for these files:
+
+* Perl scripts and modules
+  ```
+  .pm
+  .pl
+ ```
+* Bash scripts
+  ```
+  .sh
+  ```
+* Web application artifacts
+  ```
+  .html
+  .css
+  .js
+  .png
+  .jpeg
+  .jpg 
+  ```
+* Configuration files
+  ```
+  .json
+  yaml
+  .cfg
+  .ini
+  ```
+  
+Any other files in your source directory will be added to the
+`resources:` section of the manifest.
+
+Now edit the manifest and add paths to other artifacts or otherwise
+customize the manifest for your project. You can customize the
+manifest by adding some options (the default `--source-dir` is the
+current directory):
+
+```
+autoconf-template-perl --create-manifest \
+  --project 'slate-industries-inventory' \
+  --author 'Fred Flintstone' \
+  --email 'fred@openbedrock.org' \
+  --description 'quarry inventory app' > manifest.yaml
+```
+
+Remember that your paths in the manifest can be absolute or relative
+to the directory where you will be running `autoconf-template-perl` to
+create your project.
+
+You can also add the names of scripts or modules that do not exist but
+you _plan_ to create. Use just the relative path for those...for
+example if I _plan_ to create a `Slate::Config` module, then list the
+file in the manifest like this:
+
+```
+perl:
+  lib:
+    - Slate/Config.pm
+```
+
+`autoconf-template-perl` will then create a stub module for you from the stub
+template for Perl modules.
+
+
+[Back to Table of Contents](#table-of-contents) 
+
 # Configuring `autoconf-template-perl`
 
 `autoconf-template-perl` can create a valid project with no options
 all you need is a `manifest.yaml` file.  It can even find your assets
-for you and create a manifest!
+for you and create a manifest.
 
 ```
 autoconf-template-perl --create-manifest --source-dir .
+```
+
+# Customizing Your Stub Files
+
+When files do not exist in your manifest `autoconf-template-perl` will
+create new files for automatically using a template. You can create
+your own template that will be used instead of the one that are
+provided in this distribution.
+
+Create a `.autoconf-template-perl` file in your home directory or the
+root of your project. Replace the paths associated with the file types
+you want to customize with your own template.
+
+```
+[stubs]
+
+pm   = /usr/local/share/perl/5.32.1/auto/share/Autoconf-Template/stub.pm
+pl   = /usr/local/share/perl/5.32.1/auto/share/Autoconf-Template/stub.pl
+cfg  = /usr/local/share/perl/5.32.1/auto/share/Autoconf-Template/stub.cfg
+js   = /usr/local/share/perl/5.32.1/auto/share/Autoconf-Template/stub.js
+html = /usr/local/share/perl/5.32.1/auto/share/Autoconf-Template/stub.html
+
+[global]
+
+author = "Rob Lauer"
+email  = rlauer6@comcast.net
+
+create-missing = true
+
+html           = true
+bash           = true
+perl_bin       = true
+perl_lib       = true
+perl_cgi       = true
 ```
 
 [Back to Table of Contents](#table-of-contents) 
@@ -615,7 +733,7 @@ included in the manifest.
      |-- html
      |   |-- css
      |   |-- htdocs
-     |   |-- images
+     |   |-- image
      |   `-- javascript
      `-- perl
          |-- bin
@@ -625,16 +743,42 @@ included in the manifest.
              `-- t
 ```
 
-# Adding Resources to Your Project
+# Adding Artifacts to Your Project
 
-Adding resources to your project is as simple as dropping a new file
-in the `resources/` directory and refreshing the project.
+Adding additional files and resources to your project can be done by 
+dropping a new file in the target directory and refreshing the
+project. You can also use the `--create-stub` to add files that have
+stub templates (`.pl`, `.pm`, `.cgi`, etc).
 
 ```
 cp foo.txt my-project/resources/
-cd my-project
-autoconf-template-perl -r
+cd $PROJECT_HOME
+autoconf-template-perl --refresh
 ```
+
+```
+autoconf-template-perl --create-stub foo.pl
+```
+
+When you use the `--create-stub` option, `autoconf-template-perl` will
+automatically do a refresh.
+
+If you already have script or module and are not using the
+`--create-stub`option, copy the source file to the target
+directory as a `.in` file and then manually refresh the project.
+
+```
+cp foo.pl $PROJECT_HOME/src/main/perl/bin/foo.pl.in
+cd $PROJECT_HOME
+autoconf-template-perl --refresh
+```
+
+Performing a refresh operation will regenerate the
+`Makefile.am` files to enable your new artifact to be built and
+installed when the project is deployed. Refreshing will also scan your
+Perl modules and scripts for new dependencies and regenerate files
+that contain those dependencies.
+
 
 [Back to Table of Contents](#table-of-contents) 
 
@@ -1128,7 +1272,7 @@ application being installed in the locations shown in the table.
 | HTML files | src/main/html/htdocs | /var/www/htdocs | `--apache-vhostdir` |
 | CSS files | src/main/html/css | /var/www/htdocs/css | `--apache-vhostdir` |
 | Javscript files | src/main/html/javascript | /var/www/htdocs/javascript | `--apache-vhostdir` |
-| Image files | src/main/html/images | /var/www/htdocs/img | `--apache-vhostdir` |
+| Image files | src/main/html/image | /var/www/htdocs/img | `--apache-vhostdir` |
 
 > * @PACKAGE@ is the name of your project
 > * `$Config{installsitelib}` is Perl's module site directory
@@ -1169,11 +1313,11 @@ application being installed in the locations shown in the table.
 
 # Additional Hints
 
-## Adding Artifacts to Your Project
+## Adding Files to the Distribution
 
-* If you want to add files to be included in your distribution but are __not__
-supposed to be installed, add this `automake` variable to the
-`Makefile.am` in the root of your project.
+* If you want to add files to be included in your distribution but
+should __not__ be installed, add this snippet to `Makefile.am` in the
+root of your project.
 
 ```
 dist_noinst_DATA = \
@@ -1188,19 +1332,20 @@ configuration files) the easy way, follow these steps:
 
 1. Drop the file with a `.in` extension into the appropriate directory
    ```
-   cp foo.pl src/main/perl/bin/foo.pl.in
-   cp foo.cfg.in config/foo.cfg.in
+   cp foo.pl $PROJECT_HOME/src/main/perl/bin/foo.pl.in
+   cp foo.cfg.in $PROJECT_HOME/config/foo.cfg.in
    ```
 2. Re-run `autoconf-template-perl` in the root of the project using
    the `--refresh` option.
    ```
-   autoconf-template-perl -r
+   autoconf-template-perl --refresh
    ```
 
-Note that if your new Perl script or module introduced new Perl module
-dependencies, those will be identified and added to the m4 macro
+* Whenver you introduce new Perl module dependencies to the project,
+make sure you run `autoconf-template-perl --refresh`. New dependencies
+will be identified and added to the m4 macro
 `autotools/ax_requirements_check.m4` so that `configure` will verify
-their existence in the target environment during the build..
+their existence in the target environment during the build.
 
 ## Disabling Dependency Checking
 

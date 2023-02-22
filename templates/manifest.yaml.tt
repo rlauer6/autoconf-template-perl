@@ -29,6 +29,6 @@ html:
   css:
 [% FOREACH css IN css_files %]    - [% css %]
 [% END %]
-  images:
+  image:
 [% FOREACH image IN image_files %]    - [% image %]
 [% END %]

@@ -2,7 +2,7 @@
 # This is a Makefile rule use tabs!
 SUBDIRS = .
 
-templatesdir = @datadir@/@PACKAGE@/templates
+templatesdir = @perl5sharedir@/templates
 
 templates_perldir        = $(templatesdir)/perl
 templates_perl_bindir    = $(templates_perldir)/bin
@@ -32,6 +32,7 @@ TEMPLATES = \
     manifest.yaml.tt \
     spec.in.tt \
     stub.cfg.tt \
+    stub.cgi.tt \
     stub.html.tt \
     stub.js.tt \
     stub.pl.tt \
@@ -61,6 +62,24 @@ TEMPLATES_CONFIG = \
 
 TEMPLATES_HTML = \
    html/Makefile.am.tt
+
+extra-files: $(ALLTEMPLATES)
+	set -ex; templates=$$(mktemp); \
+	find $(abs_srcdir) -name '*.tt' | sort -u > $$templates; \
+	cat $$templates | perl -ne  'chomp; s/^.*\/templates/templates/; print "$$_ "; s/^templates/share/; print "$$_\n";' > $@; \
+	rm $$templates
+
+dist_noinst_DATA = extra-files
+
+ALLTEMPLATES = \
+    $(TEMPLATES) \
+    $(TEMPLATES_PERL_BIN) \
+    $(TEMPLATES_PERL_CGIBIN) \
+    $(TEMPLATES_PERL_LIB) \
+    $(TEMPLATES_BASH_BIN) \
+    $(TEMPLATES_RESOURCES) \
+    $(TEMPLATES_CONFIG) \
+    $(TEMPLATES_HTML)
 
 templates_DATA             = $(TEMPLATES)
 templates_perl_bin_DATA    = $(TEMPLATES_PERL_BIN)
