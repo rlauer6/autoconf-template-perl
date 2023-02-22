@@ -522,32 +522,13 @@ autoconf-template-perl --create-manifest --source-dir . > manifest.yaml
 
 `autoconf-template-perl` will look for these files:
 
-* Perl scripts and modules
-  ```
-  .pm
-  .pl
- ```
-* Bash scripts
-  ```
-  .sh
-  ```
-* Web application artifacts
-  ```
-  .html
-  .css
-  .js
-  .png
-  .jpeg
-  .jpg 
-  ```
-* Configuration files
-  ```
-  .json
-  yaml
-  .cfg
-  .ini
-  ```
-  
+| File Type | Extension |
+| --------- | --------- |
+| Perl scripts and module | `.pm`, `.pl` |
+| Bash scripts | `.sh` |
+|  Web application artifacts | `.html`, `.css`, `.js`, `.png`, `.jpeg`, `.jpg` |
+| Configuration files | `.json`, `.yaml`, `.cfg`, `.ini` |
+
 Any other files in your source directory will be added to the
 `resources:` section of the manifest.
 
