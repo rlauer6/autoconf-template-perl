@@ -69,7 +69,7 @@ sub main {
       if $EVAL_ERROR;
   }
 
-  my $ac_option = $options{option};
+  my $ac_option = $options{option} // $EMPTY;
   $ac_option =~ s/\-/_/gxsm;
 
   croak "option already exists - use -f to replace\n"
@@ -112,9 +112,9 @@ sub main {
 
   render_tt_template( 'ax-extra-opts.m4.tt', \%parameters, $outfile );
 
-  system 'autoreconf', '-f', '-i';
-
   if ($ac_option) {
+    system 'autoreconf', '-f', '-i';
+
     # update ax-extra-opts.json
     open my $fh, '>', $extra_opts_file
       or croak "could not open $extra_opts_file for writing\n";

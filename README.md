@@ -1,6 +1,6 @@
 # README
 
-Last Updated: 02/22/23
+Last Updated: 02/23/23
 
 <p align="center">
 <img src="https://upload.wikimedia.org/wikipedia/en/2/22/Heckert_GNU_white.svg"
@@ -46,7 +46,8 @@ See [`NEWS`](NEWS.md) for the lastest news on releases.
 * [Getting Started](#getting-started)
   * [Automatically Creating A Manifest File](#automatically-creating-a-manifest-file)
 * [Configuring `autoconf-template-perl`](#configuring-autoconf-template-perl)
-* [Customizing Your Stub Files](#customizing-your-stub-files)
+  * [`autoconf-template-perl` Options](#autoconf-template-perl-options)
+  * [Customizing Your Stub Files](#customizing-your-stub-files)
 * [Project Structure](#project-structure)
   * [Root Directory](#root-directory)
   * [`autotools` Directory](#autotools-directory)
@@ -67,10 +68,11 @@ See [`NEWS`](NEWS.md) for the lastest news on releases.
   * [RPMs](#rpms)
   * [Tarballs](#tarballs)
   * [Standard Deployment Tree](#standard-deployment-tree)
-* [FAQs](#faqs)
+* [Unit Tests](#unit-tests)
 * [Additional Hints](#additional-hints)
   * [Adding Files to the Distribution](#adding-files-to-the-distribution)
-  * [Disabling Dependency Checking](#disabling-dependency-checking)
+  * [`configure` Options](#configure-options)
+* [FAQs](#faqs)
 
 # Overview
 Building and packaging software is an important step in the software
@@ -612,19 +614,54 @@ you.
 autoconf-template-perl --create-manifest --source-dir .
 ```
 
+## `autoconf-template-perl` Options
+
+| Option | Description |
+| ------ | ----------- |
+| `h, --help`| help |
+| `a, --author name`|  author's name (default: "anonymouse")
+| `b, --bash`| build bash directories (default: true) |
+| `c, --create-missing`|  create any files in manifest that do not exist (default: false) |
+| `C, --create-manifest`| create a manifest file from the current directory |
+| `S, --create-stub`| filename  create a stub file |
+| `d, --destdir`| directory root for project directory |
+| `e, --email email`| author's email (default: rlauer6@comcast.net || anonymouse@example.com) |
+| `f, --force`| force overwrite of project directory |
+| `h, --html` | build html directories (default: true) |
+| `l, --log-level level`| logging level, error, warn, info, debug, trace  (default: error) |
+| `L, --list-stubs`| lists the stub templates available |
+| `m, --manifest` |  filename  name of the YAML manifest file |
+| `p, --project name` | project name (default: "noname") |
+| `r, --refresh`| refresh after  addition of script or module |
+| `R, --rpm-build`| enable or disable RPM spec file |
+| `s, --source-dir`| directory source directory for files in manifest or when creating manifest |
+|   | (default: pwd) |
+| `u, --unit-tests`| create unit test stubs (default: true) |
+| `v, --version` | report script version |
+
+These options default to true, use `-no-{option}` to disable
+
+```
+--bash
+--html
+--rpm-build
+--unit-tests
+```
+
 [Back to Table of Contents](#table-of-contents)
 
-# Customizing Your Stub Files
+## Customizing Your Stub Files
 
-When files do not exist in your manifest or you want to use
-`--create-stub` option, `autoconf-template-perl` will create new files
-for automatically using a _stub_ template. You can create your own
-templates that will be used to create these stubs instead of the ones
-that are provided in this distribution.
+When files do not exist in your manifest or you want to use the
+`--create-stub` option to create a new script of module,
+`autoconf-template-perl` will create new files for you using a _stub_
+template. You can create your own templates that
+`autoconf-template-perl` will use to create these stubs instead of the
+ones that are provided in this distribution.
 
 An `.autoconf-template-perlrc` file was created in you project
 directory when you created the project. Edit the file and replace the
-path for the stub files you wish to customize.
+paths for the stub files you wish to customize.
 
 ```
 [stubs]
@@ -635,7 +672,16 @@ pl   = /usr/local/share/perl/5.32.1/auto/share/Autoconf-Template/templates/stub.
 cfg  = /usr/local/share/perl/5.32.1/auto/share/Autoconf-Template/templates/stub.cfg
 js   = /usr/local/share/perl/5.32.1/auto/share/Autoconf-Template/templates/stub.js
 html = /usr/local/share/perl/5.32.1/auto/share/Autoconf-Template/templates/stub.html
+```
 
+Some other options you can set in the configuration file include your
+_name_, _email address_ and _flags that determine whether certain source
+directories will be created for you_.  `autoconf-template-perl` will
+look for this file in your home directory (`$HOME`) and the current
+working directory, so for future project creations, you'll want to
+move this to your `$HOME` directory after customization.
+
+```
 [global]
 
 author = "Rob Lauer"
@@ -674,7 +720,7 @@ you can customize.
 
 ## `autotools` Directory
 
-The `autotools` directory contains m4 macros used during the configure
+The `autotools` directory contains `m4` macros used during the configure
 phase. These should be considered source files under source control (if
 you are using a source control system).
 
@@ -909,7 +955,7 @@ scripts, modules).
 * Apache Site Directories
 
 These directories are rooted by the configuration value
-(`--with-apache-vhostdir=`) made available by the m4 macro
+(`--with-apache-vhostdir=`) made available by the `m4` macro
 [`autotools/apache_config.m4`](autotools/apache_config.m4).
 
 Without modification, the directories below
@@ -1206,7 +1252,7 @@ those dependencies.
 
 | Dependency File | Description |
 | --------------- | ----------- |
-| `autotools/ax_requirements_check.m4` | m4 macro that checks for  required modules |
+| `autotools/ax_requirements_check.m4` | `m4` macro that checks for  required modules |
 | `requirements.txt` | plain text file listing requirements |
 | `requiremetns.json` | requirements file in JSON format |
 
@@ -1354,7 +1400,7 @@ Perl module dependencies at deployment time.
 ## Tarballs
 
 If you are deploying to a target system from the distribution tarball,
-you will need to configure, build and install the application. This is
+you will need to _configure_, _build_ and _install_ the application. This is
 done using the standard recipe shown below.
 
 ```
@@ -1399,42 +1445,104 @@ application being installed in the locations shown in the table.
 
 [Back to Table of Contents](#table-of-contents) 
 
-# FAQs
-
-1. Why do I have to use a `.in` extension for my Perl scripts and
-   modules? (See [Building from `.in` Files](#building-from-in-files)).
-1. Why is `make distcheck` failing?
-   * `distcheck` can fail for various reasons, the most common reason
-     being the tarball is missing an artifact required for building
-     the distribution. `autoconf-template-perl` __should__ account for
-     all of the artifacts it knows about when you created your project
-     or used the `--refresh` option. If you've added new artifacts
-     manually, you'll need to make sure they are included in the
-     distribution. See [Adding Artifacts to Your
-     Project](#adding-artifacts-to-your-project)
-  * It's also possible that `distcheck` will fail if built artifacts
-    are not cleaned up proplery during the `make clean` phase of the
-    check. In this case you may have failed to include some generated
-    files in the list of files to be removed (`CLEANFILES`). Again,
-    `autoconf-template-perl` __should__ account for all files that are
-    targets of a build rule.
-  * Lastly, there are situations where you may want to configure your
-    project in some way to avoid a situation that will cause `make
-    distcheck` to fail. You can add an `automake` variable to the
-    `Makefile.am` in the root of your project to pass configuration
-    options during `make distcheck`.  These will be passed to the
-    `configure` script.
-    ```
-    DISTCHECK_CONFIGURE_FLAGS = 
-    ```
- 
 [Back to Table of Contents](#table-of-contents) 
+
+# Unit Tests
+
+`autoconf-template-perl` will create unit test stubs for you by
+default. You can disable this using the `--no-unit-tests` option.
+Unit test stubs are created for `.pl`, `.pm`, and `.cgi` files. These
+stubs look something like this for `.pl` and `.cgi` files.
+
+```
+#!/usr/bin/env perl
+
+use strict;
+use warnings;
+
+use Test::More tests => 1;
+
+subtest 'debug' => sub {
+  ok(1);
+};
+
+__END__
+```
+...and something like this for `.pm` files:
+
+```
+ package [% module_name %];
+ # autogenerated from [% generator %] v[% version %] on [% timestamp %]
+ # template: [% template_name %]
+ 
+ use strict;
+ use warnings;
+ 
+ use Carp;
+ use Data::Dumper;
+ use English qw(-no_match_vars);
+ use Log::Log4perl qw(:easy);
+ 
+ use parent qw(Exporter Class::Accessor::Fast);
+ 
+ __PACKAGE__->follow_best_practice;
+ __PACKAGE__->mk_accessors(
+   qw(
+    debug
+   )
+ );
+ 
+ our $VERSION = '@PACKAGE_VERSION@'; ## no critic (RequireInterpolation)
+ 
+ ########################################################################
+ sub new {
+ ########################################################################
+   my ( $class, @args ) = @_;
+ 
+   my %options = ref $args[0] ? %{ $args[0] } : @args;
+ 
+   my $self = $class->SUPER::new( \%options );
+ 
+   return $self;
+ }
+ 
+ 1;
+ 
+ ## no critic (RequirePodSections)
+ 
+ __END__
+ 
+ =pod
+ 
+ =head1 NAME
+ 
+ =head1 SYNOPSIS
+ 
+ =head1 DESCRIPTION
+ 
+ =head1 METHODS AND SUBROUTINES
+ 
+ =head1 SEE ALSO
+ 
+ =head1 AUTHOR
+ 
+ [% author %] - [% email %]
+ 
+ =cut
+
+```
+
+Unit tests are run by executing `make check` which is also run
+whenever you run `make distcheck`.  All unit tests must pass for the
+distribution to be considered _working_.
+
+[Back to Table of Contents](#table-of-contents)
 
 # Additional Hints
 
 ## Adding Files to the Distribution
 
-* If you want to add files to be included in your distribution but
+* If you want to add files to be included in your distribution that
 should __not__ be installed, add this snippet to `Makefile.am` in the
 root of your project.
 
@@ -1462,12 +1570,72 @@ configuration files) the easy way, follow these steps:
 
 * Whenver you introduce new Perl module dependencies to the project,
 make sure you run `autoconf-template-perl --refresh`. New dependencies
-will be identified and added to the m4 macro
+will be identified and added to the `m4` macro
 `autotools/ax_requirements_check.m4` so that `configure` will verify
 their existence in the target environment during the build.
 
-## Disabling Dependency Checking
+## `configure` Options
 
-TBD
+Along with the standard `configure` options that allow you to alter the
+install paths there are additonal options specific to
+`autoconf-template-perl` that control the building of your project.
+
+| Option | Description |
+| `--enable-distcheck-hack` | enables flag that use the `DISTCHECK_CONFIGURE_FLAGS`  you might have set in your project root `Makefile.am` (see [FAQs](#faqs)) |
+| `--disable-deps` | don't abort if dependencies are missing, just warn |
+| `--enable-rpm-build-mode` |  disables dependency checking and other behaviors that are only relevant outside of an RPM build |'
+| `--disable-perldeps` | don't abort if Perl module dependencies are missing |
+| `--enable-perlcritic-mode` | run `perlcritic` during `make check` | 
+| `--with-perlcritic-severity` | sets the severify level (1-5) that will break the build |
+| `--with-perl5libdir` | where to install Perl modules, default: `$Config{installib}` |
+|  `--with-perl-includes` | additional Perl module paths that will prepended to `@INC` |
+
+* Apache Configuration Options
+
+| Option | Description |
+| `--with-apache-vhost-domain=name` | domain name used to set `@apache_vhost_domain@` |
+| `--with-apache-vhostdir=DIR` | root directory for web application |
+| `--with-apache-vhost-confdir=DIR` |  where Apache looks for virtual host configuration files (_not currently used_) |
+| `--with-apache-vhost-server=name` | fully qualified HTTP server name (_not currently_used) |
+| `--with-apache-user=USER`  |       user id that should own the web pages |
+| `--with-apache-group=GROUP`        group that should own the web pages |
+| `--with-license` | default: GNU Public License |
+| `--with-architecture` | architecture (`noarch`, `x86_64`) (default: noarch |
 
 [Back to Table of Contents](#table-of-contents) 
+
+# FAQs
+
+1. Why do I have to use a `.in` extension for my Perl scripts and
+   modules? (See [Building from `.in` Files](#building-from-in-files)).
+1. Why is `make distcheck` failing?
+   * [`make
+     distcheck`](https://www.gnu.org/software/automake/manual/html_node/Checking-the-Distribution.html)
+     should be run after you create a distribution to
+     ensure that the distribution actually works.
+     
+     `distcheck` can fail for various reasons, the most common reason
+     being the tarball is missing an artifact required for building
+     the distribution. `autoconf-template-perl` __should__ account for
+     all of the artifacts it knows about when you created your project
+     or used the `--refresh` option. If you've added new artifacts
+     manually, you'll need to make sure they are included in the
+     distribution. See [Adding Artifacts to Your
+     Project](#adding-artifacts-to-your-project)
+  * It's also possible that `distcheck` will fail if built artifacts
+    are not cleaned up proplery during the `make clean` phase of the
+    check. In this case you may have failed to include some generated
+    files in the list of files to be removed (`CLEANFILES`). Again,
+    `autoconf-template-perl` __should__ account for all files that are
+    targets of a build rule.
+  * Lastly, there are situations where you may want to configure your
+    project in some way to avoid a situation that will cause `make
+    distcheck` to fail. You can add an `automake` variable to the
+    `Makefile.am` in the root of your project to pass configuration
+    options during `make distcheck`.  These will be passed to the
+    `configure` script.
+    ```
+    DISTCHECK_CONFIGURE_FLAGS = 
+    ```
+
+[Back to Table of Contents](#table-of-contents)

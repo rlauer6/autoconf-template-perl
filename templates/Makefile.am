@@ -36,7 +36,8 @@ TEMPLATES = \
     stub.html.tt \
     stub.js.tt \
     stub.pl.tt \
-    stub.pm.tt
+    stub.pm.tt \
+    unit-tests.tt
 
 TEMPLATES_PERL_BIN = \
     perl/bin/Makefile.am.tt \

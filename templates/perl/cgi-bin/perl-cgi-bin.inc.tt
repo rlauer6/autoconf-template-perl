@@ -15,7 +15,6 @@
 # See the README.md in the `autoconf-template-perl` project for more
 # details.
 
-
 [% INCLUDE "build-rules.tt" %]
 
 PERLSCRIPTS = [% makefile_am_list(cgi_scripts) %]
@@ -24,9 +23,6 @@ GPERLSCRIPTS = $(PERLSCRIPTS:.pl.in=.pl)
 
 ALLSCRIPTS = \
     $(GPERLSCRIPTS)
-
-dist_noinst_DATA = \
-    $(PERLSCRIPTS)
 
 GCGISCRIPTS = \
     $(GPERLSCRIPTS:.pl=.cgi)

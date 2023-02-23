@@ -7,6 +7,9 @@ include $(top_srcdir)/includes/directories.inc
 include $(top_srcdir)/includes/perlcritic.inc
 include $(top_srcdir)/includes/perl-cgi-bin.inc
 
+[% unit_test_list = "cgi" %]
+[% INCLUDE "unit-tests.tt" %]
+
 all:
 
 CLEANFILES = \
@@ -27,6 +30,8 @@ clean-generated-man-pages:
 	rm -f "$${mpath}" ;\
 	test $$? -eq 0 || exit 1 ;\
 	done
+
+dist_noinst_DATA = $(ALLSCRIPTS) $(UNIT_TESTS)
 
 if DISTCHECK_HACK
 else

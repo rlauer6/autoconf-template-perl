@@ -7,8 +7,8 @@ include $(top_srcdir)/includes/directories.inc
 include $(top_srcdir)/includes/perl-modules.inc
 include $(top_srcdir)/includes/perlcritic.inc
 
-test: $(GALLMODULES)
-	prove $(PERLINCLUDE) -v t/
+[% unit_test_list = "pm" %]
+[% INCLUDE "unit-tests.tt" %]
 
 all:
 
@@ -29,6 +29,7 @@ clean-generated-man-pages:
 	test $$? -eq 0 || exit 1 ;\
 	done
 
+dist_noinst_DATA = $(ALLMODULES) $(UNIT_TESTS)
 
 if DISTCHECK_HACK
 else

@@ -33,5 +33,7 @@ dist_noinst_DATA = \
   $(PACKAGE_NAME).spec \
   $(PACKAGE_NAME).spec.in
 
-DISTCHECK_CONFIGURE_FLAGS = --disable-perlcritic-mode 
-#DISTCHECK_CONFIGURE_FLAGS = --with-perlcritic-severity=3
+CLEANFILES = \
+    install-from-cpan
+
+DISTCHECK_CONFIGURE_FLAGS = --with-perlcritic-severity=5 --with-perl5libdir='\$(prefix)/shaer/perl5'

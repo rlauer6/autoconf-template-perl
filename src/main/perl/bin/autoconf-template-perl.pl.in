@@ -435,8 +435,9 @@ sub set_defaults {
   # templates that should not be rendered
   $options->{'exclude-templates'} = [];
 
-  $options->{html} //= $TRUE;
-  $options->{bash} //= $TRUE;
+  $options->{html}         //= $TRUE;
+  $options->{bash}         //= $TRUE;
+  $options->{'unit-tests'} //= $TRUE;
 
   $options->{html_build_mode} = delete $options->{html};
   $options->{bash_build_mode} = delete $options->{bash};
@@ -831,21 +832,29 @@ sub _copy_files {
 
       DEBUG Dumper( [ 'creating file ', $file, $name, $path, $ext ] );
 
-      if ( -e "$PROJECT_DIR/templates/stub$ext.tt" ) {
-        my %parameters = %{$options};
-        $parameters{template_name} = "$PROJECT_DIR/templates/stub$ext.tt";
+      my $stub_name = "$TEMPLATES_DIR/stub$ext.tt";
 
-        DEBUG Dumper( [ 'found a template ', $parameters{template_name} ] );
+      if ( -e $stub_name ) {
+        my %parameters = %{$options};
+        $parameters{template_name} = $stub_name;
+
+        DEBUG Dumper( [ 'found a template ', $stub_name ] );
 
         if ( $ext eq '.pm' ) {
           my $module_name = path_to_module($file);
           $parameters{module_name} = $module_name;
         }
 
-        render_tt_template( $parameters{template_name},
-          \%parameters, "$prefix/$dest" );
+        render_tt_template(
+          { template   => $stub_name,
+            parameters => \%parameters,
+            outfile    => "$prefix/$dest",
+          }
+        );
       }
       else {
+        DEBUG 'no template found for: ' . $file;
+
         # create empty missing file
         open my $fh, '>', "$prefix/$dest"
           or croak "could not create missing $file in $prefix/$dest\n";
@@ -1177,10 +1186,15 @@ sub init_parameters {
 
     $options->{description} = $manifest->{description};
 
+    my @build_file_lists = (
+      bash_scripts => $manifest->{bash}->{bin},
+      perl_scripts => $manifest->{perl}->{bin},
+      cgi_scripts  => $manifest->{perl}->{'cgi-bin'},
+    );
+
+    # config files should technically be above list, but we add .in to
+    # those files in init_config_sections
     my @file_lists = (
-      bash_scripts     => $manifest->{bash}->{bin},
-      perl_scripts     => $manifest->{perl}->{bin},
-      cgi_scripts      => $manifest->{perl}->{'cgi-bin'},
       html_files       => $manifest->{html}->{htdocs},
       javascript_files => $manifest->{html}->{javascript},
       css_files        => $manifest->{html}->{css},
@@ -1189,14 +1203,9 @@ sub init_parameters {
       config           => $manifest->{config},
     );
 
-    # create arrays of just the file names from the source files
-    for my $p ( pairs @file_lists ) {
-      my ( $var, $list ) = @{$p};
+    create_target_file_list( $options, \@build_file_lists, '.in' );
 
-      $list ||= [];
-
-      $options->{$var} = [ map { basename $_ } @{$list} ];
-    }
+    create_target_file_list( $options, \@file_lists );
 
     $options->{perl_modules}
       = [ map { find_module_filename($_) } @{ $manifest->{perl}->{lib} } ];
@@ -1207,6 +1216,26 @@ sub init_parameters {
   }
 
   $options->{destdir} = sprintf '%s/%s', @{$options}{qw(destdir project)};
+
+  return $options;
+}
+
+# remove path info and possibly add '.in' for files to be built
+########################################################################
+sub create_target_file_list {
+########################################################################
+  my ( $options, $file_list, $ext ) = @_;
+
+  $ext //= $EMPTY;
+
+  # create arrays of just the file names from the source files
+  for my $p ( pairs @{$file_list} ) {
+    my ( $var, $list ) = @{$p};
+
+    $list ||= [];
+
+    $options->{$var} = [ map { basename($_) . $ext } @{$list} ];
+  }
 
   return $options;
 }
@@ -1234,7 +1263,7 @@ sub init_config_sections {
       s/$/.in/xsm;
     }
 
-    $options->{$type} = [@config_files];
+    $options->{$type} = [ map { basename $_ } @config_files ];
   }
 
   return $options;
@@ -1293,6 +1322,66 @@ sub render_templates {
 }
 
 ########################################################################
+sub create_unit_tests {
+########################################################################
+  my ( $options, $dependencies ) = @_;
+
+  # create unit test scaffolding for .pm, .pl, and .cgi files
+  my @unit_tests = (
+    ( sprintf '%s/%s', $options->{destdir}, 'src/main/perl/lib' ) =>
+      [ 'pm', $options->{perl_modules} ],
+    ( sprintf '%s/%s', $options->{destdir}, 'src/main/perl/bin' ) =>
+      [ 'pl', $options->{perl_scripts} ],
+    ( sprintf '%s/%s', $options->{destdir}, 'src/main/perl/cgi-bin' ) =>
+      [ 'cgi', $options->{cgi_scripts} ],
+  );
+
+  for my $p ( pairs @unit_tests ) {
+    my ( $path, $test_info ) = @{$p};
+
+    my ( $ext, $files ) = @{$test_info};
+
+    TRACE Dumper( [ 'creating unit tests ', $path, $files ] );
+
+    next if !$files || !@{$files};
+
+    create_unit_test_stub(
+      files   => $files,
+      path    => $path,
+      options => $options,
+      ext     => $ext,
+    );
+  }
+
+  return $options;
+}
+
+########################################################################
+sub create_unit_test_stub {
+########################################################################
+  my (%args) = @_;
+
+  my ( $files, $path, $options, $ext ) = @args{qw(files path options ext)};
+
+  TRACE Dumper( [ 'unit tests', $files, 'path', $path ] );
+
+  foreach ( @{$files} ) {
+    if (/[.]pm/xsm) {
+      create_module_test_stub( path => $path, file => $_ );
+
+      $options->{unit_tests}->{$ext} = create_unit_test_list( 'pm', $files );
+    }
+    elsif (/[.]pl/xsm) {
+      create_script_test_stub( path => $path, file => $_ );
+
+      $options->{unit_tests}->{$ext} = create_unit_test_list( 'pl', $files );
+    }
+  }
+
+  return;
+}
+
+########################################################################
 sub create_module_test_stub {
 ########################################################################
   my (%args) = @_;
@@ -1321,7 +1410,7 @@ sub create_script_test_stub {
   my ( $file, $path ) = @args{qw(file path)};
 
   $file = basename $file;
-  $file =~ s/[.]pl[.]in$//xsm;
+  $file =~ s/[.]pl([.]in)?$//xsm;
 
   my $unit_test = sprintf '%s/t/00-%s.t', $path, $file;
 
@@ -1332,55 +1421,24 @@ sub create_script_test_stub {
 }
 
 ########################################################################
-sub create_unit_tests {
+sub create_unit_test_list {
 ########################################################################
-  my ( $options, $dependencies ) = @_;
+  my ( $type, $files ) = @_;
 
-  # create unit test scaffolding for .pm, .pl, and .cgi files
-  my @unit_tests = (
-    ( sprintf '%s/%s', $options->{destdir}, 'src/main/perl/lib' ) =>
-      $options->{perl_modules},
-    ( sprintf '%s/%s', $options->{destdir}, 'src/main/perl/bin' ) =>
-      $options->{perl_scripts},
-    ( sprintf '%s/%s', $options->{destdir}, 'src/main/perl/cgi-bin' ) =>
-      $options->{cgi_scripts},
-  );
+  # note: do not alter input
+  my @files = @{$files};
 
-  for my $p ( pairs @unit_tests ) {
-    my ( $path, $files ) = @{$p};
+  foreach my $file (@files) {
+    if ( $type =~ /pm/xsm ) {
+      $file = lc $file;
+      $file =~ s/\//-/gxsm;
+    }
 
-    TRACE Dumper( [ 'creating unit tests ', $path, $files ] );
-
-    next if !$files || !@{$files};
-
-    create_unit_test_stub(
-      files => $files,
-      path  => $path,
-    );
+    $file =~ s/[.]$type([.]in)?/.t/xsm;
+    $file = "t/00-$file";
   }
 
-  return $options;
-}
-
-########################################################################
-sub create_unit_test_stub {
-########################################################################
-  my (%args) = @_;
-
-  my ( $files, $path ) = @args{qw(files path)};
-
-  TRACE Dumper( [ 'unit tests', $files, 'path', $path ] );
-
-  foreach ( @{$files} ) {
-    if (/[.]pm$/xsm) {
-      create_module_test_stub( path => $path, file => $_ );
-    }
-    elsif (/[.]pl$/xsm) {
-      create_script_test_stub( path => $path, file => $_ );
-    }
-  }
-
-  return;
+  return [@files];
 }
 
 ########################################################################

@@ -1,3 +1,56 @@
+Thu Feb 23 09:30:12 2023  Rob Lauer  <rlauer6@comcast.net>
+
+	[2.0.8 - unit tests]:
+	* README: generated
+	* README.md.in
+	* templates/stub.pm.tt: add version
+	* templates/stub.pl.tt: likewise
+	* templates/stub.cgim.tt: likewise
+	* VERSION: bump
+	* resources/Makefile.am
+	- + prove.sh.in
+	* resources/file_list.json: likewise
+	* src/main/perl/bin/autoconf-ax-extra-opts.pl.in
+	- initialize $ac_option to empty
+	- only run autoreconf if we are adding an option
+	* src/main/perl/bin/autoconf-template-perl.pl.in
+	(init_parameters)
+	- separated build files from as-is files
+	(create_target_file_list): new
+	(init_config_sections): just basename of files
+	(_copy_files): use $TEMPLATES_DIR
+	(set_defaults)
+	- set unit_test default to true
+	(create_script_test_stub)
+	- files do not have .in extension
+	- pass options, ext to create_unit_test_stub
+	(create_unit_test_list): new, create list of tests for TT
+	(create_unit_test_stub)
+	- set unit test list for each type (pl, pm, cgi) in options
+	* templates/Makefile.am
+	- + unit-tests.tt
+	(DISTCHECK_CONFIGURE_FLAGS): --with-perl5libdir='\$(prefix)/share/perl4'
+	(CLEANFILES): install-from-cpan
+	* templates/Makefile.am.tt
+	- set perlcritic severity to 5 for make distcheck
+	* templates/configure.ac.tt
+	- make autotools/prove.sh executable
+	(AC_PATH_PROG): + prove
+	* templates/perl/bin/Makefile.am.tt
+	- add unit test list
+	(dist_noinst_DATA)
+	- new, can only have one and it should be in Makefile.am
+	* templates/perl/lib/Makefile.am.tt: likewise
+	* templates/perl/cgi-bin/Makefile.am.tt: likewise
+	* templates/perl/bin/perl-bin.inc.tt
+	- remove dist_noinst_DATA from, move to Makefile.am
+	* templates/perl/cgi-bin/perl-cgi-bin.inc.tt: likewise
+	* templates/perl/lib/perl-modules.inc.tt: likewise
+	* templates/unit-tests.tt: new
+	* resources/prove.sh.in: new
+	* src/main/perl/lib/Autoconf/Constants.pm.in
+	($TEMPLATES_DIR): new
+
 Wed Feb 22 13:39:51 2023  Rob Lauer  <rlauer6@comcast.net>
 
 	[2.0.7 - extra opts]:

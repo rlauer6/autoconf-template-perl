@@ -24,9 +24,6 @@ GPERLSCRIPTS = $(PERLSCRIPTS:.pl.in=.pl)
 ALLSCRIPTS = \
     $(GPERLSCRIPTS)
 
-dist_noinst_DATA = \
-    $(PERLSCRIPTS)
-
 libexecdir = @libexecdir@
 
 bindir = @bindir@

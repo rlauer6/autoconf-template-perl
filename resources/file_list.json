@@ -1,3 +1,25 @@
+# "file_list.json" is a list of files that are used in the generation of an 
+#                  `autoconf-template-perl`  project
+#
+#  "files"      => files that will be copied to their destinations, usually "as-is"
+#
+#  "templates"  => Template Toolkit templates used to generated various project
+#                  and autoconf artifacts
+#
+#  "refresh"    => list of templates that are used to "refresh" project artifacts when
+#                  new files are added to the project
+#
+# * Note that some "templates" that are part of the `autconf-template-perl` distribution
+#   are not listed here. That is because they are use as includes in one or more of the
+#   templates below. Examples include:
+#
+#   - buildrules.tt
+#   - unit-tests.tt
+#
+# * When new artifacts are added to this project you must update the list of files
+#   in this project's `templates/Makefile.am` or `resources/Makefile.am` to make sure
+#   they are included in the distribution.
+#
 # "files" 
 #    key:   source file name
 #    value: scalar or array
@@ -42,7 +64,8 @@
     "gitignore": ".gitignore",
     "perlcritic.inc": "includes/",
     "perlcriticrc": "perlcriticrc",
-    "perltidyrc": "perltidyrc"
+    "perltidyrc": "perltidyrc",
+    "prove.sh.in": "autotools/prove.sh.in"
   },
   "templates": {
     "COPYRIGHT.tt": "COPYRIGHT",

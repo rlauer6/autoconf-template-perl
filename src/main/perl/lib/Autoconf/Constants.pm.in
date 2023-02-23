@@ -24,9 +24,10 @@ Readonly our $SLASH => q{/};
 Readonly our $COMMA => q{,};
 
 # paths
-Readonly our $PROJECT_DIR  => "$SHARE_DIR/$PROJECT";
-Readonly our $INCLUDE_PATH => "$PERL5SHARE_DIR/templates";
-Readonly our $FILE_LIST    => "$PROJECT_DIR/file_list.json";
+Readonly our $PROJECT_DIR   => "$SHARE_DIR/$PROJECT";
+Readonly our $INCLUDE_PATH  => "$PERL5SHARE_DIR/templates";
+Readonly our $TEMPLATES_DIR => "$PERL5SHARE_DIR/templates";
+Readonly our $FILE_LIST     => "$PROJECT_DIR/file_list.json";
 
 # other
 Readonly our $MANIFEST_FILE => 'manifest.yaml';
@@ -68,6 +69,7 @@ our %EXPORT_TAGS = (
       $PROJECT_DIR
       $INCLUDE_PATH
       $SHARE_DIR
+      $TEMPLATES_DIR
     )
   ],
   vars => [

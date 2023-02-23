@@ -38,7 +38,8 @@ RESOURCES = \
     perlcritic.inc \
     perlcriticrc \
     perltidyrc \
-    .autoconf-template-perlrc
+    .autoconf-template-perlrc \
+    prove.sh.in
 
 resources_DATA = \
     $(RESOURCES) \
