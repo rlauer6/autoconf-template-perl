@@ -21,18 +21,17 @@ PERLSCRIPTS = [% makefile_am_list(cgi_scripts) %]
 
 GPERLSCRIPTS = $(PERLSCRIPTS:.pl.in=.pl)
 
-ALLSCRIPTS = \
-    $(GPERLSCRIPTS)
+GCGISCRIPTS =  $(GPERLSCRIPTS:.pl=.cgi)
 
-GCGISCRIPTS = \
-    $(GPERLSCRIPTS:.pl=.cgi)
+G1MANPAGES = $(GCGISCRIPTS:.cgi=.1man)
 
 apache_site_cgibin_DATA = $(GCGISCRIPTS)
 
-$(GCGISCRIPTS): $(PERLSCRIPTS)
+$(GCGISCRIPTS): $(GPERLSCRIPTS)
+
+ALLSCRIPTS = \
+    $(PERLSCRIPTS)
 
 PERLCRITIC_CGI = \
     $(GCGISCRIPTS)
 
-G1MANPAGES = \
-    $(GCGISCRIPTS:.cgi=.1man)

@@ -1,4 +1,4 @@
-package Autoconf::Constants;
+package Autoconf::Template::Constants;
 
 use strict;
 use warnings;
@@ -22,6 +22,7 @@ Readonly our $SPACE => q{ };
 Readonly our $DASH  => q{-};
 Readonly our $SLASH => q{/};
 Readonly our $COMMA => q{,};
+Readonly our $DOT   => q{.};
 
 # paths
 Readonly our $PROJECT_DIR   => "$SHARE_DIR/$PROJECT";
@@ -48,6 +49,16 @@ Readonly::Hash our %CONFIG_FILE_EXTENSIONS => (
   yaml_files   => 'yaml',
 );
 
+Readonly::Hash our %SUBDIRS_BY_TYPE => (
+  '.html' => 'src/main/html/htdocs',
+  '.css'  => 'src/main/html/css',
+  '.js'   => 'src/main/html/javascript',
+  '.pm'   => 'src/main/perl/lib',
+  '.pl'   => 'src/main/perl/bin',
+  '.sh'   => 'src/main/bash/bin',
+  '.cgi'  => 'src/main/perl/cgi-bin',
+);
+
 our %EXPORT_TAGS = (
   booleans => [
     qw(
@@ -62,6 +73,7 @@ our %EXPORT_TAGS = (
       $DASH
       $SLASH
       $COMMA
+      $DOT
     )
   ],
   paths => [
@@ -79,6 +91,7 @@ our %EXPORT_TAGS = (
       $MANIFEST_FILE
       $COPYRIGHT
       %CONFIG_FILE_EXTENSIONS
+      %SUBDIRS_BY_TYPE
     )
   ],
 );

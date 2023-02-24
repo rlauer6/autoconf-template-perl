@@ -5,8 +5,8 @@ use warnings;
 
 # SCANDEPS=scandeps-static.pl --no-core --no-include-require
 
-use Autoconf::Constants qw(:all);
-use Autoconf::Utils qw(:all);
+use Autoconf::Template::Constants qw(:all);
+use Autoconf::Template::Utils qw(:all);
 use Carp;
 use Data::Dumper;
 use English qw(-no_match_vars);
@@ -24,7 +24,7 @@ our $VERSION = '@PACKAGE_VERSION@'; ## no critic (RequireInterpolation)
 ########################################################################
 sub get_required_modules {
 ########################################################################
-  my ( $path, $type ) = @_;
+  my ( $options, $path, $type ) = @_;
 
   my $logger = Log::Log4perl->get_logger;
 
@@ -37,6 +37,9 @@ sub get_required_modules {
   my @names;
 
   foreach my $file (@files) {
+
+    message( $options,
+      sprintf "\t\t...scanning %s for Perl module dependencies", $file );
 
     $logger->info( sprintf 'dependency scan for %s:', $file );
 
@@ -73,8 +76,12 @@ END_OF_TEMPLATE
   my $output;
 
   if ( @{$required} ) {
-    $output = render_tt_template( \$template, { required => $required },
-      $options->{outfile} );
+    $output = render_tt_template(
+      { template   => \$template,
+        parameters => { required => $required },
+        outfile    => $options->{outfile}
+      }
+    );
   }
 
   return $output;
@@ -130,7 +137,7 @@ sub remove_provided_modules {
 ########################################################################
 sub find_dependencies {
 ########################################################################
-  my ($root) = @_;
+  my ( $options, $root ) = @_;
 
   my $dependencies = [];
 
@@ -139,11 +146,31 @@ sub find_dependencies {
     next if !-d $path;
 
     DEBUG 'looking for dependencies for files in ' . $path;
+    message( $options, "\t...looking for dependencies in $path" );
 
-    push @{$dependencies}, @{ get_required_modules( $path, $p->[1] ) };
+    my @modules = @{ get_required_modules( $options, $path, $p->[1] ) };
+
+    if (@modules) {
+      message(
+        $options,
+        sprintf "\t\t...found %d dependencies",
+        scalar @modules
+      );
+
+      message(
+        $options, "\t\t\t",
+        join "\n\t\t\t",
+        sort map { $_->{name} } @modules
+      );
+    }
+    else {
+      message( $options, "\t\t...no dependencies found" );
+    }
+
+    push @{$dependencies}, @modules;
   }
-  return $dependencies;
 
+  return $dependencies;
 }
 
 ########################################################################
@@ -169,6 +196,7 @@ Options
 -i, --infile      either a .json or .txt requirements file (*)
 -l, --log-level   logging level, (default: info)
 -o, --outfile     name of the output file
+-q, --quiet       do not report progress
 -r, --root-dir    root directory of project
 -v, --version     report script version
 
@@ -197,6 +225,7 @@ sub main {
   GetOptions(
     \%options,   'help',    'format=s', 'root-dir=s',
     'outfile=s', 'version', 'infile=s', 'log-level=s',
+    'quiet',
   );
 
   return help()
@@ -255,7 +284,7 @@ sub main {
     croak "this doesn't look much like a project directory\n"
       if !-d "$root/src/main/perl/lib";
 
-    my $dependencies = find_dependencies($root);
+    my $dependencies = find_dependencies( \%options, $root );
 
     DEBUG Dumper($dependencies);
 

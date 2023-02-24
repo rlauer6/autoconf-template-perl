@@ -93,17 +93,31 @@ man1_MANS = $(G1MANPAGES)
 # +--------------------------------------------+
 
 AUTOCONFMODULES = \
-    Autoconf/Template.pm.in \
-    Autoconf/Utils.pm.in \
-    Autoconf/Constants.pm.in
+    Autoconf/Template.pm.in
 
-Autoconf/Template.pm: % : %.in Autoconf/Utils.pm
-Autoconf/Utils.pm: % : %.in Autoconf/Constants.pm
+# +--------------------------------------------+
+# Autoconf/Template
+# +--------------------------------------------+
+AUTOCONF_TEMPLATEMODULES = \
+    Autoconf/Template/Constants.pm.in \
+    Autoconf/Template/Utils.pm.in \
+    Autoconf/Template/UnitTests.pm.in
+
+Autoconf/Template.pm: % : %.in Autoconf/Template/Utils.pm
+
+Autoconf/Template/Utils.pm: % : %.in Autoconf/Template/Constants.pm
 
 GAUTOCONFMODULES = $(AUTOCONFMODULES:.pm.in=.pm)
 
+GAUTOCONF_TEMPLATEMODULES = $(AUTOCONF_TEMPLATEMODULES:.pm.in=.pm)
+
 perl5lib_autoconfdir = $(perl5libdir)/Autoconf
+
+perl5lib_autoconf_templatedir = $(perl5libdir)/Autoconf/Template
+
 perl5lib_autoconf_DATA = $(GAUTOCONFMODULES)
+
+perl5lib_autoconf_template_DATA = $(GAUTOCONF_TEMPLATEMODULES)
 
 ALLMODULES = \
     $(AUTOCONFMODULES)

@@ -1,5 +1,41 @@
-Thu Feb 23 09:30:12 2023  Rob Lauer  <rlauer6@comcast.net>
+Fri Feb 24 17:14:35 2023  Rob Lauer  <rlauer6@comcast.net>
 
+	[2.0.9 - add new unit test to existing scripts]:
+	* VERSION: bump
+	* README.md: generated
+	* README.md.in: reorganizing structure, FAQ
+	* src/main/perl/lib/Autoconf/Template/UnitTests.pm.in: refactored
+	* includes/perl-modules.inc
+	- move Utils.pm.in, Constants.pm.in under Autoconf/Templates
+	- moved unit test subs to Autoconf/Templates/UnitTests.pm.in
+	* src/main/perl/bin/autoconf-ax-extra-opts.pl.in
+	- update 'use' for above modules
+	* resources/file_list.json
+	- add Makefile.am files in dirs that are built to refresh list
+	* c/main/perl/bin/autoconf-ax-requirements-check.pl.in
+	- likewise
+	- add progress messages
+	(main): add quiet option
+	* c/main/perl/bin/autoconf-template-perl.pl.in
+	- update 'use' for Autoconf module move
+	- --create-test-sub
+	- --quiet
+	- --project-root
+	- progress messages
+	* src/main/perl/lib/Autoconf/Template/Constants.pm.in
+	- $DOT, %SUBDIRS_BY_TYPE
+	* src/main/perl/lib/Autoconf/Template/Utils.pm.in
+	(flatten_filename): new
+	(get_project_meta_data): new
+	(get_subdir_by_type): new
+	(message): new
+	* templates/build-rules.tt: %.cgi
+	* templates/perl/cgi-bin/Makefile.am.tt
+	- GPERLCRITIC_CGI, not _PL
+	* templates/perl/cgi-bin/perl-cgi-bin.inc.tt
+	- ALLSCRIPTS=PERLSCRIPTS
+
+Thu Feb 23 09:30:12 2023  Rob Lauer  <rlauer6@comcast.net>
 	[2.0.8 - unit tests]:
 	* README: generated
 	* README.md.in

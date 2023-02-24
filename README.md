@@ -1,6 +1,6 @@
 # README
 
-Last Updated: 02/23/23
+Last Updated: 02/24/23
 
 <p align="center">
 <img src="https://upload.wikimedia.org/wikipedia/en/2/22/Heckert_GNU_white.svg"
@@ -38,43 +38,47 @@ See [`NEWS`](NEWS.md) for the lastest news on releases.
 # Table of Contents
 
 * [Overview](#overview)
-  * [Configuring Your Build](#configuring-your-build)
-* [Why Autoconfiscate?](#why-autoconfiscate?)
-* [Quick Start](#quick-start)
 * [Features of the `autoconf-template-perl` Utility](#features-of-the-autoconf-template-perl-utility)
+  * [Configuring Your Build](#configuring-your-build)
+  * [Why Autoconfiscate?](#why-autoconfiscate?)
+* [Quick Start](#quick-start)
 * [Requirements](#requirements)
 * [Getting Started](#getting-started)
   * [Automatically Creating A Manifest File](#automatically-creating-a-manifest-file)
-* [Configuring `autoconf-template-perl`](#configuring-autoconf-template-perl)
+  * [Configuring `autoconf-template-perl`](#configuring-autoconf-template-perl)
   * [`autoconf-template-perl` Options](#autoconf-template-perl-options)
-  * [Customizing Your Stub Files](#customizing-your-stub-files)
-* [Project Structure](#project-structure)
+* [Project Source Tree](#project-source-tree)
   * [Root Directory](#root-directory)
   * [`autotools` Directory](#autotools-directory)
   * [`config` Directory](#config-directory)
   * [`resources` Directory](#resources-directory)
   * [`src` Directory](#src-directory)
+* [Building and Deploying Your Application](#building-and-deploying-your-application)
+  * [Building Your Application](#building-your-application)
+  * [Checking Your Project Distribution](#checking-your-project-distribution)
+  * [Deploying Your Application](#deploying-your-application)
+  * [RPMs](#rpms)
+  * [Tarballs](#tarballs)
+  * [Standard Deployment Tree](#standard-deployment-tree)
 * [Adding Artifacts to Your Project](#adding-artifacts-to-your-project)
-* [Creating Your Own Configuration Options](#creating-your-own-configuration-options)
 * [Building From `.in` Files](#building-from-.in-files)
   * [Automake Configuration Variables](#automake-configuration-variables)
 * [Building Perl Modules](#building-perl-modules)
 * [Building an RPM](#building-an-rpm)
   * [Quick Start](#quick-start)
-  * [Perl Modules and RPMs](#perl-modules-and-rpms)
-  * [Building RPMs from CPAN](#building-rpms-from-cpan)
+  * [Building RPMs from CPAN Modules](#building-rpms-from-cpan-modules)
   * [Signing an RPM](#signing-an-rpm)
-* [Deploying Your Application](#deploying-your-application)
-  * [RPMs](#rpms)
-  * [Tarballs](#tarballs)
-  * [Standard Deployment Tree](#standard-deployment-tree)
 * [Unit Tests](#unit-tests)
-* [Additional Hints](#additional-hints)
+* [Advanced Topics](#advanced-topics)
+  * [Creating Your Own Configuration Options](#creating-your-own-configuration-options)
+  * [Customizing Your Stub Files](#customizing-your-stub-files)
   * [Adding Files to the Distribution](#adding-files-to-the-distribution)
   * [`configure` Options](#configure-options)
+  * [Perl Modules and RPMs](#perl-modules-and-rpms)
 * [FAQs](#faqs)
 
 # Overview
+
 Building and packaging software is an important step in the software
 development process.  Writing good software can be a challenge but
 it's harder without good tools for building, packaging and deploying
@@ -110,6 +114,28 @@ can use this framework effectively.
 [Ok, I get it skip ahead to the Quick Start](#quick-start)
 
 [Back to Table of Contents](#table-of-contents)
+
+# Features of the `autoconf-template-perl` Utility
+
+* Organizes your applications and scripts into an __easily recognizable and navigable
+  tree structure__
+  * Perl modules
+  * Perl scripts
+  * CGI scripts
+  * Web application assets (`.html`, `.js`, `.css`, etc)
+* Creation of __deployment tarballs__ or __RPMs__
+* __Syntactic checking__ of Perl scripts and modules ( `make` )
+* __Best practice__ checking using `perlcritic` (`make check`)
+* Automatic __creation of all target directories__ during deployment
+* Identification of __Perl module dependencies__
+* Automatic creation of __unit test stubs__ for scripts and modules
+* __Variable substitution during builds__ from `configure` options
+* Creation of __man pages__ from your module or script POD
+* Creation of stub _modules_, _scripts_, _html files_, etc from
+  templates
+* Creation of an __RPM file__ for deployment on RedHat flavored systems
+
+[Back to Table of Contents](#table-of-contents) 
 
 ## Configuring Your Build
 
@@ -211,7 +237,7 @@ by convention, will install your artifacts as shown below:
 
 [Back to Table of Contents](#table-of-contents) 
 
-# Why Autoconfiscate?
+## Why Autoconfiscate?
 
 The term
 [`autoconfisicate`](https://www.webster-dictionary.org/definition/autoconfiscate)
@@ -349,27 +375,6 @@ git commit -m 'Big Bang!'
 
 [Back to Table of Contents](#table-of-contents) 
 
-# Features of the `autoconf-template-perl` Utility
-
-* Organizes your applications and scripts into an __easily recognizable and navigable
-  tree structure__
-  * Perl modules
-  * Perl scripts
-  * CGI scripts
-  * Web application assets (`.html`, `.js`, `.css`, etc)
-* Creation of __deployment tarballs__ or __RPMs__
-* __Syntactic checking__ of Perl scripts and modules ( `make` )
-* __Best practice__ checking using `perlcritic` (`make check`)
-* Automatic __creation of all target directories__ during deployment
-* Identification of __Perl module dependencies__
-* Automatic creation of __unit test stubs__ for scripts and modules
-* __Variable substitution during builds__ from `configure` options
-* Creation of __man pages__ from your module or script POD
-* Creation of stub _modules_, _scripts_, _html files_, etc from
-  templates
-* Creation of an __RPM file__ for deployment on RedHat flavored systems
-
-[Back to Table of Contents](#table-of-contents) 
 
 # Requirements
 
@@ -603,7 +608,7 @@ template for Perl modules.
 
 [Back to Table of Contents](#table-of-contents) 
 
-# Configuring `autoconf-template-perl`
+## Configuring `autoconf-template-perl`
 
 `autoconf-template-perl` can create a valid project with no options.
 All you need to provide is a `manifest.yaml` file.  You can create
@@ -650,62 +655,22 @@ These options default to true, use `-no-{option}` to disable
 
 [Back to Table of Contents](#table-of-contents)
 
-## Customizing Your Stub Files
+# Project Source Tree
 
-When files do not exist in your manifest or you want to use the
-`--create-stub` option to create a new script of module,
-`autoconf-template-perl` will create new files for you using a _stub_
-template. You can create your own templates that
-`autoconf-template-perl` will use to create these stubs instead of the
-ones that are provided in this distribution.
-
-An `.autoconf-template-perlrc` file was created in you project
-directory when you created the project. Edit the file and replace the
-paths for the stub files you wish to customize.
-
-```
-[stubs]
-
-cgi  = /usr/local/share/perl/5.32.1/auto/share/Autoconf-Template/templates/stub.cgi
-pm   = /usr/local/share/perl/5.32.1/auto/share/Autoconf-Template/templates/stub.pm
-pl   = /usr/local/share/perl/5.32.1/auto/share/Autoconf-Template/templates/stub.pl
-cfg  = /usr/local/share/perl/5.32.1/auto/share/Autoconf-Template/templates/stub.cfg
-js   = /usr/local/share/perl/5.32.1/auto/share/Autoconf-Template/templates/stub.js
-html = /usr/local/share/perl/5.32.1/auto/share/Autoconf-Template/templates/stub.html
-```
-
-Some other options you can set in the configuration file include your
-_name_, _email address_ and _flags that determine whether certain source
-directories will be created for you_.  `autoconf-template-perl` will
-look for this file in your home directory (`$HOME`) and the current
-working directory, so for future project creations, you'll want to
-move this to your `$HOME` directory after customization.
-
-```
-[global]
-
-author = "Rob Lauer"
-email  = rlauer6@comcast.net
-
-create-missing = true
-
-html           = true
-bash           = true
-perl_bin       = true
-perl_lib       = true
-perl_cgi       = true
-```
-
-[Back to Table of Contents](#table-of-contents) 
-
-# Project Structure
-
-Your Perl application project is laid out in a specific, organized
-manner to create a standard layout that all of your team can navigate
+Your Perl application project is laid out in a _specific_, _organized
+hierarchy_ to create a standard layout that all of your team can navigate
 easily. It __does not__ reflect the way a project is eventually installed in
 the target environment. See [Deploying Your
 Project](#deploying-your-project) for details regarding where
 artifacts are installed.
+
+The source tree hierarchy is based on common patterns and best
+practices you'll see in many open source projects. Those practices
+have been adapted for packaging Perl applications. Many of the
+applications I have been written or maintained have included web
+components. `autoconf-template-perl` recognizes the needs of those
+types of applications by creating directories and build instructions
+for web applications as well.
 
 ## Root Directory
 
@@ -716,30 +681,42 @@ subdirectories from the `Makefile.am` created automatically for you by
 `autoconf-template-perl`.
 
 The root also contains a stub `ChangeLog`, `README.md` and other files
-you can customize.
+you can customize you might typically see on the _first page_ of your
+`git` repository..
 
 ## `autotools` Directory
 
-The `autotools` directory contains `m4` macros used during the configure
-phase. These should be considered source files under source control (if
-you are using a source control system).
+The `autotools` directory contains [`m4`
+macros](https://en.wikipedia.org/wiki/M4_(computer_language)) used
+during the configure phase. These should be considered source files
+under source control (if you are using a source control system). You
+don't need to know much about `m4` to use this utility. The project
+contains and will create `m4` macros behind the curtains that do the
+things needed to configure and build your project.
 
 ## `config` Directory
 
-This directory should contain your configuration files. Typically
-configuration files might by `.ini`, `.cfg`, `yaml` or `.json` files
-that contain values your program needs for proper operation. When you
-specify these files in your manifest, the `autoconf-template-perl`
-utility will rename them with a `.in` extension. See [Building From
-`.in` Files](#building-from-in-files).
+This directory should contain the configuration files containing magic
+values (but hopefully not __secrets__) required by your
+application. Typically configuration files might be `.ini`, `.cfg`,
+`yaml` or `.json` files. When you specify these files in your manifest, the
+`autoconf-template-perl` utility will rename them with a `.in`
+extension. See [Building From `.in`
+Files](#building-from-in-files). It does this so that you can include
+values in the files that are populated when you configure the project
+for a build by running `./configure` in the project root.
 
-To add new configuration files after the initial project creation see
+You can add new configuration files to your project at any time. To
+add new configuration files after the initial project creation see
 [Adding Artifacts to Your Project](#adding-artifacts-to-your-project).
+
+Configuration files are deployed to _`$(sysconfdir)/@PACKAGE@`_, defined when
+you configure the project (typically `/etc/@PACKAGE@`).
 
 ## `resources` Directory
 
 This directory contains files in your project that will be installed
-to `@datadir@/@PACKAGE_NAME@`. For example, if your project name is
+to `$(datadir)/@PACKAGE@`. For example, if your project name is
 `foobar` and you configure your project like this:
 
 ```
@@ -775,6 +752,153 @@ included in the manifest.
          `-- lib
              `-- t
 ```
+
+# Building and Deploying Your Application
+
+## Building Your Application
+
+In general, the recipe for building your application looks like this:
+
+1. Configure the build with the options that determine the
+   installation location and other parameters that determine your
+   application or build environment
+   ```
+   ./configure --prefix=/usr --sysconfdir=/etc --localstatedir=/var \
+       --with-perl5libdir --with-my-custom-option=foo
+   ```
+1. Run `make` to syntax check your Perl scripts and modules and create
+   your deployment files from your `.in` files
+1. Run `make check` if you want to run unit tests
+1. Run `make dist` to create distribution tarball for your application
+
+You can also build an RPM after creating your distribution
+tarball. [Building RPMs](#building-an-rpm) is a more complicated subject that is discussed
+later in this documenation.
+
+## Checking Your Project Distribution
+
+Checking the project distribution before deployment involves several
+steps, depending on how you have configured the project. By default
+the distribution will go through the checks listed below when you run
+`make distcheck`
+
+* A tarball will be created from your project artifacts (`make dist`)
+* A [VPATH
+  build](https://www.gnu.org/software/automake/manual/html_node/VPATH-Builds.html)
+  will be initiated (`make`).
+  * building first proceeds with the substitution of Automake
+  variables for those files in the source tree with the `.in`
+  extension. The `.in` suffix is removed and a deployment file is
+  create (`.pl`, `.pm`, etc).
+  * Perl scripts and libraries will be syntax checked using `perl -wc`
+* Verification tests if any will be run (`make check`).
+  * unit tests found in the `t/` sub-directories of `perl/bin`, `perl/lib`
+    and `perl/cgi-bin`
+  * `perlcritic` at the severity level defined in your `Makefile.am`
+    specified in the `DISTCHECK_CONFIGURE_FLAGS` variable.
+* Installation of the project is done in a temporary (`make
+  install`)
+* The project will be uninstalled and build artifacts will be removed (`make
+  uninstall`, `make clean`)
+
+If all of those steps succeed, your project is ready for
+deployment. If it fails any of these steps you should check the FAQs
+regarding `distcheck` failures and correct the problem before
+deployement. When `distcheck` fails, it is likely that taking your
+tarball to the target system and attempting an installation will be
+_first order broke_.
+
+Passing, does not mean your project will be successfully
+deploy in any environment.  It simply indicates that, at least
+in your build environment, the package is complete and passes the tests
+defined by the build system.  That includes whatever checks have been
+done when you ran `./configure` which, tests for things like Perl modules
+and other Linux utilities (`prove`, `pod2man`, etc.). 
+
+If you have additional requirements for your application you can
+modify the `configure.ac` file and use this example as a guide...
+
+```
+AC_PATH_PROG([POD2MAN],
+	[pod2man])
+
+if test -z "$POD2MAN" ; then 
+  AC_MSG_ERROR([pod2man found?])
+fi
+```
+
+In the example above your `configure` script will check for the
+`pod2man` utility required for building man pages and create an
+Automake variable (`@POD2MAN`) you can use in your `.in` files.
+
+Failure to find the `pod2man` utility will abort the
+configuration. If the item you are checking for is optional, you can
+use `AC_MSG_WARN` instead of `AC_MSG_ERROR`.
+
+Much more advanced checks are possible but require much more advanced
+knowledge of `autoconf`. Learn more about [writing
+tests](https://www.gnu.org/software/autoconf/manual/autoconf-2.60/html_node/Writing-Tests.html#Writing-Tests)
+for your `configure.ac` file by visiting the Autoconf website.
+
+## Deploying Your Application
+
+How you deploy your application depends on how you have packaged it.
+If you have opted to use an RPM, deployment is done using `yum` or
+`rpm`. 
+
+## RPMs
+
+The entire deployed application has been laid out within the
+RPM, so deployment is essentially done by `rpm` by copying the
+contents of the RPM to the target system.  Some additional steps might
+be performed in the `%post` section of the RPM if you are building
+Perl module dependencies at deployment time.
+
+## Tarballs
+
+If you are deploying to a target system from the distribution tarball,
+you will need to _configure_, _build_ and _install_ the application. This is
+done using the standard recipe shown below.
+
+```
+tar xfvz my-app-1.0.0.tar.gz
+cd my-app-1.0.0
+./configure
+make
+sudo make install
+```
+
+You might want to pass configuration options to `configure` instead of
+using the defaults to control where all of your artifacts are
+deployed.
+
+Try `./configure --help` to see a listing of all configuration
+options.
+
+## Standard Deployment Tree
+
+Using the configuration options show below will result in your
+application being installed in the locations shown in the table.
+
+```
+./configure --prefix=/usr --localstatedir=/var/ --sysconfdir=/etc
+```
+
+| Artifact | Source Location | Deployment Location | Config Option |
+| --------- | -------------- | ------------------- | ------------- |
+| Bash scripts | src/main/bash/bin/ | /usr/bin | `--bindir` |
+| Perl scripts | src/main/perl/bin/ | /usr/bin | `--bindir` |
+| Perl modules | src/main/perl/lib/ | `$Config{installsitelib}` | `--perl5libdir` |
+| Configuration files | config/ | /etc/@PACKAGE@ | `--sysconfdir`
+| Resource files | resources/ | /usr/share/@PACKAGE@/ | `--datadir` |
+| HTML files | src/main/html/htdocs | /var/www/htdocs | `--apache-vhostdir` |
+| CSS files | src/main/html/css | /var/www/htdocs/css | `--apache-vhostdir` |
+| Javscript files | src/main/html/javascript | /var/www/htdocs/javascript | `--apache-vhostdir` |
+| Image files | src/main/html/image | /var/www/htdocs/img | `--apache-vhostdir` |
+
+> * @PACKAGE@ is the name of your project
+> * `$Config{installsitelib}` is Perl's module site directory
+> * Web application artifacts are all installed under `${apache_vhostdir}/htdocs`
 
 [Back to Table of Contents](#table-of-contents)
 
@@ -813,67 +937,6 @@ Performing a refresh operation will regenerate the
 installed when the project is deployed. Refreshing will also scan your
 Perl modules and scripts for new dependencies and regenerate files
 that contain those dependencies.
-
-
-[Back to Table of Contents](#table-of-contents) 
-
-# Creating Your Own Configuration Options
-
-Once you've created your project and `autoconf-template-perl` has
-created your `configure.ac` file, executing `./configure --help` will
-present you with the options available.
-
-Adding your own `configure` options to create
-`automake` variables you can use in source files is done manually by adding
-some `m4` incantations to create in your `configure.ac` (the
-_automagic_ way is discussed a litle later).
-
-```
-AC_ARG_WITH(
-  [foo-bar],[  --with-foo-bar=[foo bar stuff]],
-  [foo_bar=$withval],
-  [foo_bar=[foo]]
-)
-
-AC_SUBST([foo_bar])
-```
-...and updating the `do_subst_command` in `configure.ac` by adding
-another `sed` command.
-
-```
-  -e '"'"'s,[@]foo[@],$(foo),g'"'"' \
-```
-
-By adding these snippets you will create an `automake` variable you
-can use in various ways. Most notably, you can use this is any source
-file (`.in`) as `@variable-name@` and it will be resolved during the
-build phase.
-
-...but wait! There IS an __easier__ way!
-
-Use the `autoconf-ax-extra-opts` utility to add a new option. It will
-automatically update an `m4` macro (`ax-extra-opts.m4`) and
-`configure.ac` for you.
-
-```
-autoconf-ax-extra-opts -o s3-bucket-name \
-      -t "bucket name" \
-      -d "The bucket used store stuff" \
-      -D my-private-bucket-name
-```
-...then
-
-```
-./configure -h | grep s3
---with-s3-bucket-name=bucket-name The bucket to store stuff in (default: my-private-bucket-name)
-```
-
-To use this a configuration file for example:
-
-```
-[s3]
-bucket_name = @s3_bucket_name@
-```
 
 [Back to Table of Contents](#table-of-contents) 
 
@@ -1136,7 +1199,7 @@ issues if you do not prevent the `rpmbuild` process from trying to
 find your Perl dependencies. You may also find it a particularly
 frustrating experience if your application uses Perl modules that do
 not have RPM packages readily available (See [Building RPMs from
-CPAN](#building-rpms-from-cpan)).
+CPAN Modules](#building-rpms-from-cpan-modules)).
 
 The alternatives, using the `autoconf-template-perl` system, is to use
 the tarball created by `make dist` to build your application directly
@@ -1188,6 +1251,300 @@ follow the quick start recipe below.
    ```
    rpmbuild -tb $(ls -1t *.tar.gz | head -1)
    ```
+
+## Building RPMs from CPAN Modules
+
+There have been multiple attempts to create scripts that package CPAN
+modules as RPMs. The most recent and most robust of which appears to be `cpantorpm`.
+
+| Script | Notes | Repo | 
+| ------ | ----- | ---- |
+| `cpantorpm` | loosely based on `cpan2rpm`| https://metacpan.org/dist/App-CPANtoRPM/view/bin/cpantorpm.pod |
+| `cpan2rpm` | | https://github.com/ekkis/cpan2rpm |
+| `cpanspec` | old and crufty | https://src.fedoraproject.org/rpms/cpanspec |
+
+If you are going to package your application as an RPM you should
+become familiar with these tools.
+
+## Signing an RPM
+
+Optionally sign the RPM. Make sure you have set `%_gpg_name` in your
+`.rpmmacros` file.
+
+
+```
+rpmbuild -tb $(ls -1t *.tar.gz | head -1) --sign
+```
+
+[Back to Table of Contents](#table-of-contents) 
+
+# Unit Tests
+
+`autoconf-template-perl` will create unit test stubs for you by
+default. Unit test stubs are just very simple Perl scripts that
+incorporate `Test::More`. You can disable their create using the
+`--no-unit-tests` option.  Unit test stubs are created for `.pl`,
+`.pm`, and `.cgi` files. These stubs look something like this for
+`.pl` and `.cgi` files.
+
+```
+#!/usr/bin/env perl
+
+use strict;
+use warnings;
+
+use Test::More tests => 1;
+
+subtest 'debug' => sub {
+  ok(1);
+};
+
+__END__
+```
+...and something like this for `.pm` files:
+
+```
+ package [% module_name %];
+ # autogenerated from [% generator %] v[% version %] on [% timestamp %]
+ # template: [% template_name %]
+ 
+ use strict;
+ use warnings;
+ 
+ use Carp;
+ use Data::Dumper;
+ use English qw(-no_match_vars);
+ use Log::Log4perl qw(:easy);
+ 
+ use parent qw(Exporter Class::Accessor::Fast);
+ 
+ __PACKAGE__->follow_best_practice;
+ __PACKAGE__->mk_accessors(
+   qw(
+    debug
+   )
+ );
+ 
+ our $VERSION = '@PACKAGE_VERSION@'; ## no critic (RequireInterpolation)
+ 
+ ########################################################################
+ sub new {
+ ########################################################################
+   my ( $class, @args ) = @_;
+ 
+   my %options = ref $args[0] ? %{ $args[0] } : @args;
+ 
+   my $self = $class->SUPER::new( \%options );
+ 
+   return $self;
+ }
+ 
+ 1;
+ 
+ ## no critic (RequirePodSections)
+ 
+ __END__
+ 
+ =pod
+ 
+ =head1 NAME
+ 
+ =head1 SYNOPSIS
+ 
+ =head1 DESCRIPTION
+ 
+ =head1 METHODS AND SUBROUTINES
+ 
+ =head1 SEE ALSO
+ 
+ =head1 AUTHOR
+ 
+ [% author %] - [% email %]
+ 
+ =cut
+
+```
+
+Unit tests are run by executing `make check` which is also run
+whenever you run `make distcheck` (See [Checking Your Project
+Distribution](#checking-your-project-distribution)).  All of the unit
+tests must pass for the distribution to be considered _working_.
+
+[Back to Table of Contents](#table-of-contents)
+
+# Advanced Topics
+
+## Creating Your Own Configuration Options
+
+Once you've created your project and `autoconf-template-perl` has
+created your `configure.ac` file, executing `./configure --help` will
+present you with the options available.
+
+Adding your own `configure` options to create
+`automake` variables you can use in source files is done manually by adding
+some `m4` incantations to create in your `configure.ac` (the
+_automagic_ way is discussed a litle later).
+
+```
+AC_ARG_WITH(
+  [foo-bar],[  --with-foo-bar=[foo bar stuff]],
+  [foo_bar=$withval],
+  [foo_bar=[foo]]
+)
+
+AC_SUBST([foo_bar])
+```
+...and updating the `do_subst_command` in `configure.ac` by adding
+another `sed` command.
+
+```
+  -e '"'"'s,[@]foo[@],$(foo),g'"'"' \
+```
+
+By adding these snippets you will create an `automake` variable you
+can use in various ways. Most notably, you can use this is any source
+file (`.in`) as `@variable-name@` and it will be resolved during the
+build phase.
+
+...but wait! There IS an __easier__ way!
+
+Use the `autoconf-ax-extra-opts` utility to add a new option. It will
+automatically update an `m4` macro (`ax-extra-opts.m4`) and
+`configure.ac` for you.
+
+```
+autoconf-ax-extra-opts -o s3-bucket-name \
+      -t "bucket name" \
+      -d "The bucket used store stuff" \
+      -D my-private-bucket-name
+```
+...then
+
+```
+./configure -h | grep s3
+--with-s3-bucket-name=bucket-name The bucket to store stuff in (default: my-private-bucket-name)
+```
+
+To use this a configuration file for example:
+
+```
+[s3]
+bucket_name = @s3_bucket_name@
+```
+
+## Customizing Your Stub Files
+
+When files do not exist in your manifest or you want to use the
+`--create-stub` option to create a new script of module,
+`autoconf-template-perl` will create new files for you using a _stub_
+template. You can create your own templates that
+`autoconf-template-perl` will use to create these stubs instead of the
+ones that are provided in this distribution.
+
+An `.autoconf-template-perlrc` file was created in you project
+directory when you created the project. Edit the file and replace the
+paths for the stub files you wish to customize.
+
+```
+[stubs]
+
+cgi  = /usr/local/share/perl/5.32.1/auto/share/Autoconf-Template/templates/stub.cgi
+pm   = /usr/local/share/perl/5.32.1/auto/share/Autoconf-Template/templates/stub.pm
+pl   = /usr/local/share/perl/5.32.1/auto/share/Autoconf-Template/templates/stub.pl
+cfg  = /usr/local/share/perl/5.32.1/auto/share/Autoconf-Template/templates/stub.cfg
+js   = /usr/local/share/perl/5.32.1/auto/share/Autoconf-Template/templates/stub.js
+html = /usr/local/share/perl/5.32.1/auto/share/Autoconf-Template/templates/stub.html
+```
+
+Some other options you can set in the configuration file include your
+_name_, _email address_ and _flags that determine whether certain source
+directories will be created for you_.  `autoconf-template-perl` will
+look for this file in your home directory (`$HOME`) and the current
+working directory, so for future project creations, you'll want to
+move this to your `$HOME` directory after customization.
+
+```
+[global]
+
+author = "Rob Lauer"
+email  = rlauer6@comcast.net
+
+create-missing = true
+
+html           = true
+bash           = true
+perl_bin       = true
+perl_lib       = true
+perl_cgi       = true
+```
+
+[Back to Table of Contents](#table-of-contents) 
+
+## Adding Files to the Distribution
+
+* If you want to add files to be included in your distribution that
+should __not__ be installed, add this snippet to `Makefile.am` in the
+root of your project.
+
+```
+dist_noinst_DATA = \
+   README.md \
+   NEWS.md \
+   README-BUILD.md \
+   ChangeLog
+```
+
+* To add files that require building (`.pl`, `.pm`, `.sh`, and possibly
+configuration files) the easy way, follow these steps:
+
+1. Drop the file with a `.in` extension into the appropriate directory
+   ```
+   cp foo.pl $PROJECT_HOME/src/main/perl/bin/foo.pl.in
+   cp foo.cfg.in $PROJECT_HOME/config/foo.cfg.in
+   ```
+2. Re-run `autoconf-template-perl` in the root of the project using
+   the `--refresh` option.
+   ```
+   autoconf-template-perl --refresh
+   ```
+
+* Whenver you introduce new Perl module dependencies to the project,
+make sure you run `autoconf-template-perl --refresh`. New dependencies
+will be identified and added to the `m4` macro
+`autotools/ax_requirements_check.m4` so that `configure` will verify
+their existence in the target environment during the build.
+
+## `configure` Options
+
+Along with the standard `configure` options that allow you to alter the
+install paths there are additonal options specific to
+`autoconf-template-perl` that control the building of your project.
+
+| Option | Description |
+| `--enable-distcheck-hack` | enables flag that use the `DISTCHECK_CONFIGURE_FLAGS`  you might have set in your project root `Makefile.am` (see [FAQs](#faqs)) |
+| `--disable-deps` | don't abort if dependencies are missing, just warn |
+| `--enable-rpm-build-mode` |  disables dependency checking and other behaviors that are only relevant outside of an RPM build |'
+| `--disable-perldeps` | don't abort if Perl module dependencies are missing |
+| `--enable-perlcritic-mode` | run `perlcritic` during `make check` | 
+| `--with-perlcritic-severity` | sets the severify level (1-5) that will break the build |
+| `--with-perl5libdir` | where to install Perl modules, default: `$Config{installib}` |
+|  `--with-perl-includes` | additional Perl module paths that will prepended to `@INC` |
+
+* Apache Configuration Options
+
+| Option | Description |
+| `--with-apache-vhost-domain=name` | domain name used to set `@apache_vhost_domain@` |
+| `--with-apache-vhostdir=DIR` | root directory for web application |
+| `--with-apache-vhost-confdir=DIR` |  where Apache looks for virtual host configuration files (_not currently used_) |
+| `--with-apache-vhost-server=name` | fully qualified HTTP server name (_not currently_used) |
+| `--with-apache-user=USER`  |       user id that should own the web pages |
+| `--with-apache-group=GROUP`        group that should own the web pages |
+| `--with-license` | default: GNU Public License |
+| `--with-architecture` | architecture (`noarch`, `x86_64`) (default: noarch |
+
+[Back to Table of Contents](#table-of-contents) 
+
+[Back to Table of Contents](#table-of-contents)
 
 ## Perl Modules and RPMs
 
@@ -1357,262 +1714,50 @@ build with the use of RPMs.
 
 [Back to Table of Contents](#table-of-contents) 
 
-## Building RPMs from CPAN
-
-There have been multiple attempts to create scripts that package CPAN
-modules as RPMs. The most recent and most robust of which appears to be `cpantorpm`.
-
-| Script | Notes | Repo | 
-| ------ | ----- | ---- |
-| `cpantorpm` | loosely based on `cpan2rpm`| https://metacpan.org/dist/App-CPANtoRPM/view/bin/cpantorpm.pod |
-| `cpan2rpm` | | https://github.com/ekkis/cpan2rpm |
-| `cpanspec` | old and crufty | https://src.fedoraproject.org/rpms/cpanspec |
-
-If you are going to package your application as an RPM you should
-become familiar with these tools.
-
-## Signing an RPM
-
-Optionally sign the RPM. Make sure you have set `%_gpg_name` in your
-`.rpmmacros` file.
-
-
-```
-rpmbuild -tb $(ls -1t *.tar.gz | head -1) --sign
-```
-
-[Back to Table of Contents](#table-of-contents) 
-
-# Deploying Your Application
-
-How you deploy your application depends on how you have packaged it.
-If you have opted to use an RPM, deployment is done using `yum` or
-`rpm`. 
-
-## RPMs
-
-The entire deployed application has been laid out within the
-RPM, so deployment is essentially done by `rpm` by copying the
-contents of the RPM to the target system.  Some additional steps might
-be performed in the `%post` section of the RPM if you are building
-Perl module dependencies at deployment time.
-
-## Tarballs
-
-If you are deploying to a target system from the distribution tarball,
-you will need to _configure_, _build_ and _install_ the application. This is
-done using the standard recipe shown below.
-
-```
-tar xfvz my-app-1.0.0.tar.gz
-cd my-app-1.0.0
-./configure
-make
-sudo make install
-```
-
-You might want to pass configuration options to `configure` instead of
-using the defaults to control where all of your artifacts are
-deployed.
-
-Try `./configure --help` to see a listing of all configuration
-options.
-
-## Standard Deployment Tree
-
-Using the configuration options show below will result in your
-application being installed in the locations shown in the table.
-
-```
-./configure --prefix=/usr --localstatedir=/var/ --sysconfdir=/etc
-```
-
-| Artifact | Source Location | Deployment Location | Config Option |
-| --------- | -------------- | ------------------- | ------------- |
-| Bash scripts | src/main/bash/bin/ | /usr/bin | `--bindir` |
-| Perl scripts | src/main/perl/bin/ | /usr/bin | `--bindir` |
-| Perl modules | src/main/perl/lib/ | `$Config{installsitelib}` | `--perl5libdir` |
-| Configuration files | config/ | /etc/@PACKAGE@ | `--sysconfdir`
-| Resource files | resources/ | /usr/share/@PACKAGE@/ | `--datadir` |
-| HTML files | src/main/html/htdocs | /var/www/htdocs | `--apache-vhostdir` |
-| CSS files | src/main/html/css | /var/www/htdocs/css | `--apache-vhostdir` |
-| Javscript files | src/main/html/javascript | /var/www/htdocs/javascript | `--apache-vhostdir` |
-| Image files | src/main/html/image | /var/www/htdocs/img | `--apache-vhostdir` |
-
-> * @PACKAGE@ is the name of your project
-> * `$Config{installsitelib}` is Perl's module site directory
-> * Web application artifacts are all installed under `${apache_vhostdir}/htdocs`
-
-[Back to Table of Contents](#table-of-contents) 
-
-[Back to Table of Contents](#table-of-contents) 
-
-# Unit Tests
-
-`autoconf-template-perl` will create unit test stubs for you by
-default. You can disable this using the `--no-unit-tests` option.
-Unit test stubs are created for `.pl`, `.pm`, and `.cgi` files. These
-stubs look something like this for `.pl` and `.cgi` files.
-
-```
-#!/usr/bin/env perl
-
-use strict;
-use warnings;
-
-use Test::More tests => 1;
-
-subtest 'debug' => sub {
-  ok(1);
-};
-
-__END__
-```
-...and something like this for `.pm` files:
-
-```
- package [% module_name %];
- # autogenerated from [% generator %] v[% version %] on [% timestamp %]
- # template: [% template_name %]
- 
- use strict;
- use warnings;
- 
- use Carp;
- use Data::Dumper;
- use English qw(-no_match_vars);
- use Log::Log4perl qw(:easy);
- 
- use parent qw(Exporter Class::Accessor::Fast);
- 
- __PACKAGE__->follow_best_practice;
- __PACKAGE__->mk_accessors(
-   qw(
-    debug
-   )
- );
- 
- our $VERSION = '@PACKAGE_VERSION@'; ## no critic (RequireInterpolation)
- 
- ########################################################################
- sub new {
- ########################################################################
-   my ( $class, @args ) = @_;
- 
-   my %options = ref $args[0] ? %{ $args[0] } : @args;
- 
-   my $self = $class->SUPER::new( \%options );
- 
-   return $self;
- }
- 
- 1;
- 
- ## no critic (RequirePodSections)
- 
- __END__
- 
- =pod
- 
- =head1 NAME
- 
- =head1 SYNOPSIS
- 
- =head1 DESCRIPTION
- 
- =head1 METHODS AND SUBROUTINES
- 
- =head1 SEE ALSO
- 
- =head1 AUTHOR
- 
- [% author %] - [% email %]
- 
- =cut
-
-```
-
-Unit tests are run by executing `make check` which is also run
-whenever you run `make distcheck`.  All unit tests must pass for the
-distribution to be considered _working_.
-
-[Back to Table of Contents](#table-of-contents)
-
-# Additional Hints
-
-## Adding Files to the Distribution
-
-* If you want to add files to be included in your distribution that
-should __not__ be installed, add this snippet to `Makefile.am` in the
-root of your project.
-
-```
-dist_noinst_DATA = \
-   README.md \
-   NEWS.md \
-   README-BUILD.md \
-   ChangeLog
-```
-
-* To add files that require building (`.pl`, `.pm`, `.sh`, and possibly
-configuration files) the easy way, follow these steps:
-
-1. Drop the file with a `.in` extension into the appropriate directory
-   ```
-   cp foo.pl $PROJECT_HOME/src/main/perl/bin/foo.pl.in
-   cp foo.cfg.in $PROJECT_HOME/config/foo.cfg.in
-   ```
-2. Re-run `autoconf-template-perl` in the root of the project using
-   the `--refresh` option.
-   ```
-   autoconf-template-perl --refresh
-   ```
-
-* Whenver you introduce new Perl module dependencies to the project,
-make sure you run `autoconf-template-perl --refresh`. New dependencies
-will be identified and added to the `m4` macro
-`autotools/ax_requirements_check.m4` so that `configure` will verify
-their existence in the target environment during the build.
-
-## `configure` Options
-
-Along with the standard `configure` options that allow you to alter the
-install paths there are additonal options specific to
-`autoconf-template-perl` that control the building of your project.
-
-| Option | Description |
-| `--enable-distcheck-hack` | enables flag that use the `DISTCHECK_CONFIGURE_FLAGS`  you might have set in your project root `Makefile.am` (see [FAQs](#faqs)) |
-| `--disable-deps` | don't abort if dependencies are missing, just warn |
-| `--enable-rpm-build-mode` |  disables dependency checking and other behaviors that are only relevant outside of an RPM build |'
-| `--disable-perldeps` | don't abort if Perl module dependencies are missing |
-| `--enable-perlcritic-mode` | run `perlcritic` during `make check` | 
-| `--with-perlcritic-severity` | sets the severify level (1-5) that will break the build |
-| `--with-perl5libdir` | where to install Perl modules, default: `$Config{installib}` |
-|  `--with-perl-includes` | additional Perl module paths that will prepended to `@INC` |
-
-* Apache Configuration Options
-
-| Option | Description |
-| `--with-apache-vhost-domain=name` | domain name used to set `@apache_vhost_domain@` |
-| `--with-apache-vhostdir=DIR` | root directory for web application |
-| `--with-apache-vhost-confdir=DIR` |  where Apache looks for virtual host configuration files (_not currently used_) |
-| `--with-apache-vhost-server=name` | fully qualified HTTP server name (_not currently_used) |
-| `--with-apache-user=USER`  |       user id that should own the web pages |
-| `--with-apache-group=GROUP`        group that should own the web pages |
-| `--with-license` | default: GNU Public License |
-| `--with-architecture` | architecture (`noarch`, `x86_64`) (default: noarch |
-
-[Back to Table of Contents](#table-of-contents) 
-
 # FAQs
 
+1. Do I need to be an Autotools expert to use this package?
+   * No, but it helps if you understand the basic concepts of
+     _autoconfiscation_, building open software using Autotools and
+     Linux utilities. If you can' run this script and create a project
+     that can create a distribution tarball that
+     [_works_](#checking-your-project-distribution), then please
+     report the issue - that's a bug.
+1. Why did you create this project when there are already a few very
+   good Perl packaging applications (`carton`, `Dist::Zilla`)?
+   * Those tools only solve a portion of the problems associated with
+     packaging an entire application. An application is usually
+     composed of more than just Perl modules. Artifacts for
+     applications must be inventoried, packaged and deployed in their
+     appropriate locations on the target environment. I was tutored
+     early on to respect the [Unix/Linux FSH File System Hierarchy](https://en.wikipedia.org/wiki/Filesystem_Hierarchy_Standard)
+     as much as possible and there is no better tool (IMHO) than the
+     Autotools for helping to adhere to that advice.
+     
+     Over the years I have built project after project using my
+     template for creating Perl applications. The template was a good
+     accelerator starting a new project but I wanted something that
+     would get me going even faster.  The template still required a
+     lot of manual editing, cut 'n paste and revisitations to the
+     Automake documentation.  It was time to put my years of
+     experience using Autotools to the test and create a truly
+     automated way to create a new _autoconfiscated_ project that
+     worked immediately after the project was
+     created. `autoconf-template-perl` is the culmination of my
+     experience with Autotools and my experience writing Perl scripts
+     and modules.
+     
+     `autoconf-template-perl` is still a WIP, but should be usable to
+     get you started using Autotools without having to understand it completely.
 1. Why do I have to use a `.in` extension for my Perl scripts and
    modules? (See [Building from `.in` Files](#building-from-in-files)).
 1. Why is `make distcheck` failing?
    * [`make
      distcheck`](https://www.gnu.org/software/automake/manual/html_node/Checking-the-Distribution.html)
      should be run after you create a distribution to
-     ensure that the distribution actually works.
+     ensure that the distribution actually works (See [Checking the
+     Project Distribution](#checking-your-project-distribution) for
+     more details).
      
      `distcheck` can fail for various reasons, the most common reason
      being the tarball is missing an artifact required for building
@@ -1637,5 +1782,27 @@ install paths there are additonal options specific to
     ```
     DISTCHECK_CONFIGURE_FLAGS = 
     ```
-
-[Back to Table of Contents](#table-of-contents)
+1. What if I have other types of files I need to build (C/C++, e.g.)?
+   * `autconf-tempalte-perl` was built specifically for Perl
+     applications but could be expanded to include building other
+     types of applications (Python, C/C+). In fact, the original Perl
+     template for _autoconfiscation_ was based on an _autoconfiscated_
+     C application. Personally, I have not written a C program in over
+     20 years and don't intend on expanding this to building binaries
+     or libraries.  Python applications might be a target at some
+     point however (PRs welcome).
+1. I don't want  my RPM packages to install modules from CPAN, I have RPMs
+   for all my dependencies. How do I prevent the RPM from installing
+   dependencies from CPAN?
+   * When you create the project you can use the
+   `--no-rpm-install-from-cpan` option to disable installation of
+   dependencies in the `%post` section of the RPM spec file. If you
+   forgot to do that initially and later decide to disable that
+   feature, just refresh the project with that option.
+   ```
+   make distclean
+   autoconf-template-perl --no-rpm-install-from-cpan --refresh'
+   ./configure
+   make dist
+   rpmbuild -tb my-project-0.0.1.tar.gz
+   ```

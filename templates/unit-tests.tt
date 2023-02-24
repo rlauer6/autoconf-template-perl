@@ -1,7 +1,5 @@
 #-*- mode: makefile-gmake; -*-
 
-AUTOMAKE_OPTIONS = subdir-objects
-
 TESTS = $(GUNIT_TESTS)
 
 # this was a tough one...VPATH builds are fun

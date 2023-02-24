@@ -1,9 +1,9 @@
-package Autoconf::Utils;
+package Autoconf::Template::Utils;
 
 use strict;
 use warnings;
 
-use Autoconf::Constants qw(:all);
+use Autoconf::Template::Constants qw(:all);
 use Carp;
 use English qw(-no_match_vars);
 use Data::Dumper;
@@ -18,7 +18,7 @@ use Log::Log4perl qw(:easy);
 use Log::Log4perl::Level;
 use JSON;
 use Template;
-use YAML qw(Load);
+use YAML qw(Load LoadFile);
 
 use parent qw(Exporter);
 
@@ -29,7 +29,11 @@ our @EXPORT_OK = qw(
   find_files_of_type
   find_module_filename
   find_root_dir
+  flatten_filename
+  get_project_meta_data
+  get_subdir_by_type
   init_logger
+  message
   module_to_path
   path_to_module
   render_tt_template
@@ -58,6 +62,39 @@ sub version {
   print $COPYRIGHT;
 
   return;
+}
+
+########################################################################
+sub get_subdir_by_type {
+########################################################################
+  my ($file) = @_;
+
+  $file =~ s/[.]in$//xsm;
+
+  my ( $name, $path, $ext ) = fileparse( $file, qr/[.][^.]+$/xsm );
+
+  return ( $SUBDIRS_BY_TYPE{$ext}, $ext );
+}
+
+########################################################################
+sub flatten_filename {
+########################################################################
+  my ( $filename, $sep ) = @_;
+
+  $sep //= $DASH;
+
+  my $name;
+
+  if ( $filename =~ /[.]pm/xsm ) {
+    $name = path_to_module($filename);
+    $name =~ s/::/$sep/gxsm;
+  }
+  else {
+    $name = basename $filename;
+    $name =~ s/[.].*$//xsm;
+  }
+
+  return lc $name;
 }
 
 ########################################################################
@@ -272,7 +309,8 @@ sub render_tt_template {
     [ 'rendering template:' => $template,
       'to outfile:'         => $outfile,
       'cleanup:'            => $args{cleanup},
-      'parameters:'         => $parameters
+      'parameters:'         => $parameters,
+      'INCLUDE_PATH:'       => Dumper( [$INCLUDE_PATH] ),
     ]
   );
 
@@ -309,17 +347,53 @@ sub render_tt_template {
   return $content;
 }
 
+{
+  my $meta_data;
+
+########################################################################
+  sub get_project_meta_data {
+########################################################################
+    my ($options) = @_;
+
+    return %{$meta_data}
+      if $meta_data;
+
+    my ( $destdir, $project ) = @{$options}{qw( destdir project)};
+    my $meta_data_file;
+
+    if ( $destdir && $project ) {
+      $meta_data_file = sprintf '%s/%s/project.yaml', $destdir, $project;
+    }
+    elsif ( $options->{'project-root'} ) {
+      $meta_data_file = sprintf '%s/project.yaml', $options->{'project-root'};
+    }
+
+    $meta_data = eval { return LoadFile($meta_data_file) };
+
+    return %{ $meta_data || {} };
+  }
+}
+
 ########################################################################
 sub find_root_dir {
 ########################################################################
+  my ($options) = @_;
+
   my ( $project, $destdir );
 
   # see if we can figure out what project we are in...
-  #
-  # PACKAGE_NAME is the project name, so if you are anywhere in the
-  # build tree and have a 'Makefile' there I can probably find
-  # the project name...
-  if ( -e 'Makefile' ) {
+  if ( $options->{'project-root'} ) {
+    my %meta_data = get_project_meta_data($options);
+
+    if ( keys %meta_data ) {
+      $project = $meta_data{project};
+      $destdir = dirname $options->{'project-root'};
+    }
+  }
+  elsif ( -e 'Makefile' ) {
+    # PACKAGE_NAME is the project name, so if you are anywhere in the
+    # build tree and have a 'Makefile' there I can probably find
+    # the project name...
     my $makefile = slurp_file('Makefile');
 
     if ( $makefile =~ /^PACKAGE_NAME\s=\s([^\n]+)$/xsm ) {
@@ -334,10 +408,21 @@ sub find_root_dir {
     }
   }
 
-  croak q{I'm sorry I can't figure out what you want to refresh}
+  croak
+    q{Unable to find the root of your project. Use --project-root option or run 'configure'}
     if !$project || !$destdir;
 
   return ( $project, $destdir );
+}
+
+########################################################################
+sub message {
+########################################################################
+  my ( $options, @message ) = @_;
+
+  return if $options->{quiet};
+
+  return print {*STDOUT} "@message\n";
 }
 
 ########################################################################
@@ -355,6 +440,7 @@ sub init_logger {
 
   Log::Log4perl->easy_init(
     { level  => $level,
+      file   => '>>autoconf-template-perl.log',
       layout => '%d (%r/%R) (%p) %l %m%n',
     }
   );

@@ -41,8 +41,8 @@ PERLINCLUDE = \
 	>&2 echo "WARNING: $@"
 	$(perlwc) -wc $(PERLINCLUDE) $@ || { rm $@ && exit 1; }
 
-.cgi: %.pl
-	cp $< $$(basename).cgi
+%.cgi: %.pl
+	cp $< $@
 
 define MAN_PAGE_BUILD_RECIPE
 	target_name="$@";\

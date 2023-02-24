@@ -6,8 +6,8 @@
 use strict;
 use warnings;
 
-use Autoconf::Constants qw(:all);
-use Autoconf::Utils qw(:all);
+use Autoconf::Template::Constants qw(:all);
+use Autoconf::Template::Utils qw(:all);
 use Carp;
 use Data::Dumper;
 use English qw(-no_match_vars);
@@ -110,7 +110,12 @@ sub main {
 
   my $outfile = "$root/autotools/ax-extra-opts.m4";
 
-  render_tt_template( 'ax-extra-opts.m4.tt', \%parameters, $outfile );
+  render_tt_template(
+    { template   => 'ax-extra-opts.m4.tt',
+      parameters => \%parameters,
+      outfile    => $outfile
+    }
+  );
 
   if ($ac_option) {
     system 'autoreconf', '-f', '-i';

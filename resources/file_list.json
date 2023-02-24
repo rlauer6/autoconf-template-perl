@@ -89,10 +89,14 @@
   },
   "refresh": [
     "bash/bin/bash-bin.inc.tt",
-    "config/Makefile.am.tt",
     "perl/bin/perl-bin.inc.tt",
     "perl/cgi-bin/perl-cgi-bin.inc.tt",
     "perl/lib/perl-modules.inc.tt",
-    "resources/Makefile.am.tt"
+    "resources/Makefile.am.tt",
+    "config/Makefile.am.tt",
+    "perl/bin/Makefile.am.tt",
+    "perl/cgi-bin/Makefile.am.tt",
+    "perl/lib/Makefile.am.tt",
+    "spec.in.tt"
   ]
 }
