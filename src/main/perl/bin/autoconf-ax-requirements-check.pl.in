@@ -38,9 +38,6 @@ sub get_required_modules {
 
   foreach my $file (@files) {
 
-    message( $options,
-      sprintf "\t\t...scanning %s for Perl module dependencies", $file );
-
     $logger->info( sprintf 'dependency scan for %s:', $file );
 
     my $scanner
@@ -146,27 +143,8 @@ sub find_dependencies {
     next if !-d $path;
 
     DEBUG 'looking for dependencies for files in ' . $path;
-    message( $options, "\t...looking for dependencies in $path" );
 
     my @modules = @{ get_required_modules( $options, $path, $p->[1] ) };
-
-    if (@modules) {
-      message(
-        $options,
-        sprintf "\t\t...found %d dependencies",
-        scalar @modules
-      );
-
-      message(
-        $options, "\t\t\t",
-        join "\n\t\t\t",
-        sort map { $_->{name} } @modules
-      );
-    }
-    else {
-      message( $options, "\t\t...no dependencies found" );
-    }
-
     push @{$dependencies}, @modules;
   }
 

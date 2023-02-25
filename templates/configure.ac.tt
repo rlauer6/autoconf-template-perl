@@ -228,10 +228,10 @@ AC_CONFIG_FILES([
     src/main/Makefile
     src/main/perl/Makefile
     src/main/perl/bin/Makefile
-    src/main/perl/cgi-bin/Makefile
     src/main/perl/lib/Makefile[% IF bash_build_mode %]
     src/main/bash/Makefile
     src/main/bash/bin/Makefile[% END %][% IF html_build_mode %]
+    src/main/perl/cgi-bin/Makefile
     src/main/html/Makefile[% END %]
     config/Makefile
     resources/Makefile

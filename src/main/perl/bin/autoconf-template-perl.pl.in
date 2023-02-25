@@ -117,21 +117,13 @@ sub main {
 
   $options{root} = sprintf '%s/%s', $options{destdir}, $options{project};
 
-  message( \%options, '...initiating project creation in ' . $options{root} );
-
   init_parameters( \%options );
 
   if ( $options{'create-stub'} || $options{'create-test-stub'} ) {
 
-    message( \%options,
-      '...attempting to create stub ' . $options{'create-stub'}
-        || $options{'create-test-stub'} );
-
     create_stub( \%options );
 
     INFO '...refreshing project';
-
-    message( \%options, '...refreshing project' );
 
     my @args = ( '-r', '-P', $options{root}, '-l', $options{'log-level'} );
     system $PROGRAM_NAME, @args;
@@ -143,38 +135,39 @@ sub main {
 
   my $manifest = $options{manifest};
 
-  if ( !$options{refresh} ) {
+  # override build mode options if we have something in the manifest
+  if ( $manifest->{bash} && keys %{ $manifest->{bash} } ) {
+    $options{bash_build_mode} = $TRUE;
+  }
 
-    # override build mode options if we have something in the manifest
-    if ( $manifest->{bash} && keys %{ $manifest->{bash} } ) {
-      $options{bash_build_mode} = $TRUE;
-    }
-
-    if ( $manifest->{html} && keys %{ $manifest->{html} } ) {
+  if ( $manifest->{html} && keys %{ $manifest->{html} } ) {
+    if ( !$options{html_build_mode} ) {
+      WARN
+        q{you have an 'html' section in your manifest, adding a web assets};
       $options{html_build_mode} = $TRUE;
     }
+  }
 
-    INFO '...creating project build tree';
+  INFO '...creating/refreshing project build tree';
 
-    create_build_tree( \%options );
+  create_source_tree( \%options );
 
+  if ( !$options{refresh} ) {
     # copy files from manifest to target directories
     INFO 'copying files to ' . $options{root};
 
     copy_files( \%options );
   }
-
-  message( \%options, '...project directories created' );
-  message( \%options, '...project assets copied to ' . $options{root} );
-
-  message( \%options, '...finding Perl modules' );
+  else {
+    # don't refresh these if they don't exist
+    $options{bash_build_mode} = -d sprintf '%s/src/main/bash', $options{root};
+    $options{html_build_mode} = -d sprintf '%s/src/main/html', $options{root};
+  }
 
   find_perl_modules( \%options );
 
   if ( $options{'unit-tests'} ) {
     INFO '...creating unit tests';
-
-    message( \%options, '...creating unit tests' );
 
     create_unit_tests( \%options );
 
@@ -190,8 +183,6 @@ sub main {
 
     INFO '...copying additional files';
 
-    message( \%options, '...copying additional support files' );
-
     copy_list( \%options );
   }
 
@@ -202,17 +193,25 @@ sub main {
 
   INFO '...finding dependencies';
 
-  message( \%options, '...finding Perl module dependencies' );
-
   create_requirement_files( \%options );
 
   set_rpm_build_options( \%options );
 
   TRACE Dumper( [ options => \%options ] );
 
-  INFO '...rendering templates';
+  $options{exclude_templates} = [];
 
-  message( \%options, '...creating Automake files from templates' );
+  if ( !$options{bash_build_mode} ) {
+    push @{ $options{exclude_templates} }, 'bash/bin/Makefile.am.tt';
+    push @{ $options{exclude_templates} }, 'bash/Makefile.am.tt';
+  }
+
+  if ( !$options{html_build_mode} ) {
+    push @{ $options{exclude_templates} }, 'html/Makefile.am.tt';
+    push @{ $options{exclude_templates} }, 'perl/cgi-bin/Makefile.am.tt';
+  }
+
+  INFO '...rendering templates';
 
   render_templates( \%options );
 
@@ -243,8 +242,6 @@ sub main {
 
     my $cwd = getcwd;
 
-    message( \%options, '...almost done!...running autoreconf...' );
-
     eval {
       chdir $options{root};
 
@@ -257,15 +254,9 @@ sub main {
 
     INFO '...creating initial ChangeLog entries';
 
-    message( \%options, '...creating initial ChangeLog' );
-
     # create ChangeLog AFTER files are created in new project directory
     create_changelog( \%options );
   }
-
-  message( \%options, '...project creation complete!' );
-  message( \%options, $EMPTY );
-  message( \%options, 'Run ./configure to configure your project' );
 
   return;
 }
@@ -346,7 +337,7 @@ sub create_stub {
 
     my ($path) = get_subdir_by_type($file);
 
-    my $next_test = get_next_text_number($options);
+    my $next_test = get_next_test_number($options);
 
     create_unit_test_stub(
       files       => [$file],
@@ -366,7 +357,7 @@ sub get_next_test_number {
 ########################################################################
   my ($options) = @_;
 
-  my $file = $options->{'create-test-sub'};
+  my $file = $options->{'create-test-stub'};
 
   my $ext;
 
@@ -374,7 +365,7 @@ sub get_next_test_number {
     $ext = $1;
   }
 
-  my $name = flatten_filename( $options->{'create-test-sub'} );
+  my $name = flatten_filename($file);
 
   my $unit_tests = create_unit_tests_list($options);
 
@@ -448,11 +439,16 @@ sub create_stub_file {
 
   $name =~ s/[.].*$//xsm;
 
-  my $dest_path = sprintf '%s/%s/%s%s.in', $options->{root},
+  my $dest_path = sprintf '%s/%s/%s%s', $options->{root},
     $path, $name, $target_ext;
 
+  # only "built" files get .in extension...
+  if ( any { $ext eq $_ } qw(pl pm yaml cfg json ini) ) {
+    $dest_path .= '.in';
+  }
+
   croak "$dest_path already exists...use -f to force\n"
-    if -e $dest_path && !$options->{force};
+    if -e $dest_path && !$options->{force} && !$options->{refresh};
 
   render_tt_template(
     { template   => $parameters{template_name},
@@ -821,7 +817,7 @@ sub get_subdirs {
 }
 
 ########################################################################
-sub create_build_tree {
+sub create_source_tree {
 ########################################################################
   my ($options) = @_;
 
@@ -830,7 +826,7 @@ sub create_build_tree {
   my $main_prefix = sprintf '%s/src/main', $root;
 
   croak "directory $main_prefix exists - use -f to force\n"
-    if -d $main_prefix && !$options->{force};
+    if -d $main_prefix && !$options->{force} && !$options->{refresh};
 
   for (qw(config resources)) {
     make_path( sprintf '%s/%s', $root, $_ );
@@ -854,7 +850,8 @@ sub create_build_tree {
     make_path("$main_prefix/$_");
   }
 
-  my @perl_dirs = qw(lib bin cgi-bin);
+  my @perl_dirs = qw(lib bin);
+  push @perl_dirs, $options->{html_build_mode} ? 'cgi-bin' : ();
 
   foreach (@perl_dirs) {
     make_path("$main_prefix/perl/$_");
@@ -1224,11 +1221,13 @@ sub init_parameters {
       my ( $subdir, $ext_list ) = @{ $html_files{$_} };
 
       foreach my $file_type ( @{$ext_list} ) {
-        push @{ $options->{$file_list} },
-          find_files_of_type(
+
+        my @files = find_files_of_type(
           path => "$root/src/main/html/$subdir",
           type => $file_type,
-          );
+        );
+
+        push @{ $options->{$file_list} }, map { basename $_ } @files;
       }
     }
 

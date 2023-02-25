@@ -88,6 +88,8 @@
     "spec.in.tt": [ 0, "@project@.spec.in", [ "nl" ]]
   },
   "refresh": [
+    "html/Makefile.am.tt",
+    "configure.ac.tt",
     "bash/bin/bash-bin.inc.tt",
     "perl/bin/perl-bin.inc.tt",
     "perl/cgi-bin/perl-cgi-bin.inc.tt",

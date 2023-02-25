@@ -6,8 +6,12 @@ ACLOCAL_AMFLAGS = -I autotools
 
 dist_noinst_DATA =  \
     README.md \
+    README.md.in \
     perlcriticrc \
     ChangeLog
+
+README.md: README.md.in
+	$(MARKDOWN_UTILS) $< > $@
 
 install-data-hook:
 

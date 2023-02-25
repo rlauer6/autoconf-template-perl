@@ -135,6 +135,13 @@ if test -z "$POD2MARKDOWN" ; then
   AC_MSG_ERROR([pod2markdown found?])
 fi
 
+AC_PATH_PROG([MARKDOWN_UTILS],
+	[md-utils.pl])
+
+if test -z "$MARKDOWN_UTILS" ; then 
+  AC_MSG_ERROR([md-utils.pl not found?])
+fi
+
 AC_PATH_PROG([POD2MAN],
 	[pod2man])
 

@@ -1,6 +1,9 @@
 # README
 
-Last Updated: 02/24/23
+Last Updated: 02/25/23
+
+__This project is currently a work in progress and may not be ready for
+production.__
 
 <p align="center">
 <img src="https://upload.wikimedia.org/wikipedia/en/2/22/Heckert_GNU_white.svg"
@@ -1282,8 +1285,35 @@ rpmbuild -tb $(ls -1t *.tar.gz | head -1) --sign
 
 `autoconf-template-perl` will create unit test stubs for you by
 default. Unit test stubs are just very simple Perl scripts that
-incorporate `Test::More`. You can disable their create using the
-`--no-unit-tests` option.  Unit test stubs are created for `.pl`,
+incorporate `Test::More`. You can disable their creation using the
+`--no-unit-tests` option.
+
+Additional unit test stubs can be added at any time after project
+creation. When `autoconf-template-perl` identifies a `.pl`, `.pm` or
+`.cgi` file during project creation, a unit test stub is created in a
+sub-directory of the source tree (e.g. `src/main/perl/bin/t`).  Unit
+test are created with a `.t` extension. They are named with a 2-digit
+numeric prefix, followed by the script name (in lower case) without
+the extension.  Perl modules are named similiarly but have the '::'
+replace with a dash ('-'). Examples:
+
+| Script/Module | Name Unit Test Name |
+| ------------- | ------------------- |
+|  `foo.pl`     | `t/00-foo.t` |
+| `Foo::Bar`    | `t/00-foo-bar.t` | 
+
+Unit tests created after the initial project for a specific script or
+module will be named with a prefix one greater than the hightest test
+for that file. To create `01-foo.pl`:
+
+`autoconf-template-perl --create-test-stub foo.pl`
+
+For Perl scripts in your `src/main/cgi-bin` directory, use the `.cgi`
+extension for the filename which tells `autoconf-template-perl` to
+look in that directory to create the next unit test for your CGI
+script.
+
+Unit test stubs are created for `.pl`,
 `.pm`, and `.cgi` files. These stubs look something like this for
 `.pl` and `.cgi` files.
 
@@ -1795,14 +1825,29 @@ build with the use of RPMs.
    for all my dependencies. How do I prevent the RPM from installing
    dependencies from CPAN?
    * When you create the project you can use the
-   `--no-rpm-install-from-cpan` option to disable installation of
-   dependencies in the `%post` section of the RPM spec file. If you
-   forgot to do that initially and later decide to disable that
-   feature, just refresh the project with that option.
-   ```
-   make distclean
-   autoconf-template-perl --no-rpm-install-from-cpan --refresh'
-   ./configure
-   make dist
-   rpmbuild -tb my-project-0.0.1.tar.gz
-   ```
+     `--no-rpm-install-from-cpan` option to disable installation of
+     dependencies in the `%post` section of the RPM spec file. If you
+     forgot to do that initially and later decide to disable that
+     feature, just refresh the project with that option.
+     ```
+     make distclean
+     autoconf-template-perl --no-rpm-install-from-cpan --refresh'
+     ./configure
+     make dist
+     rpmbuild -tb my-project-0.0.1.tar.gz
+     ```
+1. I created my project with `--no-html` (or `--no-bash`) and now I
+   want to add assets in those directories. How can I make sure the
+   build will recognize these?
+   * There are two ways to do this. The easy way is to use the
+     `--create-stub` option to create a new stub file in the
+     appropriate directory.
+     ```
+     autoconf-template-perl --create-stub index.html
+     ```
+     The extension of your stub filename will determine what directory
+     the file will be created in.  The file will be created n the
+     correct directory and the build system will be refreshed
+     automatically.  If you prefer to do this manually, create the new
+     directory,  move files into that directory
+     as needed and then run `autoconf-template-perl --refresh`.

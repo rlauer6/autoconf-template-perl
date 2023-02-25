@@ -1,3 +1,35 @@
+Sat Feb 25 09:42:14 2023  Rob Lauer  <rlauer6@comcast.net>
+
+	[2.0.10 - adding new assets]:
+	* VERSION: bump
+	* configure.ac: check for md-utils.pl
+	* Makefile.am
+	- build README.md
+	- add README.md.in to distribution
+	* resources/file_list.json
+	(refresh)
+	- +added html/Makefile.am.tt
+	- +configure.ac.tt
+	* resources/prove.sh.in
+	- no need to use `sed`, it was hiding the return code
+	* src/main/perl/bin/autoconf-ax-requirements-check.pl.in
+	- removed messages, log is sufficient
+	* src/main/perl/bin/autoconf-template-perl.pl.in
+	- create source tree even when refreshing
+	- set bash/html_build_mode for refreshg based directory
+	existence to avoid creating these
+	(main): exclude templates when !html or !bash
+	(create_source_tree)
+	- renamed from create_build_tree()
+	- don't create cgi-bin unless html_build_mode
+	(init_parameters): strip path from file lists
+	(create_stub_file): only files to be built get .in extension
+	* src/main/perl/lib/Autoconf/Template/UnitTests.pm.in
+	(create_unit_test_stub)
+	- pass mode or script when rendering base on extension
+	* templates/configure.ac.tt
+	- don't include cgi-bin if !html_build_mode
+
 Fri Feb 24 17:14:35 2023  Rob Lauer  <rlauer6@comcast.net>
 
 	[2.0.9 - add new unit test to existing scripts]:
@@ -12,7 +44,7 @@ Fri Feb 24 17:14:35 2023  Rob Lauer  <rlauer6@comcast.net>
 	- update 'use' for above modules
 	* resources/file_list.json
 	- add Makefile.am files in dirs that are built to refresh list
-	* c/main/perl/bin/autoconf-ax-requirements-check.pl.in
+	* src/main/perl/bin/autoconf-ax-requirements-check.pl.in
 	- likewise
 	- add progress messages
 	(main): add quiet option

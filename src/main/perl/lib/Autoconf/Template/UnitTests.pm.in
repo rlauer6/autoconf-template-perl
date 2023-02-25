@@ -67,7 +67,7 @@ sub create_unit_test_stub {
     render_unit_test(
       %args,
       file => $_,
-      type => 'module',
+      type => /[.]pm/xsm ? 'module' : 'script',
       name => $test_name,
     );
   }
