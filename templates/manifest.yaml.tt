@@ -13,7 +13,7 @@ perl:
 [% FOREACH script IN perl_scripts %]    - [% script %]
 [% END %]
   lib:
-[% FOREACH module IN modules %]    - [% module %]
+[% FOREACH module IN perl_modules %]    - [% module %]
 [% END %]
 bash:
   bin:

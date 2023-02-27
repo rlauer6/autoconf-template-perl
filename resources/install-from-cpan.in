@@ -3,12 +3,13 @@
 set -ex
 
 destdir=@bindir@
+logdir=@localstatedir@/log
 
 curl -L https://cpanmin.us -o ${destdir}/cpanm
 chmod +x ${destdir}/cpanm
 
 for a in $(cat @datadir@/@PACKAGE@/requires.txt | awk '{print $1}'); do
-  ${destdir}/cpanm -n -v $a | tee -a /var/log/cpanm-install.log;
+  ${destdir}/cpanm -n -v $a | tee -a ${logdir}/cpanm-install.log;
 done
 
 exit 0

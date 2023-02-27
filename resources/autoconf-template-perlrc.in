@@ -20,3 +20,6 @@ perl_bin       = true
 perl_lib       = true
 perl_cgi       = true
 
+exclude_files  = Makefile Makefile.am Makefile.in \
+                 manifest.yaml autoconf-template-perl.log \
+                 qr/[.]in$/

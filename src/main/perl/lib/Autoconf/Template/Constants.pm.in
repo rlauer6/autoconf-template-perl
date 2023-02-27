@@ -82,6 +82,7 @@ our %EXPORT_TAGS = (
       $INCLUDE_PATH
       $SHARE_DIR
       $TEMPLATES_DIR
+      $PERL5SHARE_DIR
     )
   ],
   vars => [

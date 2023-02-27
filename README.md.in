@@ -37,6 +37,7 @@ See [`NEWS`](NEWS.md) for the lastest news on releases.
 * [x] add web assets to RPM
 * [x] index for documentation
 * [ ] `make cpan` for tarball distributions
+* [ ] add Apache configuration templates
 
 @TOC@
 
@@ -1708,9 +1709,9 @@ build with the use of RPMs.
 
 1. Do I need to be an Autotools expert to use this package?
    * No, but it helps if you understand the basic concepts of
-     _autoconfiscation_, building open software using Autotools and
-     Linux utilities. If you can' run this script and create a project
-     that can create a distribution tarball that
+     _autoconfiscation_, building open software using Autotools, and
+     using Linux utilities. If you find that you can't run this script
+     to create a project and create a distribution tarball that
      [_works_](#checking-your-project-distribution), then please
      report the issue - that's a bug.
 1. Why did you create this project when there are already a few very
@@ -1757,21 +1758,21 @@ build with the use of RPMs.
      manually, you'll need to make sure they are included in the
      distribution. See [Adding Artifacts to Your
      Project](#adding-artifacts-to-your-project)
-  * It's also possible that `distcheck` will fail if built artifacts
-    are not cleaned up proplery during the `make clean` phase of the
-    check. In this case you may have failed to include some generated
-    files in the list of files to be removed (`CLEANFILES`). Again,
-    `autoconf-template-perl` __should__ account for all files that are
-    targets of a build rule.
-  * Lastly, there are situations where you may want to configure your
-    project in some way to avoid a situation that will cause `make
-    distcheck` to fail. You can add an `automake` variable to the
-    `Makefile.am` in the root of your project to pass configuration
-    options during `make distcheck`.  These will be passed to the
-    `configure` script.
-    ```
-    DISTCHECK_CONFIGURE_FLAGS = 
-    ```
+   * It's also possible that `distcheck` will fail if built artifacts
+     are not cleaned up proplery during the `make clean` phase of the
+     check. In this case you may have failed to include some generated
+     files in the list of files to be removed (`CLEANFILES`). Again,
+     `autoconf-template-perl` __should__ account for all files that are
+     targets of a build rule.
+   * Lastly, there are situations where you may want to configure your
+     project in some way to avoid a situation that will cause `make
+     distcheck` to fail. You can add an `automake` variable to the
+     `Makefile.am` in the root of your project to pass configuration
+     options during `make distcheck`.  These will be passed to the
+     `configure` script.
+     ```
+     DISTCHECK_CONFIGURE_FLAGS = 
+     ```
 1. What if I have other types of files I need to build (C/C++, e.g.)?
    * `autconf-tempalte-perl` was built specifically for Perl
      applications but could be expanded to include building other
@@ -1806,7 +1807,7 @@ build with the use of RPMs.
      autoconf-template-perl --create-stub index.html
      ```
      The extension of your stub filename will determine what directory
-     the file will be created in.  The file will be created n the
+     the file will be created in.  The file will be created in the
      correct directory and the build system will be refreshed
      automatically.  If you prefer to do this manually, create the new
      directory,  move files into that directory

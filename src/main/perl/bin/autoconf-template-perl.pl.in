@@ -48,19 +48,21 @@ sub main {
   # options are defined with '-' to separate words to make it easy to
   # type options on CLI
   GetOptions(
-    \%options,              'author=s',
-    'bash!',                'conf|C=s',
-    'create-manifest|M',    'create-missing|c',
-    'create-test-stub|t=s', 'create-stub=s',
-    'destdir=s',            'email=s',
-    'force',                'help|h',
-    'html|H!',              'list-stubs|L',
-    'log-level|l=s',        'manifest|m=s',
-    'project=s',            'project-root|P=s',
-    'quiet|Q',              'refresh|r',
-    'rpm-build-mode|R!',    'rpm-install-from-cpan!',
-    'rpm-requires|q=s@',    'scripts|S',
-    'source-dir|S',         'unit-tests!',
+    \%options,           'all|a',
+    'author|n=s',        'bash!',
+    'conf|C=s',          'create-manifest|M',
+    'create-missing|c',  'create-test-stub|t=s',
+    'create-stub=s',     'destdir=s',
+    'email|e=s',         'exclude-files|F=s@',
+    'exclude-dirs|E=s@', 'force|f',
+    'help|h',            'html|H!',
+    'list-stubs|L',      'log-level|l=s',
+    'manifest|m=s',      'project|p=s',
+    'project-root|P=s',  'quiet|Q',
+    'refresh|r',         'rpm-build-mode|R!',
+    'rpm-provides!',     'rpm-post-section!',
+    'rpm-requires|q=s@', 'scripts|S',
+    'source-dir|S',      'unit-tests!',
     'version',
   );
 
@@ -69,6 +71,10 @@ sub main {
   init_logger( $options{'log-level'} );
 
   $options{autoconf_templaterc} = load_autoconf_templaterc( \%options );
+
+  if ( !$options{autoconf_templaterc} ) {
+    WARN 'no .autoconf-template-perlrc found...';
+  }
 
   set_defaults( \%options );
 
@@ -140,11 +146,22 @@ sub main {
     $options{bash_build_mode} = $TRUE;
   }
 
-  if ( $manifest->{html} && keys %{ $manifest->{html} } ) {
-    if ( !$options{html_build_mode} ) {
-      WARN
-        q{you have an 'html' section in your manifest, adding a web assets};
+  # you said no-html, but let's see if you have web assets in manifest
+  # if you want to include these directories unconditionally,
+  # explicitly set html_build_mode
+  if ( !$options{html_build_mode} ) {
+    if ( $manifest->{perl}->{'cgi-bin'}
+      && keys %{ $manifest->{perl}->{'cgi-bin'} } ) {
       $options{html_build_mode} = $TRUE;
+    }
+
+    for ( keys %{ $manifest->{html} || {} } ) {
+      $options{html_build_mode} = @{ $manifest->{html}->{$_} || [] };
+    }
+
+    if ( $options{html_build_mode} ) {
+      WARN
+        q{you said --no-html but you have  web assets, adding web sections};
     }
   }
 
@@ -199,7 +216,7 @@ sub main {
 
   TRACE Dumper( [ options => \%options ] );
 
-  $options{exclude_templates} = [];
+  $options{exclude_templates} //= [];
 
   if ( !$options{bash_build_mode} ) {
     push @{ $options{exclude_templates} }, 'bash/bin/Makefile.am.tt';
@@ -262,6 +279,35 @@ sub main {
 }
 
 ########################################################################
+sub get_exclude_files {
+########################################################################
+  my ($options) = @_;
+
+  my @exclude_files;
+
+  # add exclude files from command line
+  push @exclude_files, @{ $options->{'exclude-files'} || [] };
+
+  # default exclude list from configuration
+  my ( undef, $exclude_files_var )
+    = get_config_vars( $options, 'global', 'exclude_files' );
+
+  DEBUG Dumper( [ exclude_file_vars => $exclude_files_var ] );
+
+  push @exclude_files, split /\s+/xsm, $exclude_files_var;
+
+  foreach my $file (@exclude_files) {
+    next if $file !~ /^qr/xsm;
+
+    $file = eval $file; ## no critic
+  }
+
+  TRACE Dumper( [ exclude_files => \@exclude_files ] );
+
+  return @exclude_files;
+}
+
+########################################################################
 sub create_manifest {
 ########################################################################
   my ($options) = @_;
@@ -281,34 +327,63 @@ sub create_manifest {
     config_files     => [qw(json ini cfg yaml)],
   );
 
+  my @exclude_files = get_exclude_files($options);
+
   foreach my $param ( keys %file_types ) {
-    $files{$param} = [];
+    my @file_list;
 
     foreach my $type ( @{ $file_types{$param} } ) {
-      push @{ $files{$param} },
-        find_files_of_type( type => $type, path => $srcdir );
+      push @file_list,
+        find_files_of_type(
+        type => $type,
+        path => $srcdir
+        );
+
     }
+
+    $files{$param} = [ filter_list( \@file_list, $srcdir, @exclude_files ) ];
   }
 
-  my @all_files;
+  my $cwd = getcwd;
 
-  my @exclude = map { @{ $files{$_} } } keys %files;
+  my @exclude_dirs = @{ $options->{'exclude-dirs'} || [] };
 
-  push @exclude, map {"$srcdir/$_"} qw(Makefile Makefile.am Makefile.in);
+  foreach (@exclude_dirs) {
+    next if /^\//xsm;
+
+    s/^/$cwd\//xsm;
+  }
+
+  TRACE Dumper( [ 'exclude-dirs' => \@exclude_dirs ] );
+
+  my @resources;
+
+  TRACE Dumper(
+    [ exclude => \@exclude_files, 'exclude-dirs' => \@exclude_dirs ] );
 
   find(
     sub {
-      return
-        if -d $_ || any { $File::Find::name eq $_ } @exclude;
+      return if -d $_;
 
-      push @all_files, $File::Find::name;
+      return
+        if any { dirname($File::Find::name) =~ /^$_/xsm } @exclude_dirs;
+
+      TRACE Dumper( [ resource => $File::Find::name ] );
+
+      push @resources, $File::Find::name;
     },
     $srcdir
   );
 
-  $files{resources} = \@all_files;
+  TRACE Dumper( [ files => \%files, resources => \@resources ] );
 
-  DEBUG Dumper( [ files => \%files ] );
+  @resources
+    = filter_list( \@resources, $srcdir, @exclude_files,
+    map { @{ $files{$_} } } keys %files );
+
+  $files{resources} = \@resources;
+
+  TRACE Dumper( [ filtered => \%files ] );
 
   my $manifest = render_tt_template(
     { template   => 'manifest.yaml.tt',
@@ -473,12 +548,40 @@ sub set_rpm_build_options {
   my %rpm_options;
   $options->{rpm} = \%rpm_options;
 
-  $rpm_options{install_cpan_files} = $options->{'rpm-install-from-cpan'};
+  $rpm_options{provides} = $options->{'rpm-provides'} // $TRUE;
+  $rpm_options{post_section} //= $options->{'rpm-post-section'};
 
-  DEBUG Dumper(
-    [ $rpm_options{install_cpan_files}, $requires, -e $requires ] );
+  # -------------------------------------------------------------
+  # --rpm-provides | --rpm-post-section | provides | post_section
+  # -------------------------------------------------------------
+  #  -               -                     true      true
+  #  true            -                     true      true
+  #  -               true                  true      true
+  #  false           -                     false     false
+  #  false           true                  false     true
+  #  -               false                 true      ????
+  #  true            false                 true      ????
 
-  if ( $rpm_options{install_cpan_files} && -e $requires ) {
+  # 1, 2, 3 you are letting `install-from-cpan` install modules when RPM
+  #         is deployed by yum
+  # 4       you are letting yum install all Perl modules
+  # 5       you are install some Perl modules at deployment time, and using
+  #         yum to possibly install others
+  # 6, 7    you are packaging(?) Perl modules in the RPM but not using
+  #         `install-from-cpan`, so I'll trust you know what you are doing...
+
+  # In summary...
+  #
+  # no options                           INCLUDE provides AND post section
+  # --no-rpm-provides                    EXCLUDE provides AND post section
+  # --no-rpm-post-section                include provides BUT EXCLUDE post section
+  # --no-rpm-provide, --rpm-post-section EXLCUDE provides but INCLUDE post section
+
+  $rpm_options{post_section} //= $rpm_options{provides};
+
+  DEBUG Dumper( [ $rpm_options{provides}, $requires, -e $requires ] );
+
+  if ( $rpm_options{provides} && -e $requires ) {
     my $provides = slurp_file($requires);
 
     $provides = [ map { ( split /\s+/xsm )[0] } split /\n/xsm, $provides ];
@@ -518,9 +621,11 @@ sub set_defaults {
   # templates that should not be rendered
   $options->{'exclude-templates'} = [];
 
-  $options->{html}         //= $TRUE;
-  $options->{bash}         //= $TRUE;
-  $options->{'unit-tests'} //= $TRUE;
+  if ( $options->{all} ) {
+    $options->{html}         //= $TRUE;
+    $options->{bash}         //= $TRUE;
+    $options->{'unit-tests'} //= $TRUE;
+  }
 
   $options->{html_build_mode} = delete $options->{html};
   $options->{bash_build_mode} = delete $options->{bash};
@@ -560,7 +665,8 @@ usage: $name options
 Options                Arg        Description
 -------                ----       ------------
 -h, --help                        help
--a, --author           name       author's name (default: "anonymouse")
+-a, --all                         create all directories and unit-tests
+-n, --author           name       author's name (default: "anonymouse")
 -b, --bash                        build bash directories (default: true)
 -c, --create-missing              create any files in manifest that do not exist (default: false)
 -C, --create-manifest             create a manifest file from the current directory
@@ -568,7 +674,9 @@ Options                Arg        Description
 -t, --create-test-stub filename   create a stub unit test file
 -d, --destdir          directory  directory where project will be built
 -e, --email            email      author's email (default: $ENV{EMAIL} || anonymouse\@example.com)
+-E, --exclude-dirs                one or more directories to exclude when creating a manifest
 -f, --force                       force overwrite of project directory
+-F, --exclude-files               one or more files to exclude when creating manifest
 -h, --html                        build html directories (default: true)
 -l, --log-level        level      logging level, error, warn, info, debug, trace  (default: error)
 -L, --list-stubs                  lists the stub templates available
@@ -578,8 +686,10 @@ Options                Arg        Description
 -Q, --quiet                       do not report progress
 -r, --refresh                     refresh after  addition of script or module
 -R, --rpm-build                   enable or disable RPM spec file
-    --no-rpm-install-from-cpan    disable installation of Perl modules in \%post section
--s, --source-dir       directory  source directory for files in manifest or when creating manifest
+    --rpm-provides                add Provides section for required Perl modules (default:true)
+    --rpm-post-section            add %post section for installing CPAN modules (default: true)
+    --rpm-requires     RPM        one or more RPM packages (e.g. --rpm-requires less)
+-s, --source-dir       directory  source for files in manifest or when creating manifest
                                   (default: pwd)
 -u, --unit-tests                  create unit test stubs (default: true)
 -v, --version                     report script version
@@ -604,40 +714,70 @@ END_OF_HELP
 ########################################################################
 sub load_autoconf_templaterc {
 ########################################################################
-  my ($options) = @_;
+  my ( $options, @paths ) = @_;
+
+  croak q{usage: load_autoconf_templaterc($options, [@paths])}
+    if !ref $options;
+
+  if ( !@paths ) {
+    @paths = ( getcwd, $ENV{HOME} );
+  }
 
   my $rc_file = $options->{conf};
 
+  TRACE Dumper( [ paths => \@paths ] );
+
   if ( !$rc_file ) {
-    my @paths = ( $ENV{HOME}, $PROJECT_DIR );
-
-    eval {
-      find(
-        { no_chdir => $TRUE,
-          wanted   => sub {
-            return if !/[.]autoconf-template-perlrc/xsm;
-            $rc_file = $File::Find::name;
-
-            die 'found';
-          }
-        },
-        @paths
-      );
-    };
-
+    my ($rc_path) = grep { -e "$_/.autoconf-template-perlrc" } @paths;
+    $rc_file = $rc_path ? "$rc_path/.autoconf-template-perlrc" : $EMPTY;
   }
 
-  croak "could not find your configuration file ($rc_file)\n"
-    if $rc_file && !-e $rc_file;
+  return
+    if !$rc_file || !-e $rc_file;
 
   $options->{conf} = $rc_file;
 
-  if ( -e "$rc_file" ) {
-    $options->{autoconf_template_perlrc}
-      = Config::IniFiles->new( -file => $rc_file );
+  TRACE Dumper( [ 'autoconf-template-perlrc' => $rc_file ] );
+
+  return Config::IniFiles->new(
+    -file          => $rc_file,
+    -allowcontinue => $TRUE
+  );
+}
+
+########################################################################
+sub get_config_vars {
+########################################################################
+  my ( $options, $section, @var_list ) = @_;
+
+  croak 'usage: get_config_vars(options, section, var)'
+    if !ref $options;
+
+  my $config = $options->{autoconf_template_perlrc};
+
+  DEBUG Dumper( [ 'dirs' => [ $PROJECT_DIR, $PERL5SHARE_DIR ] ] );
+
+  if ( !$config ) {
+    $config = $options->{config}
+      = load_autoconf_templaterc( $options, $PROJECT_DIR, $PERL5SHARE_DIR ); # create manifest?
   }
 
-  return;
+  croak 'could not find .autoconf-template-perlrc'
+    if !$config;
+
+  my @var_values;
+
+  if ( !@var_list ) {
+    @var_list = $config->Parameters($section);
+  }
+
+  foreach (@var_list) {
+    push @var_values, ( $_, $config->val( $section, $_ ) );
+  }
+
+  DEBUG Dumper( [ var_values => \@var_values ] );
+
+  return @var_values;
 }
 
 ########################################################################
@@ -645,15 +785,17 @@ sub get_stubs {
 ########################################################################
   my ($options) = @_;
 
-  my $config = $options->{autoconf_template_perlrc};
+  my @stub_list = get_config_vars( $options, 'stubs' );
 
   my @stubs;
 
-  foreach ( $config->Parameters('stubs') ) {
+  foreach my $p ( pairs @stub_list ) {
+    my ( $type, $path ) = @{$p};
+
     push @stubs,
       {
-      type => sprintf( '%5s', ".$_" ),
-      path => $config->val( 'stubs', $_ )
+      type => sprintf( '%5s', ".$type" ),
+      path => $path,
       };
   }
 
@@ -1096,6 +1238,13 @@ sub check_manifest {
         if none { $file =~ /[.]$_$/xsm } values %CONFIG_FILE_EXTENSIONS;
 
       $file = make_absolute( $srcdir, $file );
+    }
+  }
+
+  # don't overwrite some files if they are in the manifest
+  for my $file (qw(README.md ChangeLog .gitignore)) {
+    if ( any { $_ =~ /$file$/xsm } @{ $manifest->{resources} } ) {
+      push @{ $options->{exclude_templates} }, "$file.tt";
     }
   }
 

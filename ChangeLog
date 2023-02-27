@@ -1,3 +1,43 @@
+Mon Feb 27 09:56:40 2023  Rob Lauer  <rlauer@usgn.net>
+
+	[2.0.11 - exclude files, post section options]:
+	* VERSION: bump
+	* includes/perl-modules.inc
+	(ALLMODULE): +AUTOCONF_TEMPLATEMODULES
+	* resources/autoconf-template-perlrc.in
+	- exclude_files
+	* resources/install-from-cpan.in: use am var for logdir
+	* src/main/perl/bin/autoconf-template-perl.pl.in
+	(main)
+	- split option --rpm-install-from-cpan to --rpm-provides,
+	  --rpm-post-section in order to allow excluding post section but
+	  including Provides: section for modules
+	- don't croak if we don't have am autoconf-templaterc
+	- set html/bash_build mode based on manifest state
+	- default is now to NOT build html, bash directories unless set to true
+	- --author now -n
+	- new options --exclude-dirs, --exclude-files
+	- new option --all to enable all directories and unit tests
+	(get_exclude_files): new, fetch exclude list from configuration
+	(create_manifest): filter files based on exclude list
+	(rpm_build_options)
+	- interpret new options --rpm-provides, --rpm-post-section
+	- document all use cases
+	(load_autoconf_templaterc)
+	- take a path argument
+	- don't use find, we only want depth 1
+	(get_config_vars): new
+	(get_stubs): use above
+	(check_manifest): exclude some templates if they are in the manifest already
+	* src/main/perl/lib/Autoconf/Template/Constants.pm.in
+	- +$PERL5SHARE_DIR
+	* src/main/perl/lib/Autoconf/Template/Utils.pm.in
+	(filter_list): new
+	* templates/manifest.yaml.tt: perl_modules, not modules
+	* templates/spec.in.tt
+	-  new options (provides, post_section) determine if provides
+	   and post sections get included
+
 Sat Feb 25 09:42:14 2023  Rob Lauer  <rlauer6@comcast.net>
 
 	[2.0.10 - adding new assets]:

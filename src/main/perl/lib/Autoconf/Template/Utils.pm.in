@@ -25,6 +25,7 @@ use parent qw(Exporter);
 our @EXPORT_OK = qw(
   create_path
   expand_filename
+  filter_list
   find_files
   find_files_of_type
   find_module_filename
@@ -77,6 +78,53 @@ sub get_subdir_by_type {
 }
 
 ########################################################################
+sub filter_list {
+########################################################################
+  my ( $files, $srcdir, @filter ) = @_;
+
+  my @filtered_list;
+
+  foreach my $file ( @{$files} ) {
+    my $dirname = dirname $file;
+
+    TRACE( [ dirname => $dirname, file => $file ] );
+
+    my $exclude;
+
+    foreach my $pattern (@filter) {
+      TRACE Dumper( [ file => $file, pattern => $pattern ] );
+
+      if ( ref $pattern && reftype($pattern) eq 'REGEXP' ) {
+
+        if ( $file =~ $pattern ) {
+          $exclude = $TRUE;
+          TRACE Dumper( [ excluding => $file ] );
+          last;
+        }
+      }
+      else {
+        if ( $pattern !~ /^\//xsm ) {
+          $pattern = "$dirname/$pattern";
+        }
+
+        if ( $file eq $pattern ) {
+          TRACE Dumper( [ excluding => $file ] );
+
+          $exclude = $TRUE;
+          last;
+        }
+      }
+    }
+
+    next if $exclude;
+
+    push @filtered_list, $file;
+  }
+
+  return @filtered_list;
+}
+
+########################################################################
 sub flatten_filename {
 ########################################################################
   my ( $filename, $sep ) = @_;
@@ -126,7 +174,7 @@ sub strip_in {
     $arg =~ s/[.]in$//xsm;
   }
 
-  DEBUG Dumper( 'strip_in', $arg );
+  TRACE Dumper( 'strip_in', $arg );
 
   return $arg;
 }
@@ -327,7 +375,7 @@ sub render_tt_template {
     if !$tt->process( $template, $parameters, \$content );
 
   if ( any { $_ eq 'nl' } @cleanup ) {
-    DEBUG 'cleaning up multiple new lines...';
+    TRACE 'cleaning up multiple new lines...';
 
     while ( $content =~ s/\n\n\n/\n/xsmg ) { }
   }

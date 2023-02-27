@@ -17,10 +17,14 @@
 #
 # ...and use the default values for the rest of the options
 #
-# If you are building CPAN modules in the %post section of the spec
-# file, you will most likely want to specify the '--with-architecture'
-# option as 'x86_64' as a number of CPAN modules require building with
-# 'gcc' and result in binary artifacts being include in the rpm file.
+# If you are building CPAN modules into RPM rather than building them at the time
+# of deployement in  the %post section of the spec file, you will most likely want
+# to specify the '--with-architecture'# option as 'x86_64' as a number of CPAN modules
+# require building with 'gcc' and result in binary artifacts being include in the rpm file.
+#
+# The default is to add CPAN modules in the post section, hence you can probably take the 
+# default architecture (noarch).
+#
 
 %define project_base     @PACKAGE_NAME@
 %define project_version  @VERSION@
@@ -82,9 +86,7 @@ Prefix:     %{_prefix}
 
 BuildRequires: automake autoconf make
 
-# Requires: curl make gcc perl perl-core
-
-[% IF rpm.install_cpan_files %]
+[% IF rpm.provides %]
 
 [% FOREACH pkg IN rpm.requires %]
 Requires: [% pkg %][% END %]
@@ -118,7 +120,7 @@ Summary:  @PACKAGE@
 # Pre-installation steps go here
 %pre
 
-[% IF rpm.install_cpan_files %]
+[% IF rpm.post_section %]
 # Post installation steps go here
 %post -p %{_bindir}/install-from-cpan
 [% END %]
