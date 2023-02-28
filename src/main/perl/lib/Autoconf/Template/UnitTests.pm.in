@@ -9,6 +9,7 @@ use Data::Dumper;
 use File::Basename qw(basename);
 use List::Util qw(pairs);
 use Log::Log4perl qw(:easy);
+use Scalar::Util qw(reftype);
 
 use parent qw(Exporter);
 
@@ -40,13 +41,26 @@ sub create_unit_tests {
 
     TRACE Dumper( [ 'creating unit tests ', $path, $files ] );
 
-    next if !$files || !@{$files};
+    next if !$files;
 
-    create_unit_test_stub(
-      files   => $files,
-      path    => $path,
-      options => $options,
-    );
+    if ( reftype($files) eq 'HASH' ) {
+
+      foreach my $dir ( keys %{$files} ) {
+        create_unit_test_stub(
+          files   => [ map {"$dir-$_"} @{ $files->{$dir} } ],
+          path    => $path,
+          options => $options,
+        );
+      }
+    }
+    else {
+      create_unit_test_stub(
+        files   => $files,
+        path    => $path,
+        options => $options,
+      );
+    }
+
   }
 
   return;

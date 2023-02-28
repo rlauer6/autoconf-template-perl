@@ -17,21 +17,51 @@
 
 [% INCLUDE "build-rules.tt" %]
 
-PERLSCRIPTS = [% makefile_am_list(cgi_scripts) %]
+PERLSCRIPTS = [% makefile_am_list(cgi_scripts, '.') %]
 
 GPERLSCRIPTS = $(PERLSCRIPTS:.pl.in=.pl)
 
 GCGISCRIPTS =  $(GPERLSCRIPTS:.pl=.cgi)
 
-G1MANPAGES = $(GCGISCRIPTS:.cgi=.1man)
-
 apache_site_cgibin_DATA = $(GCGISCRIPTS)
 
 $(GCGISCRIPTS): $(GPERLSCRIPTS)
 
-ALLSCRIPTS = \
-    $(PERLSCRIPTS)
+[% FOREACH dir = cgi_scripts.keys -%]
+[% IF dir != '.' -%]
+apache_site_cgibin_[% dir %]dir = $(apache_site_cgibindir)/[% dir %]
+
+PERLSCRIPTS_[% dir | upper %] = [% makefile_am_list(cgi_scripts, dir) %]
+
+GPERLSCRIPTS_[% dir | upper %] = $(PERLSCRIPTS_[% dir | upper %]:.pl.in=.pl)
+
+GCGISCRIPTS_[% dir | upper %] = $(GPERLSCRIPTS_[% dir | upper %]:.pl=.cgi)
+
+apache_site_cgibin_[% dir %]_DATA = $(GCGISCRIPTS_[% dir | upper %])
+
+[% END %]
+[% END %]
+
+ALLSCRIPTS = [% makefile_am_flatten_list(cgi_scripts) %]
+
+GALLSCRIPTS = $(ALLSCRIPTS:.pl.in=.pl)
 
 PERLCRITIC_CGI = \
-    $(GCGISCRIPTS)
+    $(GALLSCRIPTS:.pl=.cgi)
 
+# We may have multiple files with the same name, so generating a man page for each 
+# might create duplicate man pages. To fix this, man pages will be installed in slightly
+# non-obvious way {dirname}-{file}.1man
+
+MANPAGES = [% makefile_am_list(cgi_scripts) %]
+
+TEMP_MANPAGES = $(GALLSCRIPTS:.pl=.1man)
+
+GMANPAGES = $(MANPAGES:.pl.in=.1man)
+
+$(GMANPAGES): $(TEMP_MANPAGES)
+	set -x; \
+	src=$(subst -,/,$@); \
+	cp $$src $@
+
+G1MANPAGES = $(GMANPAGES:.tman=.1man)

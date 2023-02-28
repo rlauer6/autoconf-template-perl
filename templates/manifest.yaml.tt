@@ -12,6 +12,9 @@ perl:
   bin:
 [% FOREACH script IN perl_scripts %]    - [% script %]
 [% END %]
+  cgi-bin:
+[% FOREACH script IN cgi_scripts %]    - [% script %]
+[% END %]
   lib:
 [% FOREACH module IN perl_modules %]    - [% module %]
 [% END %]

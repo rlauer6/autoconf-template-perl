@@ -1,4 +1,47 @@
-Mon Feb 27 09:56:40 2023  Rob Lauer  <rlauer@usgn.net>
+Tue Feb 28 08:16:57 2023  Rob Lauer  <rlauer6@comcast.net>
+
+	[2.0.12 - sub-directories]:
+	* VERSION: bump
+	* src/main/perl/bin/autoconf-template-perl.pl.in
+	- new option --strip-dir to preserver sub directories of source
+	- manifest->{perl}->{cgi-bin} is an array, not a hash
+	- set html_build_mode if any files under html
+	(create_manifest)
+	- look for .cgi files too
+	(check_manifest)
+	- croak if yaml error (should not happen though)
+	(set_defaults): move setting of email, author, project after reading manifest
+	(_copy_files)
+	- use strip-dir option for preserving parts of source paths
+	- convert .cgi input files to .pl files
+	(copy_files): identify files that should go in root directory
+	(_prefixed_list): new
+	(makefile_am_flatten_list): new
+	(makefile_am_list): refactored
+	(_makefile_am_join): new
+	(find_resources): accepts options now, not root
+	(init_parameters):
+	- add makefile_am_flatten_list sub for TT
+	- use create_target_file_list() to create resource, perl_scripts, cgi_scripts,  lists
+	- set default email, author, project here if not already set
+	(create_target_list)
+	- use strip-dir to preserve portion of source path
+	- create hash, not array for resources, perl_scripts, cgi_scripts
+	- set root file list to '.' key
+	* templates/manifest.yaml.tt
+	- added cgi-bin: section
+	* templates/perl/bin/perl-bin.inc.tt
+	- changes to makefile_am_list() method becuase '.' is special in TT
+	* templates/perl/cgi-bin/perl-cgi-bin.inc.tt: likewise
+	* templates/unit-tests.tt: likewise
+	* templates/resources/Makefile.am.tt: likewise
+	* src/main/perl/lib/Autoconf/Template/UnitTests.pm.in
+	(create_unit_tests)
+	- unit tests for sub-directories (rename to 00-{dir}-{file}.t)
+	(rpm_build_options)
+	- check for keys now since file lists are hashes
+
+Mon Feb 27 09:56:40 2023  Rob Lauer  <rlauer6@comcast.net>
 
 	[2.0.11 - exclude files, post section options]:
 	* VERSION: bump

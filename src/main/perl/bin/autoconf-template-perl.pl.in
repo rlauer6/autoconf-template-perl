@@ -62,8 +62,8 @@ sub main {
     'refresh|r',         'rpm-build-mode|R!',
     'rpm-provides!',     'rpm-post-section!',
     'rpm-requires|q=s@', 'scripts|S',
-    'source-dir|S',      'unit-tests!',
-    'version',
+    'source-dir|S',      'strip-dir=s',
+    'unit-tests!',       'version',
   );
 
   $options{'log-level'} //= 'info';
@@ -149,14 +149,16 @@ sub main {
   # you said no-html, but let's see if you have web assets in manifest
   # if you want to include these directories unconditionally,
   # explicitly set html_build_mode
+  DEBUG Dumper( [ manifest => $manifest ] );
+
   if ( !$options{html_build_mode} ) {
     if ( $manifest->{perl}->{'cgi-bin'}
-      && keys %{ $manifest->{perl}->{'cgi-bin'} } ) {
+      && @{ $manifest->{perl}->{'cgi-bin'} } ) {
       $options{html_build_mode} = $TRUE;
     }
 
     for ( keys %{ $manifest->{html} || {} } ) {
-      $options{html_build_mode} = @{ $manifest->{html}->{$_} || [] };
+      $options{html_build_mode} ||= @{ $manifest->{html}->{$_} || [] };
     }
 
     if ( $options{html_build_mode} ) {
@@ -319,6 +321,7 @@ sub create_manifest {
   my %file_types = (
     perl_modules     => ['pm'],
     perl_scripts     => ['pl'],
+    cgi_scripts      => ['cgi'],
     bash_scripts     => ['sh'],
     html_files       => ['html'],
     css_files        => ['css'],
@@ -595,20 +598,21 @@ sub set_rpm_build_options {
     push @{ $rpm_options{requires} }, @{ $options->{'rpm-requires'} };
   }
 
+  $rpm_options{bin_files} = keys %{ $options->{perl_scripts} };
+  $rpm_options{resources} = keys %{ $options->{resources} };
+  $rpm_options{cgi_bin}   = keys %{ $options->{cgi_scripts} };
+
   $rpm_options{man_pages}
-    = @{ $options->{perl_modules} } || @{ $options->{perl_scripts} };
-  $rpm_options{perl_modules} = @{ $options->{perl_modules} } ? $TRUE : $FALSE;
-  $rpm_options{bin_files} = @{ $options->{bash_scripts} } ? $TRUE : $FALSE;
-  $rpm_options{bin_files} ||= @{ $options->{perl_scripts} } ? $TRUE : $FALSE;
+    = @{ $options->{perl_modules} } || $options->{bin_files};
 
-  $rpm_options{resources}    = @{ $options->{resources} };
   $rpm_options{config_files} = @{ $options->{config} };
+  $rpm_options{html}         = @{ $options->{html_files} };
+  $rpm_options{javascript}   = @{ $options->{javascript_files} };
+  $rpm_options{css}          = @{ $options->{css_files} };
+  $rpm_options{image}        = @{ $options->{image_files} };
+  $rpm_options{perl_modules} = @{ $options->{perl_modules} } ? $TRUE : $FALSE;
 
-  $rpm_options{cgi_bin}    = @{ $options->{cgi_scripts} };
-  $rpm_options{html}       = @{ $options->{html_files} };
-  $rpm_options{javascript} = @{ $options->{javascript_files} };
-  $rpm_options{css}        = @{ $options->{css_files} };
-  $rpm_options{image}      = @{ $options->{image_files} };
+  $rpm_options{bin_files} ||= @{ $options->{bash_scripts} } ? $TRUE : $FALSE;
 
   return $options;
 }
@@ -637,10 +641,6 @@ sub set_defaults {
     push @{ $options->{exclude_templates} }, 'spec.in.tt';
   }
 
-  # defaults
-  $options->{email}        //= $ENV{EMAIL} // 'anonymouse@example.com';
-  $options->{author}       //= 'Anonymouse';
-  $options->{project}      //= 'noname';
   $options->{'source-dir'} //= getcwd;
 
   for (qw(destdir project-root source-dir)) {
@@ -1042,9 +1042,14 @@ sub _copy_files {
     = @args{qw(prefix files add_in options)};
 
   for my $file ( @{$file_list} ) {
-    my $dest = basename $file;
+    my $dest = $file;
 
-    DEBUG Dumper( [ 'source ', $file, 'basename ', $dest ] );
+    my $strip_dir = $options->{'strip-dir'} // dirname($file);
+    $strip_dir .= $SLASH;
+
+    $dest =~ s/$strip_dir//xsm;
+
+    DEBUG Dumper( [ 'source ', $file, 'destination ', $dest ] );
 
     # .pm files, we may have a directory hierarchy that we want to
     # reflect in the build tree. IOW, for Foo/Bar/Baz.pm it needs
@@ -1058,6 +1063,11 @@ sub _copy_files {
     #
     if ( $file =~ /[.]pm/xsm ) {
       $dest = find_module_filename($file);
+    }
+
+    # we looked for .cgi files, will install as .pl.in
+    if ( $file =~ /[.]cgi/xsm ) {
+      $dest =~ s/[.]cgi/.pl/xsm;
     }
 
     if ( $add_in && $file !~ /[.]in$/xsm ) {
@@ -1120,6 +1130,41 @@ sub copy_files {
 
   my $manifest = $options->{manifest};
   my $root     = $options->{root};
+
+  my @root_files;
+  my @resource_files;
+
+  # TODO: add files to root Makefile.am?
+  foreach my $file ( @{ $manifest->{resources} } ) {
+    if ( none { $file =~ /$_$/xsm } qw(ChangeLog CHANGELOG README.md) ) {
+      push @resource_files, $file;
+    }
+    else {
+      push @root_files, $file;
+    }
+  }
+
+  $manifest->{resources} = \@resource_files;
+
+  if (@root_files) {
+    _copy_files(
+      prefix  => $root,
+      files   => \@root_files,
+      add_in  => $FALSE,
+      options => $options,
+    );
+
+    # remove files we want in root from resources
+    my @resources;
+
+    foreach my $r ( @{ $options->{resources}->{$DOT} } ) {
+      next if any { $r eq $_ } map { basename $_ } @root_files;
+
+      push @resources, $r;
+    }
+
+    $options->{resources}->{$DOT} = [@resources];
+  }
 
   _copy_files(
     prefix  => $root . '/resources',
@@ -1185,6 +1230,9 @@ sub check_manifest {
   my ($options) = @_;
 
   my $manifest = eval { LoadFile( $options->{manifest} ); };
+
+  croak "error reading manifest: $EVAL_ERROR\n",
+    if $EVAL_ERROR;
 
   # manifest overrides other parameters
   foreach (qw(project email description author)) {
@@ -1280,17 +1328,75 @@ sub get_dependencies {
 }
 
 ########################################################################
+sub _prefixed_list {
+########################################################################
+  my ( $prefix, $list, $sep ) = @_;
+
+  $sep //= $SLASH;
+
+  return @{$list}
+    if !$prefix;
+
+  return map {"$prefix$sep$_"} @{$list};
+}
+
+########################################################################
+sub makefile_am_flatten_list {
+########################################################################
+  my ($hash) = @_;
+
+  my @list;
+
+  foreach my $k ( keys %{$hash} ) {
+    my $prefix = $k ne $DOT ? $k : $EMPTY;
+    push @list, _prefixed_list( $k, $hash->{$k} );
+  }
+
+  return _makefile_am_join(@list);
+}
+
+########################################################################
 sub makefile_am_list {
 ########################################################################
-  my ( $file_list, $dir ) = @_;
+  my ( $file_list, $prefix ) = @_;
 
-  return $EMPTY if !ref $file_list || !@{$file_list};
+  DEBUG Dumper(
+    [ file_list => $file_list,
+      prefix    => $prefix // $EMPTY,
+    ]
+  );
 
-  my @files = @{$file_list};
+  return $EMPTY if !ref $file_list;
 
-  if ($dir) {
-    @files = map {"$dir/$_"} @files;
+  return _makefile_am_join( _prefixed_list( $prefix, $file_list ) )
+    if reftype($file_list) eq 'ARRAY';
+
+  my @files;
+
+  if ( !defined $prefix ) {
+    # dir-file
+    foreach my $dir ( keys %{$file_list} ) {
+      $prefix = $dir eq $DOT ? $EMPTY : $dir;
+      push @files, _prefixed_list( $prefix, $file_list->{$dir}, $DASH );
+    }
   }
+  elsif ( $prefix eq $DOT ) {
+    @files = exists $file_list->{$DOT} ? @{ $file_list->{$DOT} } : ();
+  }
+  else {
+    @files = _prefixed_list( $prefix, $file_list->{$prefix} );
+  }
+
+  return _makefile_am_join(@files);
+}
+
+########################################################################
+sub _makefile_am_join {
+########################################################################
+  my (@files) = @_;
+
+  return $EMPTY
+    if !@files;
 
   my $list = join " \\\n    ", @files;
 
@@ -1300,7 +1406,9 @@ sub makefile_am_list {
 ########################################################################
 sub find_resources {
 ########################################################################
-  my ($root) = @_;
+  my ($options) = @_;
+
+  my $root = $options->{root};
 
   my @resources;
 
@@ -1308,7 +1416,15 @@ sub find_resources {
     sub {
       return if /^Makefile/xsm || -d $File::Find::name;
 
-      push @resources, basename $File::Find::name;
+      my $file = $File::Find::name;
+
+      DEBUG Dumper( [ file => $file ] );
+
+      $file =~ s/$root\/resources\///xsm;
+
+      DEBUG Dumper( [ file => $file ] );
+
+      push @resources, $file;
     },
     "$root/resources"
   );
@@ -1342,14 +1458,19 @@ sub init_parameters {
   #     ITEM \
   #     ITEM \
   #     ITEM
-  $options->{makefile_am_list} = \&makefile_am_list;
+
+  $options->{makefile_am_list}         = \&makefile_am_list;
+  $options->{makefile_am_flatten_list} = \&makefile_am_flatten_list;
 
   if ( $options->{refresh} ) {
     # main() prepped 'destdir', 'project' for refresh option from
     # abs_top_srcdir in Makefile, so we should be certain that root
     # for refresh is correct...
 
-    $options->{resources} = find_resources($root);
+    my $resources = find_resources($options);
+
+    $options->{'strip-dir'} = sprintf '%s/%s', $options->{root}, 'resources';
+    create_target_file_list( $options, [ resources => $resources ] );
 
     # refresh the list of files for 'built' assets look for .in files
     # in each directory, presumably someone dropped a new .in file in
@@ -1408,10 +1529,18 @@ sub init_parameters {
       ]
     );
 
-    for my $script_type (qw(bash perl cgi)) {
-      $options->{ $script_type . '_scripts' }
-        = [ map { ( basename $_) . '.in' }
-          @{ $options->{ $script_type . '_scripts' } } ];
+    $options->{bash_scripts}
+      = [ map { ( basename $_) . '.in' } @{ $options->{bashscripts} } ];
+
+    for my $p ( pairs qw(perl perl/bin cgi perl/cgi-bin) ) {
+      my ( $type, $dir ) = @{$p};
+      $type = "$type" . '_scripts';
+
+      $options->{'strip-dir'} = sprintf '%s/src/main/%s', $options->{root},
+        $dir;
+
+      create_target_file_list( $options, [ $type => $options->{$type} ],
+        '.in' );
     }
 
     DEBUG Dumper(
@@ -1475,6 +1604,11 @@ sub init_parameters {
     init_config_sections( $options, $options->{manifest}->{config} );
   }
 
+  # defaults that need to be set after checking manifest!
+  $options->{email}   //= $ENV{EMAIL} // 'anonymouse@example.com';
+  $options->{author}  //= 'Anonymouse';
+  $options->{project} //= 'noname';
+
   return $options;
 }
 
@@ -1486,13 +1620,53 @@ sub create_target_file_list {
 
   $ext //= $EMPTY;
 
+  my $strip_dir = $options->{'strip-dir'};
+  $strip_dir .= $SLASH;
+
+  DEBUG Dumper( [ targets => $file_list ] );
+
   # create arrays of just the file names from the source files
   for my $p ( pairs @{$file_list} ) {
     my ( $var, $list ) = @{$p};
 
     $list ||= [];
 
-    $options->{$var} = [ map { basename($_) . $ext } @{$list} ];
+    my @targets;
+
+    foreach my $file ( @{$list} ) {
+      my $strip_dir = $options->{'strip-dir'} || dirname($file);
+      $strip_dir .= $SLASH;
+
+      my $target = $file;
+      $target =~ s/^$strip_dir//xsm;
+
+      if ( $target =~ /[.]cgi/xsm ) {
+        $target =~ s/[.]cgi/.pl/xsm;
+      }
+
+      push @targets, $target . $ext;
+    }
+
+    if ( any { $var eq $_ } qw( resources perl_scripts cgi_scripts ) ) {
+      my $dirs = {};
+
+      foreach (@targets) {
+        my $subdir = dirname($_) || $DOT;
+        $dirs->{$subdir} ||= [];
+
+        DEBUG Dumper(
+          [ target => $_, var => $var, subdir => $subdir, dirs => $dirs ] );
+
+        push @{ $dirs->{$subdir} }, basename $_;
+      }
+
+      $options->{$var} = $dirs;
+    }
+    else {
+      $options->{$var} = [@targets];
+    }
+
+    DEBUG Dumper( [ var => $var, targets => $options->{$var} ] );
   }
 
   return $options;
