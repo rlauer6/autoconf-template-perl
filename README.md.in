@@ -556,7 +556,7 @@ to the directory where you will be running `autoconf-template-perl` to
 create your project.
 
 You can also add the names of scripts or modules that do not exist but
-you _plan_ to create. Use just the relative path for those...for
+you _plan_ to create. Use just the __relative path__ for those...for
 example if I _plan_ to create a `Slate::Config` module, then list the
 file in the manifest like this:
 
@@ -569,6 +569,25 @@ perl:
 `autoconf-template-perl` will then create a stub module for you from the stub
 template for Perl modules.
 
+If your files exist in a file hierarchy that you wish to preserve, use the
+`--strip-dir` option to strip the root of the hierarchy from files in
+your manifest rather than the entire directory name. Normally, the
+files listed in the manifest will be copied to the root of their
+target directory.  For example, any `.pl` files in your source
+directories (and below) will be copied to `src/main/perl/bin`. Suppose
+you have files in your current directory like this:
+
+```
+bar/bar.pl
+biz/biz.pl
+foo/bar.pl
+```
+...and you want to preserve that hierarchy, set `--strip-dir` to the
+current working directory when you create the project.
+
+```
+autoconf-template-perl  --strip-dir . -d .
+```
 
 @TOC_BACK@ 
 

@@ -34,6 +34,7 @@ our @EXPORT_OK = qw(
   get_project_meta_data
   get_subdir_by_type
   init_logger
+  is_exclude_dir
   message
   module_to_path
   path_to_module
@@ -82,19 +83,25 @@ sub filter_list {
 ########################################################################
   my ( $files, $srcdir, @filter ) = @_;
 
+  TRACE Dumper( [ files => $files, filter => \@filter ] );
+
   my @filtered_list;
 
   foreach my $file ( @{$files} ) {
-    my $dirname = dirname $file;
 
-    TRACE( [ dirname => $dirname, file => $file ] );
+    my $dirname = dirname $file;
+    TRACE Dumper( [ dirname => $dirname, file => $file ] );
+
+    $dirname = $dirname eq $DOT ? $EMPTY : "$dirname/";
 
     my $exclude;
 
-    foreach my $pattern (@filter) {
-      TRACE Dumper( [ file => $file, pattern => $pattern ] );
+    foreach my $f (@filter) {
+
+      my $pattern = $f;
 
       if ( ref $pattern && reftype($pattern) eq 'REGEXP' ) {
+        TRACE Dumper( [ file => $file, regexp => $pattern ] );
 
         if ( $file =~ $pattern ) {
           $exclude = $TRUE;
@@ -103,9 +110,7 @@ sub filter_list {
         }
       }
       else {
-        if ( $pattern !~ /^\//xsm ) {
-          $pattern = "$dirname/$pattern";
-        }
+        TRACE Dumper( [ file => $file, pattern => $pattern ] );
 
         if ( $file eq $pattern ) {
           TRACE Dumper( [ excluding => $file ] );
@@ -114,6 +119,7 @@ sub filter_list {
           last;
         }
       }
+
     }
 
     next if $exclude;
@@ -194,11 +200,32 @@ sub find_files {
 }
 
 ########################################################################
+sub is_exclude_dir {
+########################################################################
+  my ( $name, $exclude_dirs ) = @_;
+
+  foreach my $dir ( @{$exclude_dirs} ) {
+    if ( !ref $dir ) {
+      $dir = qr/^$dir/xsm;
+
+      DEBUG Dumper(
+        [ reftype($dir), dir => $dir, name => $File::Find::name ] );
+
+      return $TRUE
+        if $File::Find::name =~ $dir;
+    }
+  }
+
+  return $FALSE;
+}
+
+########################################################################
 sub find_files_of_type {
 ########################################################################
   my (%args) = @_;
 
-  my ( $path, $type, $ext, $strip_in ) = @args{qw(path type ext strip)};
+  my ( $path, $type, $ext, $strip_in, $exclude_dirs )
+    = @args{qw(path type ext strip exclude_dirs)};
 
   return ()
     if !-d $path;
@@ -213,6 +240,9 @@ sub find_files_of_type {
     sub {
       return
         if -d $_ || !/[.]$type$ext$/xsm;
+
+      return
+        if is_exclude_dir( $File::Find::name, $exclude_dirs );
 
       my $name = $File::Find::name;
 
@@ -385,7 +415,8 @@ sub render_tt_template {
     create_path($outfile);
 
     open my $fh, '>', $outfile
-      or croak "could open $outfile for writing";
+      or croak sprintf 'could not open [%s] for writing: %s', $outfile,
+      $OS_ERROR;
 
     print {$fh} $content;
 

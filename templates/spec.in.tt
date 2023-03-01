@@ -76,7 +76,7 @@ Source:     %{project_base}-%{project_version}.tar.gz
 
 BuildArch:  %{_architecture}
 
-[% IF rpm.install_from_cpan %]
+[% IF rpm.provides %]
 %global __requires_exclude  ^perl
 %global __requires_exclude_from %{_bindir}
 [% END %]
@@ -122,7 +122,8 @@ Summary:  @PACKAGE@
 
 [% IF rpm.post_section %]
 # Post installation steps go here
-%post -p %{_bindir}/install-from-cpan
+%post
+ %{_bindir}/install-from-cpan %{_datadir}/%{project_base}/requires.txt
 [% END %]
 
 %clean

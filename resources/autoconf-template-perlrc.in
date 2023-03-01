@@ -1,3 +1,55 @@
+# -*- mode: conf; -*-
+# This is the configuration file for `autoconf-template-perl`
+# you can place this file your $HOME directory or the directory from which you 
+# will create your project
+#
+# Rules of the Road
+# -----------------
+# * boolean true values can be represented as: true, yes, 1, on
+#
+# * boolean false values can be representeda as: false, no, 0, off
+#
+# * use \ to continue lines
+#
+# * use qr// for regular expressions for exclude_files, exclude_dirs
+#
+# * directories listed without leading '/' are relative to the directory in which
+#   you are in when running `autoconf-tempate-perl` or the value of --source-dir
+#
+# * command line arguments override values in your .autoconf-template-perlrc file
+# 
+[global]
+
+author = Anonymouse
+email  = anonymouse@example.org
+
+# create files from stubs if they are listed in the manifest
+# but do not exist
+create_missing = true
+
+# maximum severity level allowable
+perlcritic_severity = 3
+
+# create unit test stubs for .pl, .cgi and .pm files
+unit_tests = true
+
+# whether to create man pages from pod
+man_pages = true
+
+# create HTML directories regardless of manifest contents
+html           = false
+
+# likewise
+bash           = true
+
+# exclude the files when creating manifest (--create-manifest)
+exclude_files  = Makefile Makefile.am Makefile.in \
+                 qr/manifest[.]yaml/ autoconf-template-perl.log \
+                 qr/[.]in$/
+
+# exclude traversing these directories when creating manifest
+exclude_dirs = .git
+
 [stubs]
 
 pm   = @perl5sharedir@/templates/stub.pm.tt
@@ -7,19 +59,3 @@ cfg  = @perl5sharedir@/templates/stub.cfg.tt
 js   = @perl5sharedir@/templates/stub.js.tt
 html = @perl5sharedir@/templates/stub.html.tt
 
-[global]
-
-author = "Rob Lauer"
-email  = rlauer6@comcast.net
-
-create-missing = true
-
-html           = true
-bash           = true
-perl_bin       = true
-perl_lib       = true
-perl_cgi       = true
-
-exclude_files  = Makefile Makefile.am Makefile.in \
-                 manifest.yaml autoconf-template-perl.log \
-                 qr/[.]in$/

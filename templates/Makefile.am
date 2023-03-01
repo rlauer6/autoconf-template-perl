@@ -19,6 +19,7 @@ templates_htmldir      = $(templatesdir)/html
 TEMPLATES = \
     00-module.t.tt \
     00-script.t.tt \
+    ax_perlcritic_config.m4.tt \
     COPYRIGHT.tt \
     ChangeLog.tt \
     INSTALL.tt \

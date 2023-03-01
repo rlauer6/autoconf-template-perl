@@ -42,3 +42,7 @@ src/main/perl/**/*.xml
 src/main/perl/lib/*.tpl
 config/*.xml
 src/main/bash/**/*.sh
+autotools/prove.sh
+autotools/test-driver
+install-from-cpan
+**/*.log

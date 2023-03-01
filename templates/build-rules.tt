@@ -63,5 +63,11 @@ endef
 %.1man : %.cgi
 	$(MAN_PAGE_BUILD_RECIPE)
 
+%.tman : %.pl
+	$(MAN_PAGE_BUILD_RECIPE)
+
+%.tman : %.cgi
+	$(MAN_PAGE_BUILD_RECIPE)
+
 %.md : %.pm
 	$(POD2MARKDOWN) < $< >$@

@@ -47,24 +47,43 @@ sub main {
 
   # options are defined with '-' to separate words to make it easy to
   # type options on CLI
-  GetOptions(
-    \%options,           'all|a',
-    'author|n=s',        'bash!',
-    'conf|C=s',          'create-manifest|M',
-    'create-missing|c',  'create-test-stub|t=s',
-    'create-stub=s',     'destdir=s',
-    'email|e=s',         'exclude-files|F=s@',
-    'exclude-dirs|E=s@', 'force|f',
-    'help|h',            'html|H!',
-    'list-stubs|L',      'log-level|l=s',
-    'manifest|m=s',      'project|p=s',
-    'project-root|P=s',  'quiet|Q',
-    'refresh|r',         'rpm-build-mode|R!',
-    'rpm-provides!',     'rpm-post-section!',
-    'rpm-requires|q=s@', 'scripts|S',
-    'source-dir|S',      'strip-dir=s',
-    'unit-tests!',       'version',
+  my @options_specs = qw(
+    all|a
+    author|n=s
+    bash!
+    conf|C=s
+    create-manifest|M
+    create-missing|c
+    create-stub=s
+    create-test-stub|t=s
+    description|D=s
+    destdir|d=s
+    email|e=s
+    exclude-dirs|E=s@
+    exclude-files|F=s@
+    force|f
+    help|h
+    html|H!
+    list-stubs|L
+    log-level|l=s
+    manifest|m=s
+    man-pages!
+    project-root|P=s
+    project|p=s
+    quiet|Q
+    refresh|r
+    rpm-build-mode|R!
+    rpm-post-section!
+    rpm-provides!
+    rpm-requires|q=s@
+    scripts|S
+    source-dir|S
+    strip-dir=s
+    unit-tests!
+    version
   );
+
+  GetOptions( \%options, @options_specs );
 
   $options{'log-level'} //= 'info';
 
@@ -281,35 +300,6 @@ sub main {
 }
 
 ########################################################################
-sub get_exclude_files {
-########################################################################
-  my ($options) = @_;
-
-  my @exclude_files;
-
-  # add exclude files from command line
-  push @exclude_files, @{ $options->{'exclude-files'} || [] };
-
-  # default exclude list from configuration
-  my ( undef, $exclude_files_var )
-    = get_config_vars( $options, 'global', 'exclude_files' );
-
-  DEBUG Dumper( [ exclude_file_vars => $exclude_files_var ] );
-
-  push @exclude_files, split /\s+/xsm, $exclude_files_var;
-
-  foreach my $file (@exclude_files) {
-    next if $file !~ /^qr/xsm;
-
-    $file = eval $file; ## no critic
-  }
-
-  TRACE Dumper( [ exclude_files => \@exclude_files ] );
-
-  return @exclude_files;
-}
-
-########################################################################
 sub create_manifest {
 ########################################################################
   my ($options) = @_;
@@ -330,7 +320,15 @@ sub create_manifest {
     config_files     => [qw(json ini cfg yaml)],
   );
 
-  my @exclude_files = get_exclude_files($options);
+  my @exclude_files = @{ $options->{'exclude-files'} };
+
+  my @exclude_dirs = @{ $options->{'exclude-dirs'} };
+
+  foreach my $dir (@exclude_dirs) {
+    next if ref $dir || $dir =~ /^\//xsm;
+
+    $dir =~ s/^/$srcdir\//xsm;
+  }
 
   foreach my $param ( keys %file_types ) {
     my @file_list;
@@ -338,8 +336,9 @@ sub create_manifest {
     foreach my $type ( @{ $file_types{$param} } ) {
       push @file_list,
         find_files_of_type(
-        type => $type,
-        path => $srcdir
+        type         => $type,
+        path         => $srcdir,
+        exclude_dirs => \@exclude_dirs,
         );
 
     }
@@ -347,29 +346,14 @@ sub create_manifest {
     $files{$param} = [ filter_list( \@file_list, $srcdir, @exclude_files ) ];
   }
 
-  my $cwd = getcwd;
-
-  my @exclude_dirs = @{ $options->{'exclude-dirs'} || [] };
-
-  foreach (@exclude_dirs) {
-    next if /^\//xsm;
-
-    s/^/$cwd\//xsm;
-  }
-
-  TRACE Dumper( [ 'exclude-dirs' => \@exclude_dirs ] );
-
-  my @resources;
-
   TRACE Dumper(
     [ exclude => \@exclude_files, 'exclude-dirs' => \@exclude_dirs ] );
 
+  my @resources;
+
   find(
     sub {
-      return if -d $_;
-
-      return
-        if any { dirname($File::Find::name) =~ /^$_/xsm } @exclude_dirs;
+      return if -d $_ || is_exclude_dir( $File::Find::name, \@exclude_dirs );
 
       TRACE Dumper( [ resource => $File::Find::name ] );
 
@@ -602,8 +586,7 @@ sub set_rpm_build_options {
   $rpm_options{resources} = keys %{ $options->{resources} };
   $rpm_options{cgi_bin}   = keys %{ $options->{cgi_scripts} };
 
-  $rpm_options{man_pages}
-    = @{ $options->{perl_modules} } || $options->{bin_files};
+  $rpm_options{man_pages} = $options->{'man-pages'};
 
   $rpm_options{config_files} = @{ $options->{config} };
   $rpm_options{html}         = @{ $options->{html_files} };
@@ -625,10 +608,11 @@ sub set_defaults {
   # templates that should not be rendered
   $options->{'exclude-templates'} = [];
 
+  # command line overrides
   if ( $options->{all} ) {
-    $options->{html}         //= $TRUE;
-    $options->{bash}         //= $TRUE;
-    $options->{'unit-tests'} //= $TRUE;
+    $options->{html}         = $TRUE;
+    $options->{bash}         = $TRUE;
+    $options->{'unit-tests'} = $TRUE;
   }
 
   $options->{html_build_mode} = delete $options->{html};
@@ -643,9 +627,18 @@ sub set_defaults {
 
   $options->{'source-dir'} //= getcwd;
 
-  for (qw(destdir project-root source-dir)) {
+  for (qw(destdir project-root source-dir strip-dir)) {
     if ( $options->{$_} && $options->{$_} eq $DOT ) {
       $options->{$_} = getcwd;
+    }
+  }
+
+  # convert qr// strs to regexp
+  foreach my $list ( @{$options}{qw(exclude-files exclude-dirs)} ) {
+    foreach my $str ( @{$list} ) {
+      next if $str !~ /^qr/xsm;
+
+      $str = eval $str; ## no critic
     }
   }
 
@@ -691,6 +684,7 @@ Options                Arg        Description
     --rpm-requires     RPM        one or more RPM packages (e.g. --rpm-requires less)
 -s, --source-dir       directory  source for files in manifest or when creating manifest
                                   (default: pwd)
+    --strip-dir                   set to pwd to preserve file hierarchy
 -u, --unit-tests                  create unit test stubs (default: true)
 -v, --version                     report script version
 
@@ -720,7 +714,7 @@ sub load_autoconf_templaterc {
     if !ref $options;
 
   if ( !@paths ) {
-    @paths = ( getcwd, $ENV{HOME} );
+    @paths = ( getcwd, $ENV{HOME}, $PROJECT_DIR, $PERL5SHARE_DIR );
   }
 
   my $rc_file = $options->{conf};
@@ -739,10 +733,66 @@ sub load_autoconf_templaterc {
 
   TRACE Dumper( [ 'autoconf-template-perlrc' => $rc_file ] );
 
-  return Config::IniFiles->new(
+  my $config = Config::IniFiles->new(
     -file          => $rc_file,
     -allowcontinue => $TRUE
   );
+
+  # convert boolean words to boolean value
+  # ...command line options take precendence!
+  my @booleans = (
+    man_pages      => 'man-pages',
+    create_missing => 'create-missing',
+    unit_tests     => 'unit-tests',
+    html           => 'html',
+    bash           => 'bash',
+  );
+
+  for my $p ( pairs @booleans ) {
+    my ( $config_var, $options_var ) = @{$p};
+
+    next if defined $options->{$options_var};
+
+    my $val = lc $config->val( 'global', $config_var );
+
+    croak "invalid value boolean value for $_ ($val)"
+      if none { $val eq $_ } qw( true 1 yes on false 0 no off );
+
+    $options->{$options_var} = any { $val eq $_ } qw(true 0 yes on);
+  }
+
+  my $perlcritic_severity = $config->val( 'global', 'perlcritic_severity' );
+
+  croak
+    'invalid value for "perlcritic_severity" in .autoconf-template-perlrc'
+    if none { $perlcritic_severity eq $_ } qw(1 2 3 4 5);
+
+  $options->{'perlcritic_severity'} = $options->{'perlcritic-severity'};
+  $options->{'perlcritic_severity'} //= $perlcritic_severity;
+
+  # defaults that need to be set after checking manifest!
+  $options->{email}  //= $config->val( 'global', 'email' );
+  $options->{author} //= $config->val( 'global', 'author' );
+
+  # command line arguments are additive for these settings
+  my $exclude_dirs = $config->val( 'global', 'exclude_dirs' );
+
+  $options->{'exclude-dirs'}  //= [];
+  $options->{'exclude-files'} //= [];
+
+  if ($exclude_dirs) {
+    push @{ $options->{'exclude-dirs'} }, split /\s+/xsm, $exclude_dirs;
+  }
+
+  my $exclude_files = $config->val( 'global', 'exclude_files' );
+
+  if ($exclude_files) {
+    push @{ $options->{'exclude-files'} }, split /\s+/xsm, $exclude_files;
+  }
+
+  DEBUG Dumper( [ options => $options ] );
+
+  return $config;
 }
 
 ########################################################################
@@ -1345,11 +1395,14 @@ sub makefile_am_flatten_list {
 ########################################################################
   my ($hash) = @_;
 
+  DEBUG Dumper( [ hash => $hash ] );
+
   my @list;
 
   foreach my $k ( keys %{$hash} ) {
     my $prefix = $k ne $DOT ? $k : $EMPTY;
-    push @list, _prefixed_list( $k, $hash->{$k} );
+    DEBUG Dumper( [ k => $k, prefix => $prefix, file => $hash->{$k} ] );
+    push @list, _prefixed_list( $prefix, $hash->{$k} );
   }
 
   return _makefile_am_join(@list);
@@ -1604,9 +1657,6 @@ sub init_parameters {
     init_config_sections( $options, $options->{manifest}->{config} );
   }
 
-  # defaults that need to be set after checking manifest!
-  $options->{email}   //= $ENV{EMAIL} // 'anonymouse@example.com';
-  $options->{author}  //= 'Anonymouse';
   $options->{project} //= 'noname';
 
   return $options;
@@ -1803,7 +1853,7 @@ sub create_changelog {
 
   find(
     sub {
-      return if -d $_;
+      return if -d $_ || $File::Find::name =~ /autom4te/xsm;
       push @all_files, $File::Find::name;
     },
     $root
@@ -1815,7 +1865,25 @@ sub create_changelog {
 
   @all_files = sort { lc $a cmp lc $b } @all_files;
 
-  my $parameters = { %{$options}, files => \@all_files };
+  DEBUG Dumper( [ root => $root, all_files => \@all_files ] );
+
+  my @exclude_files = qw(
+    configure
+    aclocal.m4
+    .git/config
+    autotools/missing
+    autotools/install-sh
+    autotools/test-driver
+  );
+
+  push @exclude_files, qr/Makefile[.]in$/xsm;
+  push @exclude_files, qr/Makefile$/xsm;
+
+  my @filtered_list = filter_list( \@all_files, '', @exclude_files );
+
+  DEBUG Dumper( [ filtered_list => \@filtered_list ] );
+
+  my $parameters = { %{$options}, files => [@filtered_list] };
 
   render_tt_template(
     { template   => 'ChangeLog.tt',

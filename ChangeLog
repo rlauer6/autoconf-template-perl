@@ -1,3 +1,67 @@
+Wed Mar  1 16:51:48 2023  Rob Lauer  <rlauer6@comcast.net>
+
+	[2.0.13 - perlcritic-severity, conditional man pages]:
+	* VERSION: bump
+	* resources/gitignore
+	- autotools/prove.sh, autotools/test-driver, *.log, install-from-cpan
+	* README.md.in: explain --strip-dir
+	* resources/Makefile.am: removed ax_perlcritic_config.m4
+	* resources/file_list.json: move above to templates
+	* resources/install-from-cpan
+	- don't hardcode requires path, accept as arg
+	- only install cpanm if missing
+	* resources/autoconf-template-perlrc.in
+	- added some notes
+	- +perlcritic_severity
+	- +author, email
+	- +man_pages
+	- removed perl_*
+	- html=false
+	- exclude manifest.yaml
+	* src/main/perl/bin/autoconf-template-perl.pl.in
+	(main)
+	- +man-pages option
+	(get_exclude_files): removed
+	(create_manifest)
+	- exclude some files and dirs
+	(set_rpm_build_options): use man-pages option
+	(set_defaults)
+	- set html build options true if --all
+	- set strip-dir to pwd if .
+	- convert exclude-dirs, exclude-files patterns to regexp
+	(load_autoconf_templaterc)
+	- look in install dirs too
+	- convert boolean words to booleans
+	- set options from config here
+	(makefile_am_flatten_list): pass $prefix, not $k to _prefixed_list()
+	(init_parameters): do not set email, author here
+	(create_changelog): exclude some dirs and files
+	* src/main/perl/lib/Autoconf/Template/UnitTests.pm.in
+	(render_unit_test): set name to module name if module
+	* src/main/perl/lib/Autoconf/Template/Utils.pm.in
+	(is_exclude_dir): new
+	(filter_list): set cwd to empty
+	(find_files_of_type): use is_exclude_dir
+	(render_tt_template): typo, show $OS_ERROR
+	* templates/Makefile.am
+	- move ax_perlcritic_config.m4 to template
+	* templates/ax_perlcritic_config.m4.tt
+	- use template var for perlcritic_severity
+	* templates/build-rules.tt
+	- build rules for temp man pages
+	* templates/configure.ac.tt
+	- only include APACHE_CONFIG if html_build_mode
+	- show apache_vhost_dir in output
+	* templates/perl/bin/Makefile.am.tt
+	- conditionally include man pages
+	* templates/perl/bin/perl-bin.inc.tt
+	- recipe for building man pages (cp temp pages)
+	* templates/perl/cgi-bin/perl-cgi-bin.inc.tt: likewise
+	* templates/spec.in.tt
+	- rpm.provides now not rpm.install_from_cpan
+	- pass arg to install-from-cpan in %post section
+	* templates/unit-tests.tt: pass list of unit tests, not hash
+
 Tue Feb 28 08:16:57 2023  Rob Lauer  <rlauer6@comcast.net>
 
 	[2.0.12 - sub-directories]:

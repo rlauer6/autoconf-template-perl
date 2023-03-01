@@ -28,7 +28,6 @@ RESOURCES = \
     autotools/ax_deps_check.m4 \
     autotools/ax_distcheck_hack.m4 \
     autotools/apache_config.m4 \
-    autotools/ax_perlcritic_config.m4 \
     bootstrap \
     apache-directories.inc \
     directories.inc \

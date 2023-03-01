@@ -14,7 +14,7 @@ $(GUNIT_TESTS): $(UNIT_TESTS)
 
 GUNIT_TESTS = $(UNIT_TESTS:.t=.test)
 
-UNIT_TESTS = [% makefile_am_list(unit_tests, unit_test_list) %]
+UNIT_TESTS = [% makefile_am_list(unit_tests.$unit_test_list) %]
 
 UNIT_TESTS_LOGS=$(UNIT_TESTS:.t=.log)
 UNIT_TESTS_TRS=$(UNIT_TESTS:.t=.trs)

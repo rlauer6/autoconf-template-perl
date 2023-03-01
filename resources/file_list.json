@@ -56,7 +56,6 @@
     "ax_am_conditional_example.m4": "autotools/",
     "ax_deps_check.m4": "autotools/",
     "ax_distcheck_hack.m4": "autotools/",
-    "ax_perlcritic_config.m4": "autotools/",
     "autoconf-template-perlrc" : ".autoconf-template-perlrc",
     "install-from-cpan.in" : "",
     "bootstrap": [ "0755" ],
@@ -68,6 +67,7 @@
     "prove.sh.in": "autotools/prove.sh.in"
   },
   "templates": {
+    "ax_perlcritic_config.m4.tt": "autotools/ax_perlcritic_config.m4",
     "COPYRIGHT.tt": "COPYRIGHT",
     "ChangeLog.tt": "ChangeLog",
     "Makefile.am.tt": "Makefile.am",

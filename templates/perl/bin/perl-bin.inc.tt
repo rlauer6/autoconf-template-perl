@@ -59,13 +59,17 @@ PERLCRITIC_PL = \
 
 MANPAGES = [% makefile_am_list(perl_scripts) %]
 
-TEMP_MANPAGES = $(GALLSCRIPTS:.pl=.1man)
+TEMP_MANPAGES = $(GALLSCRIPTS:.pl=.tman)
 
 GMANPAGES = $(MANPAGES:.pl.in=.1man)
 
 $(GMANPAGES): $(TEMP_MANPAGES)
 	set -x; \
 	src=$(subst -,/,$@); \
-	cp $$src $@
+	if test -e $$src; then \
+	  cp $$src $@; \
+	else \
+	  cp $$(basename $@ .1man).tman $@; \
+	fi
 
 G1MANPAGES = $(GMANPAGES:.tman=.1man)
