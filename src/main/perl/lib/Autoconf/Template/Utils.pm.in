@@ -207,13 +207,17 @@ sub is_exclude_dir {
   foreach my $dir ( @{$exclude_dirs} ) {
     if ( !ref $dir ) {
       $dir = qr/^$dir/xsm;
-
-      DEBUG Dumper(
-        [ reftype($dir), dir => $dir, name => $File::Find::name ] );
-
-      return $TRUE
-        if $File::Find::name =~ $dir;
     }
+
+    DEBUG Dumper(
+      [ reftype => reftype($dir),
+        dir     => $dir,
+        name    => $File::Find::name
+      ]
+    );
+
+    return $TRUE
+      if $File::Find::name =~ $dir;
   }
 
   return $FALSE;

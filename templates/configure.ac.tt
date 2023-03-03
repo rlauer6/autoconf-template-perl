@@ -143,7 +143,7 @@ AC_PATH_PROG([POD2MARKDOWN],
 	[pod2markdown])
 
 if test -z "$POD2MARKDOWN" ; then 
-  AC_MSG_ERROR([pod2markdown found?])
+  AC_MSG_WARN([pod2markdown found?])
 fi
 
 AC_PATH_PROG([PROVE],
@@ -160,12 +160,14 @@ if test -z "$RPMBUILD" ; then
   AC_MSG_WARN([rpmbuild not found?])
 fi
 
+[% IF man_pages %]
 AC_PATH_PROG([POD2MAN],
 	[pod2man])
 
 if test -z "$POD2MAN" ; then 
   AC_MSG_ERROR([pod2man found?])
 fi
+[% END %]
 
 AC_PATH_PROG([PERLCRITIC],
 	[perlcritic])

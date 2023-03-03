@@ -46,4 +46,10 @@ dist_noinst_DATA = \
 CLEANFILES = \
     install-from-cpan
 
+EXTRA_DIST = \
+    configure \
+    autotools/missing \
+    autotools/install-sh \
+    aclocal.m4
+
 DISTCHECK_CONFIGURE_FLAGS = --with-perlcritic-severity=[% perlcritic_severity %] --with-perl5libdir='\$(prefix)/shaer/perl5'

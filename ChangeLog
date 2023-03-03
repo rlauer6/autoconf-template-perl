@@ -1,3 +1,52 @@
+Fri Mar  3 11:37:17 2023  Rob Lauer  <rlauer6@comcast.net>
+
+	[2.0.14]:
+	* VERSION: bump
+	* resources/autoconf-template-perlrc.in
+	- version_numbers, pod_to_readme
+	- use regexp for .log files
+	* resources/install-from-cpan.in
+	- use found cpanm location
+	* src/main/perl/bin/autoconf-ax-requirements-check.pl.in
+	- add-version-numbers option to disable
+	- update option
+	* src/main/perl/bin/autoconf-template-perl.pl.in
+	- likewise
+	(main)
+	- +pod-to-readme, manpages, add-version-numbers, dependencies  options
+	- warn if no project name or description
+	- don't create requirements file if refreshing && no-dependencies set
+	(create_manifest): croak if traversing old project
+	(rpm_build_options): test keys for file lists
+	(set_defaults): add-version-numbers TRUE
+	(help): descriptions, manpages, pod-to-reade, add-version-numbers
+	(makefile_am_list): subdir arg to add subdir to list
+	(create_target_file_list): all subdirs in all html dirs
+	(create_requirement_files)
+	- pass along --no-add-version-numbers if set
+	(create_changelog): don't filter out automake scripts
+	* src/main/perl/lib/Autoconf/Template/Constants.pm.in
+	- add $VERSION to $COPYRIGHT
+	* src/main/perl/lib/Autoconf/Template/Utils.pm.in
+	(is_exclude_dir): test was in wrong scope
+	* templates/manpage-rules.tt
+	* templates/Makefile.am
+	- add above to build
+	* templates/Makefile.am.tt
+	- add automakes scripts to distribution (EXTRA_DIST)
+	* templates/README.md.tt: tweaks
+	* templates/build-rules.tt: move manpage build rules to manpage-rules.tt
+	* templates/perl/bin/perl-bin.inc.tt: likewise
+	* templates/perl/cgi-bin/perl-cgi-bin.inc.tt: likewise
+	* templates/perl/cgi-bin/Makefile.am.tt
+	(CLEANFILES): *.tman, *.cgi
+	* templates/configure.ac.tt
+	- WARN for no pod2markdown
+	- remove pod2man test if no manpages
+	* templates/html/Makefile.am.tt: allow subdirs for all html dirs
+	* templates/perl/lib/Makefile.am.tt
+	(docs): target for creating markdown from pod
+
 Wed Mar  1 16:51:48 2023  Rob Lauer  <rlauer6@comcast.net>
 
 	[2.0.13 - perlcritic-severity, conditional man pages]:

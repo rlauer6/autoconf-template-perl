@@ -15,7 +15,8 @@ all:
 CLEANFILES = \
     $(GPERLSCRIPTS) \
     $(GPERLCRITIC_CGI) \
-    $(GCGISCRIPTS)
+    $(GALLSCRIPTS:.pl=.cgi) \
+    $(TEMP_MANPAGES)
 
 man1_MANS = $(G1MANPAGES)
 

@@ -21,17 +21,18 @@ set -ex
 destdir=@bindir@
 logdir=@localstatedir@/log
 
-cpanm=$(command -v cpanm)
+CPANM=$(command -v cpanm)
 
-if test -z "$cpanm"; then
+if test -z "$CPANM"; then
     curl -L https://cpanmin.us -o ${destdir}/cpanm
     chmod +x ${destdir}/cpanm
+    CPANM=${destdir}/cpanm
 fi
 
 set -o pipefail
 
 for a in $(cat $requires | awk '{print $1}'); do
-  ${destdir}/cpanm -n -v $a | tee -a ${logdir}/cpanm-install.log;
+  $CPANM -n -v $a | tee -a ${logdir}/cpanm-install.log;
 done
 
 exit 0

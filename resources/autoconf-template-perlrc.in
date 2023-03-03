@@ -36,15 +36,23 @@ unit_tests = true
 # whether to create man pages from pod
 man_pages = true
 
+# wheter to create README.md files from pod in .pm files
+pod_to_readme = true
+
+# whether to add version numbers in the requirements files
+version_numbers = true
+
 # create HTML directories regardless of manifest contents
 html           = false
 
 # likewise
 bash           = true
 
-# exclude the files when creating manifest (--create-manifest)
+
+# exclude these files when creating manifest (--create-manifest)
 exclude_files  = Makefile Makefile.am Makefile.in \
-                 qr/manifest[.]yaml/ autoconf-template-perl.log \
+                 qr/manifest[.]yaml/ \
+                 qr/autoconf-template-perl[.]log/ \
                  qr/[.]in$/
 
 # exclude traversing these directories when creating manifest

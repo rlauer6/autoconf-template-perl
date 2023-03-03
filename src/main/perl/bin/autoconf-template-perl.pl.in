@@ -48,6 +48,7 @@ sub main {
   # options are defined with '-' to separate words to make it easy to
   # type options on CLI
   my @options_specs = qw(
+    add-version-numbers!
     all|a
     author|n=s
     bash!
@@ -56,6 +57,7 @@ sub main {
     create-missing|c
     create-stub=s
     create-test-stub|t=s
+    dependencies!
     description|D=s
     destdir|d=s
     email|e=s
@@ -68,6 +70,7 @@ sub main {
     log-level|l=s
     manifest|m=s
     man-pages!
+    pod-to-readme!
     project-root|P=s
     project|p=s
     quiet|Q
@@ -229,9 +232,11 @@ sub main {
   # - requirements.txt
   # - requirements.json
 
-  INFO '...finding dependencies';
+  if ( !$options{refresh} || $options{dependencies} ) {
+    INFO '...finding dependencies';
 
-  create_requirement_files( \%options );
+    create_requirement_files( \%options );
+  }
 
   set_rpm_build_options( \%options );
 
@@ -304,6 +309,16 @@ sub create_manifest {
 ########################################################################
   my ($options) = @_;
 
+  if ( !$options->{project} ) {
+    print {*STDERR}
+      "WARNING: you do not have a project name (-p to add project name)\n";
+  }
+
+  if ( !$options->{description} ) {
+    print {*STDERR}
+      "WARNING: you do not have a project description (-D to add description)\n";
+  }
+
   my %files;
 
   my $srcdir = $options->{'source-dir'};
@@ -353,9 +368,16 @@ sub create_manifest {
 
   find(
     sub {
-      return if -d $_ || is_exclude_dir( $File::Find::name, \@exclude_dirs );
+      return
+        if ( -d $_ ) || is_exclude_dir( $File::Find::name, \@exclude_dirs );
 
-      TRACE Dumper( [ resource => $File::Find::name ] );
+      TRACE Dumper(
+        [ resource => $File::Find::name, exclude_dirs => \@exclude_dirs ] );
+
+      if ( $File::Find::name =~ /project[.]yaml/xsm ) {
+        croak
+          "traversing a directory that may already be a project...use -f to force\n";
+      }
 
       push @resources, $File::Find::name;
     },
@@ -582,17 +604,17 @@ sub set_rpm_build_options {
     push @{ $rpm_options{requires} }, @{ $options->{'rpm-requires'} };
   }
 
-  $rpm_options{bin_files} = keys %{ $options->{perl_scripts} };
-  $rpm_options{resources} = keys %{ $options->{resources} };
-  $rpm_options{cgi_bin}   = keys %{ $options->{cgi_scripts} };
+  $rpm_options{bin_files}  = keys %{ $options->{perl_scripts} };
+  $rpm_options{resources}  = keys %{ $options->{resources} };
+  $rpm_options{cgi_bin}    = keys %{ $options->{cgi_scripts} };
+  $rpm_options{html}       = keys %{ $options->{html_files} };
+  $rpm_options{javascript} = keys %{ $options->{javascript_files} };
+  $rpm_options{css}        = keys %{ $options->{css_files} };
+  $rpm_options{image}      = keys %{ $options->{image_files} };
 
   $rpm_options{man_pages} = $options->{'man-pages'};
 
   $rpm_options{config_files} = @{ $options->{config} };
-  $rpm_options{html}         = @{ $options->{html_files} };
-  $rpm_options{javascript}   = @{ $options->{javascript_files} };
-  $rpm_options{css}          = @{ $options->{css_files} };
-  $rpm_options{image}        = @{ $options->{image_files} };
   $rpm_options{perl_modules} = @{ $options->{perl_modules} } ? $TRUE : $FALSE;
 
   $rpm_options{bin_files} ||= @{ $options->{bash_scripts} } ? $TRUE : $FALSE;
@@ -604,6 +626,8 @@ sub set_rpm_build_options {
 sub set_defaults {
 ########################################################################
   my ($options) = @_;
+
+  $options->{'add-version-numbers'} //= $TRUE;
 
   # templates that should not be rendered
   $options->{'exclude-templates'} = [];
@@ -659,13 +683,12 @@ Options                Arg        Description
 -------                ----       ------------
 -h, --help                        help
 -a, --all                         create all directories and unit-tests
--n, --author           name       author's name (default: "anonymouse")
+    --add-versions-numbers        default: true
 -b, --bash                        build bash directories (default: true)
 -c, --create-missing              create any files in manifest that do not exist (default: false)
--C, --create-manifest             create a manifest file from the current directory
--S, --create-stub      filename   create a stub file
--t, --create-test-stub filename   create a stub unit test file
 -d, --destdir          directory  directory where project will be built
+-D, --description                 project description
+    --dependencies                whether to look for new dependencies on refresh, (default:true)
 -e, --email            email      author's email (default: $ENV{EMAIL} || anonymouse\@example.com)
 -E, --exclude-dirs                one or more directories to exclude when creating a manifest
 -f, --force                       force overwrite of project directory
@@ -674,6 +697,10 @@ Options                Arg        Description
 -l, --log-level        level      logging level, error, warn, info, debug, trace  (default: error)
 -L, --list-stubs                  lists the stub templates available
 -m, --manifest         filename   name of the YAML manifest file
+    --manpages                    default: true, create manpages for .pl, .pm, .cgi files
+-M, --create-manifest             create a manifest file from the current directory
+-n, --author           name       author's name (default: "anonymouse")
+    --pod-to-readme               create markdown from pod in .pm files
 -p, --project          name       project name (default: "noname")
 -P, --project-root                root directory of project
 -Q, --quiet                       do not report progress
@@ -685,12 +712,15 @@ Options                Arg        Description
 -s, --source-dir       directory  source for files in manifest or when creating manifest
                                   (default: pwd)
     --strip-dir                   set to pwd to preserve file hierarchy
+-S, --create-stub      filename   create a stub file
+-t, --create-test-stub filename   create a stub unit test file
 -u, --unit-tests                  create unit test stubs (default: true)
 -v, --version                     report script version
 
 These options default to true, use --no-{option} to disable
 
 --bash
+--dependencies
 --html
 --rpm-build
 --unit-tests
@@ -741,11 +771,13 @@ sub load_autoconf_templaterc {
   # convert boolean words to boolean value
   # ...command line options take precendence!
   my @booleans = (
-    man_pages      => 'man-pages',
-    create_missing => 'create-missing',
-    unit_tests     => 'unit-tests',
-    html           => 'html',
-    bash           => 'bash',
+    man_pages       => 'man-pages',
+    create_missing  => 'create-missing',
+    unit_tests      => 'unit-tests',
+    html            => 'html',
+    bash            => 'bash',
+    version_numbers => 'add-version-numbers',
+    pod_to_readme   => 'pod-to-readme',
   );
 
   for my $p ( pairs @booleans ) {
@@ -1411,11 +1443,12 @@ sub makefile_am_flatten_list {
 ########################################################################
 sub makefile_am_list {
 ########################################################################
-  my ( $file_list, $prefix ) = @_;
+  my ( $file_list, $prefix, $subdir ) = @_;
 
   DEBUG Dumper(
     [ file_list => $file_list,
       prefix    => $prefix // $EMPTY,
+      subdir    => $subdir,
     ]
   );
 
@@ -1438,6 +1471,11 @@ sub makefile_am_list {
   }
   else {
     @files = _prefixed_list( $prefix, $file_list->{$prefix} );
+  }
+
+  # src/main/html/*
+  if ($subdir) {
+    @files = map {"$subdir/$_"} @files;
   }
 
   return _makefile_am_join(@files);
@@ -1697,7 +1735,9 @@ sub create_target_file_list {
       push @targets, $target . $ext;
     }
 
-    if ( any { $var eq $_ } qw( resources perl_scripts cgi_scripts ) ) {
+    if ( any { $var eq $_ }
+      qw(html_files javascript_files image_files css_files resources perl_scripts cgi_scripts )
+    ) {
       my $dirs = {};
 
       foreach (@targets) {
@@ -1705,7 +1745,12 @@ sub create_target_file_list {
         $dirs->{$subdir} ||= [];
 
         DEBUG Dumper(
-          [ target => $_, var => $var, subdir => $subdir, dirs => $dirs ] );
+          [ target => $_,
+            var    => $var,
+            subdir => $subdir,
+            dirs   => $dirs
+          ]
+        );
 
         push @{ $dirs->{$subdir} }, basename $_;
       }
@@ -1716,7 +1761,11 @@ sub create_target_file_list {
       $options->{$var} = [@targets];
     }
 
-    DEBUG Dumper( [ var => $var, targets => $options->{$var} ] );
+    DEBUG Dumper(
+      [ var     => $var,
+        targets => $options->{$var}
+      ]
+    );
   }
 
   return $options;
@@ -1825,6 +1874,9 @@ sub create_requirement_files {
   # set rootdir option
   push @ax_requirements_check, '-r', $root;
 
+  if ( !$options->{'add-version-numbers'} ) {
+    push @ax_requirements_check, '--no-add-version-numbers';
+  }
   # pass along log-level...and quiet flag
   push @ax_requirements_check, '-l', $options->{'log-level'};
 
@@ -1868,12 +1920,7 @@ sub create_changelog {
   DEBUG Dumper( [ root => $root, all_files => \@all_files ] );
 
   my @exclude_files = qw(
-    configure
-    aclocal.m4
     .git/config
-    autotools/missing
-    autotools/install-sh
-    autotools/test-driver
   );
 
   push @exclude_files, qr/Makefile[.]in$/xsm;

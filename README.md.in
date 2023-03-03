@@ -36,8 +36,9 @@ See [`NEWS`](NEWS.md) for the lastest news on releases.
 
 * [x] add web assets to RPM
 * [x] index for documentation
-* [ ] `make cpan` for tarball distributions
+* [x] `make cpan` for tarball distributions
 * [ ] add Apache configuration templates
+* [ ] allow sub-directories in `config` directory
 
 @TOC@
 
@@ -572,7 +573,7 @@ template for Perl modules.
 If your files exist in a file hierarchy that you wish to preserve, use the
 `--strip-dir` option to strip the root of the hierarchy from files in
 your manifest rather than the entire directory name. Normally, the
-files listed in the manifest will be copied to the root of their
+files listed in the manifest will be copied to the __root__ of their
 target directory.  For example, any `.pl` files in your source
 directories (and below) will be copied to `src/main/perl/bin`. Suppose
 you have files in your current directory like this:
@@ -604,10 +605,14 @@ autoconf-template-perl --create-manifest --source-dir .
 
 ## `autoconf-template-perl` Options
 
+> This may not be a complete list of current options. use
+> `autoconf-template-perl -h` to see all options
+
 | Option | Description |
 | ------ | ----------- |
 | `h, --help`| help |
 | `a, --author name`|  author's name (default: "anonymouse")
+| `--add-version-numbers` | add version numbers to required modules, default: true |
 | `b, --bash`| build bash directories (default: true) |
 | `c, --create-missing`|  create any files in manifest that do not exist (default: false) |
 | `C, --create-manifest`| create a manifest file from the current directory |
@@ -634,6 +639,7 @@ These options default to true, use `-no-{option}` to disable
 --html
 --rpm-build
 --unit-tests
+--add-version-numbers
 ```
 
 @TOC_BACK@
@@ -650,7 +656,7 @@ artifacts are installed.
 The source tree hierarchy is based on common patterns and best
 practices you'll see in many open source projects. Those practices
 have been adapted for packaging Perl applications. Many of the
-applications I have been written or maintained have included web
+applications I have written or maintained have included web
 components. `autoconf-template-perl` recognizes the needs of those
 types of applications by creating directories and build instructions
 for web applications as well.
@@ -1121,10 +1127,10 @@ So what does _Building Perl Modules_ mean?
 In the context of `autoconf-template-perl` building a Perl module
 does a few things:
 
-1. Replaces and `automake` variables (`@variable-name@`) found in the
+1. Replaces `automake` variables (`@variable-name@`) found in the
    source files with their values that were set by `configure`
 1. Runs `perl -wc` on the module or script to check the syntax.
-1. Creates man pages from the pod contained in the module or script.
+1. Creates `man` pages from the pod contained in the module or script.
 
 When you build a Perl module or script from a `.pl.in` or `.pm.in`
 file, the build recipe will first perform any required substitution of
@@ -1157,11 +1163,62 @@ the build recipe, you can add them when you configure the project.
 ./configure --with-perl-includes=$HOME/lib/perl5
 ```
 
-
 Laying out your build tree is not a mindless task and you should
 consider the intradependencies of the components within the project
 when making those decisions.   Of course, it's not rocket science
 either. ;-)
+
+## Disabling Syntax Checking
+
+Syntax checking of Perl modules requires that all required Perl
+modules are installed somewhere in Perl's `@INC` path. There may be
+situations where you do want to perform this kind of check.  Building
+RPMs for example, that will resolve dependencies in the target
+environment is one such case.  Your build system may not, and does not
+need the Perl modules installed there. To deal with this situation,
+there are two options you should consider.
+
+Use the `--disable-perldeps` option to `configure` to disable
+the checking of Perl modules and the `--enable-rpm-build-mode` which
+will turn off syntax checking of Perl scripts and modules.
+Substitution of `automake` variables will still occur.
+
+
+## Perl Module Dependencies
+
+As discussed in previous sections, `autoconf-template-perl` will
+examine your source files and identify Perl module dependencies. Those
+dependencies are then used to create an `m4` macro used in the
+`configure` script to check your system for those dependencies. When
+you manually add new Perl scripts or modules you can run
+`autoconf-template-perl --refresh` to update the list of
+dependencies. If you use the `--create-stub` option, the refresh is
+run automatically for you. Refreshing your project does more than just
+update depdencies, it also updates the list of assets in the
+`Makefile`s that are built or installed.
+
+You may not want `autoconf-template-perl` to alter your the list of
+requirements if you have previously edited the requirement files. In
+that case you use the `--no-dependencies` option when creating stubs
+or refreshing the project.
+
+If you are maintaining the requirements list manually and you add a
+new dependency, make sure you update the `m4` macro as well. Edit the
+`requires.json` or `requires.txt` file as needed and then run the
+`autoconf-ax-requirements-check` script to update the macro.
+
+```
+autoconf-ax-requirements-check -i requires.json --update
+```
+
+After this is executed, the three files that contain the Perl module
+requirements will be updated.
+
+```
+requires.txt
+requires.json
+autotools/ax_requirements_check.m4
+```
 
 @TOC_BACK@ 
 
@@ -1260,6 +1317,28 @@ rpmbuild -tb $(ls -1t *.tar.gz | head -1) --sign
 ```
 
 @TOC_BACK@ 
+
+# Building Documentation
+
+When you create your project source tree you can tell
+`autoconf-template-perl` to include the recipes for building
+documentation.
+
+`man` pages can be will be created from the pod in your `.pm`, `.pl`,
+and `.cgi` when you execute a build using `make`. You can also create
+a `README.md` file for each Perl module in your `src/main/perl/lib`
+directories.  Use the `--man-pages` option to include the recipe for
+building `man` pages in the `Makefile`s.
+
+## README.md for Perl Modules
+
+Use the `--pod-to-readme` option for creating a `README.md` for your
+Perl modules.  The `README.md` files are __not__ automatically created
+during a build. Execute `make docs` in the `src/main/perl/lib`
+directory to create your `README.md` files. Each files will be created
+in a sub-directory whose name is the Perl module path.  Adding these
+files to your `git` repo gives you a convenient way to look at the
+module documentation.
 
 # Unit Tests
 

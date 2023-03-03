@@ -169,14 +169,16 @@ project directories
 
 Options
 -------
--h, --help        help
--f, --format      format of output (default: m4)
--i, --infile      either a .json or .txt requirements file (*)
--l, --log-level   logging level, (default: info)
--o, --outfile     name of the output file
--q, --quiet       do not report progress
--r, --root-dir    root directory of project
--v, --version     report script version
+-h, --help                help
+-a, --add-version-numbers default: true
+-f, --format              format of output (default: m4)
+-i, --infile              either a .json or .txt requirements file (*)
+-l, --log-level           logging level, (default: info)
+-o, --outfile             name of the output file
+-q, --quiet               do not report progress
+-r, --root-dir            root directory of project
+-u, --update              update requires files
+-v, --version             report script version
 
 * - .txt requirements files should be of the form:
 
@@ -199,12 +201,20 @@ END_OF_HELP
 sub main {
 ########################################################################
   my %options;
-
-  GetOptions(
-    \%options,   'help',    'format=s', 'root-dir=s',
-    'outfile=s', 'version', 'infile=s', 'log-level=s',
-    'quiet',
+  my @options_specs = qw(
+    help
+    add-version-numbers!
+    format=s
+    root-dir=s
+    outfile=s
+    version
+    infile=s
+    log-level=s
+    update
+    quiet
   );
+
+  GetOptions( \%options, @options_specs );
 
   return help()
     if $options{help};
@@ -214,6 +224,8 @@ sub main {
 
   my $outfile = $options{'outfile'};
   my $infile  = $options{'infile'};
+
+  $options{'add-version-numbers'} //= $TRUE;
 
   my %actions = (
     m4 => sub {
@@ -256,8 +268,14 @@ sub main {
 
   my $required;
 
+  my $root = $options{'root-dir'};
+
+  if ( !$root ) {
+    my ( $project, $dir ) = find_root_dir( \%options );
+    $root = "$dir/$project";
+  }
+
   if ( !$infile ) {
-    my $root = $options{'root-dir'} //= find_root_dir();
 
     croak "this doesn't look much like a project directory\n"
       if !-d "$root/src/main/perl/lib";
@@ -269,6 +287,7 @@ sub main {
     $required = remove_provided_modules( $dependencies, $root );
   }
   else {
+
     if ( $infile =~ /[.]json$/xsm ) {
       $required = slurp_file( $infile, type => 'json' );
 
@@ -293,26 +312,58 @@ sub main {
 
   DEBUG Dumper($required);
 
-  my $output = $actions{$format}->( $required, \%options );
-
-  DEBUG 'creating ' . $outfile . ' with ' . $output;
-
-  if ($output) {
-    if ($outfile) {
-
-      DEBUG 'creating ' . $outfile . ' with ' . $output;
-
-      open my $fh, '>', $outfile
-        or croak "could not open $outfile for writing\n";
-
-      print {$fh} $output;
-
-      close $fh;
-
+  if ( !$options{'add-version-numbers'} ) {
+    for ( @{$required} ) {
+      $_->{version} = $EMPTY;
     }
-    else {
-      print {*STDOUT} $output;
+  }
+
+  if ( $options{update} ) {
+
+    my @output_files = (
+      m4   => 'autotools/ax_requirements_check.m4',
+      text => 'requires.txt',
+      json => 'requires.json',
+    );
+
+    for my $p ( pairs @output_files ) {
+      my ( $format, $outfile ) = @{$p};
+      my $output = $actions{$format}->( $required, \%options );
+
+      write_output_file( $output, "$root/$outfile" );
     }
+  }
+  else {
+    my $output = $actions{$format}->( $required, \%options );
+
+    write_output_file( $output, $outfile );
+  }
+
+  return;
+}
+
+########################################################################
+sub write_output_file {
+########################################################################
+  my ( $output, $outfile ) = @_;
+
+  return
+    if !$output;
+
+  if ($outfile) {
+
+    DEBUG 'creating ' . $outfile . ' with ' . $output;
+
+    open my $fh, '>', $outfile
+      or croak "could not open $outfile for writing\n";
+
+    print {$fh} $output;
+
+    close $fh;
+
+  }
+  else {
+    print {*STDOUT} $output;
   }
 
   return;

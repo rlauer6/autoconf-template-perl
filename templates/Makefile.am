@@ -31,6 +31,7 @@ TEMPLATES = \
     configure.ac.tt \
     git-config.tt \
     manifest.yaml.tt \
+    manpage-rules.tt \
     spec.in.tt \
     stub.cfg.tt \
     stub.cgi.tt \

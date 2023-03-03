@@ -29,6 +29,19 @@ clean-generated-man-pages:
 	test $$? -eq 0 || exit 1 ;\
 	done
 
+.PHONY: docs
+docs:
+	if test -z "$(POD2MARKDOWN)"; then \
+	  >&2 echo "ERROR: no pod2markdown...install Pod::Markdown first and re-configure"; \
+	fi
+
+	for a in $(GALLMODULES); do \
+	  dir="$$(dirname "$$a")"; \ test -d
+	  "$$dir" || $(INSTALL) -d "$$dir"; \ test -d "$$dir/$$(basename
+	  "$$a" .pm)" || $(INSTALL) -d "$$dir/$$(basename "$$a" .pm)"; \
+	  $(POD2MARKDOWN) $$a > "$$dir/$$(basename "$$a" .pm)"/README.md; \
+	done
+
 dist_noinst_DATA = $(ALLMODULES) $(UNIT_TESTS)
 
 if DISTCHECK_HACK

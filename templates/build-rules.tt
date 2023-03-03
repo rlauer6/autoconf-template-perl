@@ -44,30 +44,5 @@ PERLINCLUDE = \
 %.cgi: %.pl
 	cp $< $@
 
-define MAN_PAGE_BUILD_RECIPE
-	target_name="$@";\
-	tname=$$(echo "$${target_name}" | sed -e 's/\.1man$$//') ;\
-	"$(POD2MAN)"  $< \
-	--center="$(PACKAGE)" \
-	--name="$${tname}" \
-	--release=$(PACKAGE)-$(VERSION) \
-	--section=1man > "$${target_name}" || true
-endef
-
-%.3man : %.pm
-	$(MAN_PAGE_BUILD_RECIPE)
-
-%.1man : %.pl
-	$(MAN_PAGE_BUILD_RECIPE)
-
-%.1man : %.cgi
-	$(MAN_PAGE_BUILD_RECIPE)
-
-%.tman : %.pl
-	$(MAN_PAGE_BUILD_RECIPE)
-
-%.tman : %.cgi
-	$(MAN_PAGE_BUILD_RECIPE)
-
 %.md : %.pm
 	$(POD2MARKDOWN) < $< >$@

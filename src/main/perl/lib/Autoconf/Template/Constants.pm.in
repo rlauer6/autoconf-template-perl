@@ -34,6 +34,8 @@ Readonly our $FILE_LIST     => "$PROJECT_DIR/file_list.json";
 Readonly our $MANIFEST_FILE => 'manifest.yaml';
 
 Readonly our $COPYRIGHT => <<"END_OF_COPYRIGHT";
+version $VERSION
+
 Copyright (C) 2023 TBC Development Group, LLC
 License GPLv2+: GNU GPL version 2 or later <https://gnu.org/licenses/gpl-2.0.html>
 This is free software: you are free to change and redistribute it.

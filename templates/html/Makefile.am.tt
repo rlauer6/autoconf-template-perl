@@ -8,24 +8,86 @@ SUBDIRS = .
 include $(top_srcdir)/includes/directories.inc
 include $(top_srcdir)/includes/apache-directories.inc
 
-CSS = [% makefile_am_list(css_files, 'css') %]
+########################################################################
+# CSS
+########################################################################
+CSS = [% makefile_am_list(css_files, '.', 'css') %]
 
-HTML = [% makefile_am_list(html_files, 'htdocs') %]
+dist_apache_site_css_DATA = $(CSS)
 
-IMAGES = [% makefile_am_list(image_files, 'image') %]
+[% FOREACH dir IN css_files.keys -%]
+[% IF dir != '.' -%]
+apache_site_css_[% dir %]dir = $(apache_site_cssdir)/[% dir %]
 
-JAVASCRIPT = [% makefile_am_list(javascript_files, 'javascript') %]
+CSS_[% dir | upper %] = [% makefile_am_list(css_files, dir, 'css') %]
+
+dist_apache_site_css_[% dir %]_DATA = $(CSS_[% dir | upper %])
+[% END -%]
+[% END -%]
+
+########################################################################
+# HTML
+########################################################################
+HTML = [% makefile_am_list(html_files, '.', 'htdocs') %]
+
+dist_apache_site_htdocs_DATA = $(HTML)
+
+[% FOREACH dir IN html_files.keys -%]
+[% IF dir != '.' -%]
+apache_site_htdocs_[% dir %]dir = $(apache_site_htdocs)/[% dir %]
+
+HTML_[% dir | upper %] = [% makefile_am_list(html_files, dir, 'htdocs') %]
+
+dist_apache_site_htdocs_[% dir %]_DATA = $(HTML_[% dir | upper %])
+[% END -%]
+[% END -%]
+
+########################################################################I
+# IMAGES
+########################################################################
+IMAGES = [% makefile_am_list(image_files, '.', 'images') %]
+
+dist_apache_site_img_DATA        = $(IMAGES)
+
+[% FOREACH dir IN image_files.keys -%]
+[% IF dir != '.' -%]
+apache_site_img_[% dir %]dir = $(apache_site_imgdir)/[% dir %]
+
+IMAGES_[% dir | upper %] = [% makefile_am_list(images_files, dir, 'images') %]
+
+dist_apache_site_img_[% dir %]_DATA = $(IMAGES_[% dir | upper %])
+[% END -%]
+[% END -%]
+
+########################################################################
+# JAVASCRIPT
+########################################################################
+JAVASCRIPT = [% makefile_am_list(javascript_files, '.', 'javascript') %]
+
+dist_apache_site_javascript_DATA = $(JAVASCRIPT)
+
+[% FOREACH dir IN javascript_files.keys -%]
+[% IF dir != '.' -%]
+apache_site_javascript_[% dir %]dir = $(apache_site_javascriptdir)/[% dir %]
+
+JAVASCRIPT_[% dir | upper %] = [% makefile_am_list(javascript_files, dir, 'javascript') %]
+
+dist_apache_site_javascript_[% dir %]_DATA = $(JAVASCRIPT_[% dir | upper %])
+[% END -%]
+[% END -%]
+
+########################################################################
+
+ALL_HTML       = [% makefile_am_list(html_files) %]
+ALL_CSS        = [% makefile_am_list(css_files) %]
+ALL_IMAGES     = [% makefile_am_list(image_files) %]
+ALL_JAVASCRIPT = [% makefile_am_list(javascript_files) %]
 
 ALLFILES = \
-    $(CSS) \
-    $(HTML) \
-    $(IMAGES) \
-    $(JAVASCRIPT)
-
-dist_apache_site_css_DATA        = $(CSS)
-dist_apache_site_htdocs_DATA     = $(HTML)
-dist_apache_site_img_DATA        = $(IMAGES)
-dist_apache_site_javascript_DATA = $(JAVASCRIPT)
+    $(ALL_CSS) \
+    $(ALL_HTML) \
+    $(ALL_IMAGES) \
+    $(ALL_JAVASCRIPT)
 
 dist_apache_site_log_DATA     = 
 
