@@ -33,6 +33,10 @@ use YAML qw(LoadFile DumpFile);
 
 our $VERSION = '@PACKAGE_VERSION@'; ## no critic (RequireInterpolation)
 
+use Readonly;
+
+Readonly our $MAX_DESCRIPTION_LENGTH => 40;
+
 caller or __PACKAGE__->main();
 
 ########################################################################
@@ -88,6 +92,11 @@ sub main {
 
   GetOptions( \%options, @options_specs );
 
+  my $command = shift @ARGV;
+  $command //= $EMPTY;
+
+  my @command_args = @ARGV;
+
   $options{'log-level'} //= 'info';
 
   init_logger( $options{'log-level'} );
@@ -100,6 +109,12 @@ sub main {
 
   set_defaults( \%options );
 
+  if ( $command eq 'create-index' ) {
+    create_module_index( \%options );
+
+    return;
+  }
+
   return help()
     if $options{help};
 
@@ -107,7 +122,7 @@ sub main {
     if $options{version};
 
   return list_stubs( \%options )
-    if $options{'list-stubs'};
+    if $command eq 'list-stubs' || $options{'list-stubs'};
 
   return create_manifest( \%options )
     if $options{'create-manifest'};
@@ -153,7 +168,16 @@ sub main {
 
     INFO '...refreshing project';
 
-    my @args = ( '-r', '-P', $options{root}, '-l', $options{'log-level'} );
+    my @args = (
+      '-r',
+      '-P' => $options{root},
+      '-l' => $options{'log-level'},
+    );
+
+    if ( !$options{'check-dependencies'} ) {
+      push @args, '--no-dependencies';
+    }
+
     system $PROGRAM_NAME, @args;
 
     return;
@@ -232,8 +256,13 @@ sub main {
   # - requirements.txt
   # - requirements.json
 
-  if ( !$options{refresh} || $options{dependencies} ) {
+  if ( !$options{refresh} || $options{'check-dependencies'} ) {
     INFO '...finding dependencies';
+    INFO Dumper(
+      [ refresh      => $options{refresh},
+        dependencies => $options{'check-dependencies'}
+      ]
+    );
 
     create_requirement_files( \%options );
   }
@@ -628,6 +657,9 @@ sub set_defaults {
   my ($options) = @_;
 
   $options->{'add-version-numbers'} //= $TRUE;
+  $options->{dependencies}          //= $TRUE;
+
+  $options->{'check-dependencies'} = delete $options->{dependencies};
 
   # templates that should not be rendered
   $options->{'exclude-templates'} = [];
@@ -959,8 +991,10 @@ sub find_perl_modules {
   $options->{module_names} = [];
 
   for ( @{ $options->{modules} } ) {
-    push @{ $options->{module_names} }, sprintf q{$} . q{(%sMODULES)},
-      $_->{name_uc};
+    my $name = $_->{name_uc};
+    $name =~ s/\//_/xsmg;
+
+    push @{ $options->{module_names} }, sprintf q{$} . q{(%sMODULES)}, $name;
   }
 
   return $options;
@@ -1623,9 +1657,17 @@ sub init_parameters {
     $options->{bash_scripts}
       = [ map { ( basename $_) . '.in' } @{ $options->{bashscripts} } ];
 
-    for my $p ( pairs qw(perl perl/bin cgi perl/cgi-bin) ) {
+    my @target_dirs = (
+      cgi_scripts      => 'perl/cgi-bin',
+      css_files        => 'html/css',
+      html_files       => 'html/htdocs',
+      image_files      => 'html/images',
+      javascript_files => 'html/javascript',
+      perl_scripts     => 'perl/bin',
+    );
+
+    for my $p ( pairs @target_dirs ) {
       my ( $type, $dir ) = @{$p};
-      $type = "$type" . '_scripts';
 
       $options->{'strip-dir'} = sprintf '%s/src/main/%s', $options->{root},
         $dir;
@@ -1962,6 +2004,84 @@ sub do_subst {
   }
 
   return $arg;
+}
+
+########################################################################
+sub create_module_index {
+########################################################################
+  my ($options) = @_;
+
+  my ( $project, $destdir ) = find_root_dir($options);
+
+  my $root     = "$destdir/$project/";
+  my $lib_path = 'src/main/perl/lib/';
+
+  my $path = sprintf '%s%s', $root, $lib_path;
+
+  my @files = find_files( $path, 'pm', $FALSE );
+
+  my %module_index;
+
+  INFO Dumper( [ files => \@files ] );
+
+  foreach (@files) {
+    my $file = $_;
+
+    my $git_path = $file;
+    $git_path =~ s/^$root//xsm;
+
+    my $readme = $git_path;
+    $readme =~ s/[.]pm[.]in//xsm;
+    $readme = "$readme/README.md";
+
+    my $module = $git_path;
+    $module =~ s/$lib_path//xsm;
+
+    my $short_path = $module;
+    $module =~ s/\//::/xsmg;
+    $module =~ s/[.]pm[.]in//xsm;
+
+    my $text        = slurp_file($file);
+    my $description = $EMPTY;
+
+    if ( $text =~ /=head1\sDESCRIPTION(.*?)=head1/xsm ) {
+      $description = $1;
+
+      $description =~ s/\A[\n\s]*//xsm;
+      $description =~ s/[\n\s]*\z//xsm;
+      $description =~ s/^([^\n]+)\n(.*)\z/$1/xsm;
+
+      if ( length $description > $MAX_DESCRIPTION_LENGTH ) {
+        $description = sprintf '%s...', substr $description, 0,
+          $MAX_DESCRIPTION_LENGTH;
+      }
+    }
+
+    $module_index{$module} = {
+      path        => $git_path,
+      description => $description,
+      short_path  => $short_path,
+      readme      => $readme,
+    };
+
+  }
+
+  my %index = (
+    module_index => \%module_index,
+    module_names => [ sort keys %module_index ],
+  );
+
+  my $readme = render_tt_template(
+    'perl/lib/README.md.tt',
+    { modules   => \%index,
+      project   => $project,
+      timestamp => scalar localtime,
+    }
+  );
+
+  print {*STDOUT} $readme;
+
+  return \%index;
 }
 
 ########################################################################

@@ -56,6 +56,8 @@ PERLCRITIC_PL = \
 # might create duplicate man pages. To fix this, man pages will be installed in slightly
 # non-obvious way {dirname}-{file}.1man
 
+[% IF man_pages %]
 MANPAGES = [% makefile_am_list(perl_scripts) %]
 
 [% INCLUDE "manpage-rules.tt" %]
+[% END %]

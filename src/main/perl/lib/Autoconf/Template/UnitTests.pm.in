@@ -46,14 +46,24 @@ sub create_unit_tests {
     if ( reftype($files) eq 'HASH' ) {
 
       foreach my $dir ( keys %{$files} ) {
+        my @tests = @{ $files->{$dir} };
+
+        if ( $dir ne $DOT ) {
+          @tests = map {"$dir-$_"} @tests;
+        }
+
+        TRACE Dumper( [ 'creating unit tests ', $path, \@tests ] );
+
         create_unit_test_stub(
-          files   => [ map {"$dir-$_"} @{ $files->{$dir} } ],
+          files   => \@tests,
           path    => $path,
           options => $options,
         );
       }
     }
     else {
+      TRACE Dumper( [ 'creating unit tests ', $path, $files ] );
+
       create_unit_test_stub(
         files   => $files,
         path    => $path,

@@ -23,12 +23,14 @@
 # [% IF module.path %][% module.path %][% ELSE %].[% END %]
 # +--------------------------------------------+
 
-[% module.name_uc %]MODULES = [% makefile_am_list(module.list) %]
+[% name_uc = module.name_uc.replace('/','_') -%]
+[% name_lc = module.name_lc.replace('/','_') -%]
+[% name_uc%]MODULES = [% makefile_am_list(module.list) %]
 
-G[% module.name_uc %]MODULES = $([% module.name_uc %]MODULES:.pm.in=.pm)
+G[% name_uc %]MODULES = $([% name_uc %]MODULES:.pm.in=.pm)
 [% perl5lib = module.name_lc ? 'perl5lib_' : 'perl5lib' %]
-[%IF module.path %][% perl5lib %][% module.name_lc %]dir = $(perl5libdir)/[% module.path %][% END %]
-[% perl5lib %][% module.name_lc %]_DATA = $(G[% module.name_uc %]MODULES)
+[%IF module.path %][% perl5lib %][% name_lc %]dir = $(perl5libdir)/[% module.path %][% END %]
+[% perl5lib %][% name_lc %]_DATA = $(G[% name_uc %]MODULES)
 
 [% FOREACH file IN module.files %][% IF dependencies.$file.size %][% file.replace('\.in$', '') %]: % : %.in [% dependencies.$file.join(" ") %]
 [% END %][% END %][% END %]
@@ -36,8 +38,12 @@ ALLMODULES = [% makefile_am_list(module_names) %]
 
 GALLMODULES = $(ALLMODULES:.pm.in=.pm)
 
+[% IF man_pages -%]
 man3_MANS = $(G3MANPAGES)
 
 G3MANPAGES = $(GALLMODULES:.pm=.3man)
+
+[% INCLUDE "manpage-rules.tt" %]
+[% END %]
 
 PERLCRITIC_PM = $(GALLMODULES)

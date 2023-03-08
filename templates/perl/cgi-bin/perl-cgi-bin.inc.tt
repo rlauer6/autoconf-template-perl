@@ -53,6 +53,11 @@ PERLCRITIC_CGI = \
 # might create duplicate man pages. To fix this, man pages will be installed in slightly
 # non-obvious way {dirname}-{file}.1man
 
+[% IF man_pages %]
 MANPAGES = [% makefile_am_list(cgi_scripts) %]
 
 [% INCLUDE "manpage-rules.tt" %]
+
+[% man_pages %]
+
+[% END %]

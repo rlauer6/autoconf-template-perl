@@ -1,3 +1,36 @@
+Wed Mar  8 08:45:50 2023  Rob Lauer  <rlauer6@comcast.net>
+
+	[2.0.15 - module index]:
+	* VERSION: bump
+	* README.md: generated
+	* README.md.in: updates base on new features
+	* src/main/perl/bin/autoconf-template-perl.pl.in
+	(main)
+	- commands list-stubs, create-index
+	- --check-dependencies
+	- prevent dependency checking on refresh if --no-check-dependencies
+	(create_module_index): new
+	(set_defaults): --check-dependencies = TRUE
+	(find_perl_modules)
+	- replace '/' with '_' for module names used for lists
+	(init_parameters)
+	- all (except config) directories now can have one-level of sub-directories
+	* src/main/perl/lib/Autoconf/Template/UnitTests.pm.in
+	(create_unit_tests)
+	- only sub-dirs should have test name that includes directory
+	* src/main/perl/lib/Autoconf/Template/Utils.pm.in
+	- pod updates
+	* templates/perl/lib/README.md.tt: new
+	* templates/Makefile.am: add above to build
+	* templates/perl/bin/perl-bin.inc.tt
+	-  only include man page irectives if man_pages
+	* templates/perl/cgi-bin/perl-cgi-bin.inc.tt: likewise
+	* templates/perl/lib/Makefile.am.tt
+	- fixed busted make rule for creating markdown
+	- recipe for creating module index
+	* templates/perl/lib/perl-modules.inc.tt
+	- replace '/' with '_' in automake variable names used for file lists
+
 Fri Mar  3 11:37:17 2023  Rob Lauer  <rlauer6@comcast.net>
 
 	[2.0.14]:

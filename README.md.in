@@ -1134,17 +1134,22 @@ does a few things:
 
 When you build a Perl module or script from a `.pl.in` or `.pm.in`
 file, the build recipe will first perform any required substitution of
-`automake` variables using `$(do_subst)` and then will run `perl -wc`
-against the result. If the syntax checking fails, the build will stop.
+`automake` variables using `$(do_subst)`. 
 
-When the build recipe runs `perl -wc` it also includes additional Perl
-paths that might be needed to syntax check your script.  All files in the
-`src/main/perl/lib` directory are built first, __in an order that
+> `$(do_subst)` is defined in `configure` and is simply a series of
+`sed` statements that do text substitution
+
+The `Makefile` recipe will then run `perl -wc` against the resulting
+`.pl` file. If the syntax checking fails, the build will stop.
+
+When the build recipe runs `perl -wc` it add additional Perl paths to
+`@INC` that might be needed to syntax check your script.  All files in
+the `src/main/perl/lib` directory are built first, __in an order that
 guarantees that even modules contained in the project that are
 dependencies of other modules in the project are built before the
 dependent module__.
 
-The order of the build is determined by the `SUBDIRS` variable in
+The order that `make` descends into your source tree is determined by the `SUBDIRS` variable in
 `src/main/perl/Makefile.am`.
 
 ```
@@ -1152,8 +1157,8 @@ SUBDIRS = . lib bin cgi-bin
 ```
 
 Note that files in `lib` and `bin` are built prior to `cgi-bin`
-scripts. This is done presumably because scripts in `bin` may depend
-on modules you build in `lib` and CGI scripts may depend on both Perl
+scripts. This is done because in most cases scripts in `bin` may depend
+on modules you build in `lib`.  CGI scripts may depend on both Perl
 modules and scripts.
 
 If you have additional paths, other than those configured by Perl or
@@ -1165,40 +1170,43 @@ the build recipe, you can add them when you configure the project.
 
 Laying out your build tree is not a mindless task and you should
 consider the intradependencies of the components within the project
-when making those decisions.   Of course, it's not rocket science
+when making those decisions. Of course, it's not rocket science
 either. ;-)
 
 ## Disabling Syntax Checking
 
 Syntax checking of Perl modules requires that all required Perl
 modules are installed somewhere in Perl's `@INC` path. There may be
-situations where you do want to perform this kind of check.  Building
-RPMs for example, that will resolve dependencies in the target
-environment is one such case.  Your build system may not, and does not
-need the Perl modules installed there. To deal with this situation,
-there are two options you should consider.
+situations where you do not want to perform this kind of check.
+Building RPMs for example can resolve their own dependencies in the
+target environment when they are deployed. Your build system that
+creates the RPM may not, and does not necessarily need the Perl
+modules installed to build the RPM. To deal with this situation, there
+are two options you should consider.
 
 Use the `--disable-perldeps` option to `configure` to disable
-the checking of Perl modules and the `--enable-rpm-build-mode` which
-will turn off syntax checking of Perl scripts and modules.
-Substitution of `automake` variables will still occur.
-
+the looking for required  Perl modules during execution of `configure`
+and the `--enable-rpm-build-mode` which
+will turn off syntax checking of Perl scripts and modules during a `make`.
+Substitution of `automake` variables will still occur however.
 
 ## Perl Module Dependencies
 
-As discussed in previous sections, `autoconf-template-perl` will
-examine your source files and identify Perl module dependencies. Those
-dependencies are then used to create an `m4` macro used in the
-`configure` script to check your system for those dependencies. When
-you manually add new Perl scripts or modules you can run
-`autoconf-template-perl --refresh` to update the list of
-dependencies. If you use the `--create-stub` option, the refresh is
-run automatically for you. Refreshing your project does more than just
-update depdencies, it also updates the list of assets in the
-`Makefile`s that are built or installed.
+As discussed in previous sections, when your project is instantiated
+`autoconf-template-perl` will examine your source files and identify
+Perl module dependencies. Those dependencies are then used to create
+an `m4` macro used in the `configure` script to check your system for
+those dependencies. When you manually add new Perl scripts or modules
+you can run `autoconf-template-perl --refresh` to update that list of
+dependencies. If you use the `--create-stub` option to add new Perl
+modules or scripts, the refresh is run automatically for
+you. Refreshing your project does more than just update depdencies, it
+also updates the list of assets in the `Makefile`s that are built or
+installed. Unless you refresh the project after you add a new file,
+that file will be installed at deploy time.
 
 You may not want `autoconf-template-perl` to alter your the list of
-requirements if you have previously edited the requirement files. In
+requirements if you have manually edited the requirement files. In
 that case you use the `--no-dependencies` option when creating stubs
 or refreshing the project.
 
@@ -1332,13 +1340,29 @@ building `man` pages in the `Makefile`s.
 
 ## README.md for Perl Modules
 
-Use the `--pod-to-readme` option for creating a `README.md` for your
-Perl modules.  The `README.md` files are __not__ automatically created
-during a build. Execute `make docs` in the `src/main/perl/lib`
-directory to create your `README.md` files. Each files will be created
-in a sub-directory whose name is the Perl module path.  Adding these
-files to your `git` repo gives you a convenient way to look at the
-module documentation.
+Use the `--pod-to-readme` option to enable the creation of a
+`README.md` for your Perl modules.  The `README.md` files are __not__
+automatically created during a build. Execute `make docs` in the
+`src/main/perl/lib` directory to create your `README.md` files. Each
+files will be created in a sub-directory whose name is the Perl module
+path.  Adding these files to your `git` repo gives you a convenient
+way to look at the module documentation.
+
+## Creating a Module Index
+
+You can create a module index in `src/main/perl/lib` that will allow
+you to see all of your Perl modules in one place.  Links to their
+`README.md` files and the source for each module will be included in a
+table. If you have pod embedded in the module, the index generator
+will try to extract a short description of the module from the `=head
+DESCRIPTION` section of your pod.
+
+```
+autoconf-template-perl create-index > src/main/perl/lib/README.md
+```
+
+You can also use `make index` in the `src/main/perl/lib` directory to
+automatically create your `README.md` file.
 
 # Unit Tests
 
@@ -1667,26 +1691,28 @@ Each of these strategies has its _pros_ and _cons_.
 
 | Strategy | Pros | Cons | 
 | -------- | ---- | ---- |
-| 1.i | easy, no effort | RPM packages may not be available for all dependencies |
+| 1.i | easy, no effort | RPM packages may not be available for all dependencies, some dependencies might not be identified by `rpmbuild` |
 | 1.ii | easy, no effort | requires support from SysAdmins or another step in deployment | 
-| 1.iii | easy, some effort | may fail if building modules at time of deployment requires additional libraries or special installtion instructions for CPAN modules |
-| 2.i | complete RPM ready for deployment | not supported by this utilty, lot's of effort, must be built in same environment as target |
+| 1.iii | easy, some effort | may fail if building modules at time of deployment requires additional libraries or special installation or configuration instructions for CPAN modules |
+| 2.i | a complete RPM ready for deployment! | not supported by this utilty, lot's of effort, must be built in same environment as target |
 
 Strategy #1 is typically the way you build an RPM, letting `rpmbuild`
 find your dependencies. In some cases you might add additional
 dependencies manually when `rpmbuild` fails to find them. This happens
 occassionally when your script or modules are using `require` in a way
-that hides the module name from `rpmbuild`.
+that hides the module name from `rpmbuild`. You would them manually
+edit the `.spec` file and add a statement like `Requires:
+perl(Term::ANSIColor)`.
 
 While packaging your application as an RPM using strategy #1 is
-_easy_, you may encounter problems with missing RPMs. While all of
-the core modules can be found as RPMs there are many other modules you
-may require that have not been packaged yet (or will never be
-packaged).  Of course, you [can build RPMs from CPAN
-yourself](#building-rpms-from-cpan)  and store
-them in a private `yum` repository.
+_easy_, you may encounter problems with missing RPMs. While all of the
+core modules can usually be found as RPMs, there are many other
+modules you may require that have not been packaged yet (or will never
+be packaged unless you do it yoursef).  Of course, you [can build RPMs
+from CPAN yourself](#building-rpms-from-cpan) and store them in a
+private `yum` repository.
 
-By default howeer, the spec file created by this utility employs
+By default however, the `.spec` file created by this utility employs
 strategy #1.iii. `autoconf-template-perl` prevents `rpmbuild` from
 including those dependencies by removing them when they are found by
 `rpmbuild`'s scanner. The spec file then includes a `%post` section
@@ -1749,6 +1775,14 @@ like `libxml2`, etc).  In that case you have two alternatives;
 Strategy #1.ii usually takes the form of handing your dependency list
 to the _SysAdmins_ and asking them to add these dependencies using
 whatever tools they use to install Perl modules.
+
+> `autoconf-template-perl` will install your list of required modules
+> when you run `make install`. The `requires.txt` file can be found in
+> `@datadir@/@PACKAGE@/requires.txt` (typically
+> `/usr/local/@PACKAGE@`). You can pass this file to the
+> `install-from-cpan` script that is also installed for you. It will
+> attempt to install of the required Perl modules using `cpanm`.
+
 
 Another technique I have used in the past when creating Docker
 containers, is to create a base image that contains the required
@@ -1910,3 +1944,20 @@ build with the use of RPMs.
      automatically.  If you prefer to do this manually, create the new
      directory,  move files into that directory
      as needed and then run `autoconf-template-perl --refresh`.
+1. My source files are organized in sub-directories and I want to
+   deploy them that way. For example, I have HTML files in
+   sub-directories `foo/` and `bar/`.  So, the URLs for those might be
+   `http://www.example.com/foo/index.html`, and
+   `http://www.example.com/bar/index.html`. When the project was
+   created however, these files ended up in `src/main/html` and get
+   deployed to the root of my `DocumentRoot` directory.
+   * When creating the project source tree your manifest is used to
+     list each file. Make sure each file is listed in a sub-directory of a
+     common root directory.  Then use the `--strip-dir` option with
+     that root directory as the argument. See the discussion [here](#automatically-creating-a-manifest-file) for more information about `--strip-dir`.
+1. Where can get more documentation about Autotools?
+   * [Autotools](https://www.gnu.org/savannah-checkouts/gnu/automake/manual/html_node/Autotools-Introduction.html)
+   * [`automake`](https://www.gnu.org/software/automake/)
+   * [`make`](https://www.gnu.org/software/make/)
+   * [`autoconf`](https://www.gnu.org/software/autoconf/)
+   * [Autotools: A Practioner's Guide](https://www.amazon.com/Autotools-Practioners-Autoconf-Automake-Libtool/dp/1593272065)

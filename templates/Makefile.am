@@ -54,6 +54,7 @@ TEMPLATES_BASH_BIN = \
     bash/bin/bash-bin.inc.tt
 
 TEMPLATES_PERL_LIB = \
+    perl/lib/README.md.tt \
     perl/lib/perl-modules.inc.tt \
     perl/lib/Makefile.am.tt
 

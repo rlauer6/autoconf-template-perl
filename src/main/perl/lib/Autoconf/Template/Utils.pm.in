@@ -555,13 +555,62 @@ __END__
 
 =head1 NAME
 
+AutoConf::Utils - Collection of useful utilities used across multiple
+C<autoconf-template-perl> scripts.
+
 =head1 SYNOPSIS
+
+ use AutoConf::Utils qw(find_files_of_type);
 
 =head1 DESCRIPTION
 
+Useful utilities collected here to reduce the bulk and increase
+maintainability in C<autoconf-template-perl> scripts.
+
 =head1 METHODS AND SUBROUTINES
 
-=head1 SEE ALSO
+=head2 find_files_of_type
+
+ filed_files_of_type(args)
+
+Traverses a path looking for files of a given type. Returns a list of
+absolute paths to the files found. Accepts of hash of arguments described below.
+
+=over 5
+
+=item * path
+
+Absolute (or relative) path to search. Note that files are returned
+with their absolute paths regardless of whether path is relative or
+absolute.
+
+=item * type
+
+Type (extension without .) of the files to find.
+
+Example: 'pm'
+
+=item * ext
+
+Additional extension to include in search for type (typically C<.in>).
+
+=item * exclude_dirs
+
+Array of directories to skip.
+
+=item * strip_in
+
+Boolean that indicates C<.in> extensions should be removed.
+
+=back
+
+Example:
+
+  my @files = find_files_of_type(
+    type => 'pm',
+    ext  => '.in',
+    path => $path,
+  );
 
 =head1 AUTHOR
 

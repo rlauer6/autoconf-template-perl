@@ -36,11 +36,16 @@ docs:
 	fi
 
 	for a in $(GALLMODULES); do \
-	  dir="$$(dirname "$$a")"; \ test -d
-	  "$$dir" || $(INSTALL) -d "$$dir"; \ test -d "$$dir/$$(basename
-	  "$$a" .pm)" || $(INSTALL) -d "$$dir/$$(basename "$$a" .pm)"; \
+	  dir="$$(dirname "$$a")"; \
+	  test -d "$$dir" || $(INSTALL) -d "$$dir"; \
+	  test -d "$$dir/$$(basename "$$a" .pm)" || $(INSTALL) -d "$$dir/$$(basename "$$a" .pm)"; \
 	  $(POD2MARKDOWN) $$a > "$$dir/$$(basename "$$a" .pm)"/README.md; \
 	done
+
+index: README.md
+
+README.md:
+	autoconf-template-perl create-index > $@
 
 dist_noinst_DATA = $(ALLMODULES) $(UNIT_TESTS)
 
