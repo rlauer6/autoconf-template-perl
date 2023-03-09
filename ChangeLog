@@ -1,3 +1,31 @@
+Thu Mar  9 18:15:06 2023  Rob Lauer  <rlauer@usgn.net>
+
+	[2.0.16 - progress bar]:
+	* VERSION: bump
+	* bootstrap: use configure options if available
+	* resources/bootstrap: likewise
+	* src/main/perl/bin/autoconf-template-perl.pl.in
+	- added progress bar
+	(set_command): new
+	(main)
+	- use $command to invoke functions
+	(create_stub_file): use find_root()
+	(help): progress-bar
+	(list_stubs): load conf file
+	(find_local_dependencies)
+	- accept $options as first arg
+	- progress bar
+	(get_dependencies): pass $options to above
+	* src/main/perl/lib/Autoconf/Template/Utils.pm.in
+	(render_tt_template)
+	- to_am_var filter
+	- use find_root_dir()
+	(save_project_meta_data): new
+	(find_root_dir): set destdir, project in $options
+	* templates/perl/lib/perl-modules.inc.tt
+	- use new filter for replacing '/' with '-'
+	* .gitignore
+
 Wed Mar  8 08:45:50 2023  Rob Lauer  <rlauer6@comcast.net>
 
 	[2.0.15 - module index]:

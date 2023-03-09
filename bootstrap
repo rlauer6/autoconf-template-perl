@@ -10,9 +10,13 @@ function _bump {
     
     test -e "$version" && mv $version VERSION
     echo -n "rebuilding for VERSION: $(cat VERSION)..."
-    
+
+    if test -e "config.log"; then
+        options=$(grep  '\$ ./configure' config.log | sed 's/\s*\$ \.\/configure//';)
+    fi
+
     if test -x bootstrap; then
-        if ./bootstrap && ./configure; then
+        if ./bootstrap && ./configure $options; then
             make clean
             make
         fi

@@ -23,8 +23,8 @@
 # [% IF module.path %][% module.path %][% ELSE %].[% END %]
 # +--------------------------------------------+
 
-[% name_uc = module.name_uc.replace('/','_') -%]
-[% name_lc = module.name_lc.replace('/','_') -%]
+[% name_uc = module.name_uc | to_am_var -%]
+[% name_lc = module.name_lc | to_am_var -%]
 [% name_uc%]MODULES = [% makefile_am_list(module.list) %]
 
 G[% name_uc %]MODULES = $([% name_uc %]MODULES:.pm.in=.pm)

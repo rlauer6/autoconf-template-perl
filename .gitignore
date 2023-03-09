@@ -1,3 +1,4 @@
+**/autoconf-template-perl.log
 **/*.1man
 *.spec
 aclocal.m4

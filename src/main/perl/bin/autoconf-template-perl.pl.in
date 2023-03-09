@@ -28,8 +28,9 @@ use List::Util qw(any none pairs);
 use Log::Log4perl qw(:easy get_logger);
 use Module::ScanDeps::Static;
 use Scalar::Util qw(reftype);
+use Term::ProgressBar;
 use Text::ASCIITable::EasyTable;
-use YAML qw(LoadFile DumpFile);
+use YAML qw(LoadFile);
 
 our $VERSION = '@PACKAGE_VERSION@'; ## no critic (RequireInterpolation)
 
@@ -38,6 +39,46 @@ use Readonly;
 Readonly our $MAX_DESCRIPTION_LENGTH => 40;
 
 caller or __PACKAGE__->main();
+
+sub set_command {
+  my ( $options, $command_args ) = @_;
+
+  my $command = shift @ARGV;
+
+  push @{$command_args}, @ARGV;
+
+  if ( $options->{help} ) {
+    $command = 'help';
+  }
+
+  if ( $options->{version} ) {
+    $command = 'version';
+  }
+
+  if ( $options->{'create-stub'} ) {
+    $command = 'create-stub';
+    push @{$command_args}, $options->{'create-stub'};
+  }
+
+  if ( $options->{'create-test-stub'} ) {
+    $command = 'create-test-stub';
+    push @{$command_args}, $options->{'create-test-stub'};
+  }
+
+  if ( $options->{'list-stubs'} ) {
+    $command = 'list-stubs';
+  }
+
+  if ( $options->{'refresh'} ) {
+    $command = 'refresh';
+  }
+
+  if ( $command eq 'refresh' ) {
+    $options->{refresh} = $TRUE;
+  }
+
+  return $command // $EMPTY;
+}
 
 ########################################################################
 sub main {
@@ -75,6 +116,7 @@ sub main {
     manifest|m=s
     man-pages!
     pod-to-readme!
+    progress-bar!
     project-root|P=s
     project|p=s
     quiet|Q
@@ -92,22 +134,18 @@ sub main {
 
   GetOptions( \%options, @options_specs );
 
-  my $command = shift @ARGV;
-  $command //= $EMPTY;
-
-  my @command_args = @ARGV;
+  my @command_args;
+  my $command = set_command( \%options, \@command_args );
 
   $options{'log-level'} //= 'info';
 
   init_logger( $options{'log-level'} );
 
-  $options{autoconf_templaterc} = load_autoconf_templaterc( \%options );
+  return help()
+    if $command eq 'help';
 
-  if ( !$options{autoconf_templaterc} ) {
-    WARN 'no .autoconf-template-perlrc found...';
-  }
-
-  set_defaults( \%options );
+  return version($VERSION)
+    if $command eq 'version';
 
   if ( $command eq 'create-index' ) {
     create_module_index( \%options );
@@ -115,54 +153,75 @@ sub main {
     return;
   }
 
-  return help()
-    if $options{help};
-
-  return version($VERSION)
-    if $options{version};
-
   return list_stubs( \%options )
-    if $command eq 'list-stubs' || $options{'list-stubs'};
+    if $command eq 'list-stubs';
+
+  return dump_project_options( \%options )
+    if $command eq 'dump-options';
 
   return create_manifest( \%options )
     if $options{'create-manifest'};
 
-  croak 'no destination dir, '
-    . "use --destdir to specify the location of your project directory\n"
-    if !$options{destdir}
-    && !$options{refresh}
-    && !$options{'create-stub'}
-    && !$options{'create-test-stub'};
+  my $steps     = 8;
+  my $completed = 0;
 
-  TRACE Dumper( [ 'options', \%options ] );
+  $options{steps}     = \$steps;
+  $options{completed} = \$completed;
 
-  my %meta_data = %options;
+  my $progress = Term::ProgressBar->new(
+    { name   => 'autoconf-template-perl',
+      count  => $steps,
+      remove => $TRUE,
+      silent => !( $options{'progress-bar'} // $TRUE ),
+    }
+  );
+  $options{progress} = $progress;
 
-  delete $meta_data{autoconf_template_perlrc};
+  # 1. load user's configuration files
+  $options{autoconf_templaterc} = load_autoconf_templaterc( \%options );
+  $progress->update( ++$completed );
 
-  # find manifest if not doing a refresh
-  if ( !$options{refresh}
-    && !$options{'create-stub'}
-    && !$options{'create-test-stub'} ) {
-    $options{manifest} ||= $MANIFEST_FILE; # check cwd for manifest.yaml
-
-    croak "no manifest, use --manifest to specify a YAML manifest\n"
-      if !-e $options{manifest};
-
-    INFO 'loading manifest...';
-    $options{manifest} = check_manifest( \%options );
+  if ( !$options{autoconf_templaterc} ) {
+    WARN 'no .autoconf-template-perlrc found...';
   }
-  else {
-    @options{qw(project destdir)} = find_root_dir( \%options );
+
+  my %meta_data;
+
+  if ( $options{refresh} ) {
+    $progress->target( ++$steps );
 
     %meta_data = get_project_meta_data( \%options );
+
+    for (
+      qw(
+      man-pages
+      pod-to-readme
+      unit-tests
+      add-version-numbers
+      rpm-build-mode
+      rpm-install-from-cpan
+      exclude-dirs
+      exclude-files)
+    ) {
+      $options{$_} //= $meta_data{$_};
+      $meta_data{$_} = $options{$_};
+    }
+
+    $options{html}         //= $meta_data{html_build_mode};
+    $options{bash}         //= $meta_data{bash_build_mode};
+    $options{dependencies} //= $meta_data{'check-dependencies'};
+
+    $meta_data{'check-dependencies'} = $options{dependencies};
+    $options{meta_data}              = \%meta_data;
+    $progress->update( ++$completed );
   }
 
-  $options{root} = sprintf '%s/%s', $options{destdir}, $options{project};
-
-  init_parameters( \%options );
+  # 2. set defaults
+  set_defaults( \%options );
+  $progress->update( ++$completed );
 
   if ( $options{'create-stub'} || $options{'create-test-stub'} ) {
+    $progress->target( $completed + 1 );
 
     create_stub( \%options );
 
@@ -180,8 +239,44 @@ sub main {
 
     system $PROGRAM_NAME, @args;
 
+    $progress->update( ++$completed );
+
     return;
   }
+
+  croak 'no destination dir, '
+    . "use --destdir to specify the location of your project directory\n"
+    if !$options{destdir}
+    && !$options{refresh}
+    && !$options{'create-stub'}
+    && !$options{'create-test-stub'};
+
+  TRACE Dumper( [ 'options', \%options ] );
+
+  if ( !keys %meta_data ) {
+    %meta_data = %options;
+  }
+
+  delete $meta_data{autoconf_template_perlrc};
+
+  if ( !$options{refresh} ) {
+    $progress->target( ++$steps );
+    $options{manifest} ||= $MANIFEST_FILE; # check cwd for manifest.yaml
+
+    croak "no manifest, use --manifest to specify a YAML manifest\n"
+      if !-e $options{manifest};
+
+    INFO 'loading manifest...';
+    $options{manifest} = check_manifest( \%options );
+    $progress->update( ++$completed );
+  }
+
+  $options{root} = sprintf '%s/%s', $options{destdir}, $options{project};
+
+  # 3. initialize parameters
+  init_parameters( \%options );
+
+  $progress->update( ++$completed );
 
   TRACE Dumper( [ 'options after init_parameters()', \%options ] );
 
@@ -215,13 +310,17 @@ sub main {
 
   INFO '...creating/refreshing project build tree';
 
+  # 4.
   create_source_tree( \%options );
+  $progress->update( ++$completed );
 
   if ( !$options{refresh} ) {
+    $progress->target( ++$steps );
     # copy files from manifest to target directories
     INFO 'copying files to ' . $options{root};
 
     copy_files( \%options );
+    $progress->update( ++$completed );
   }
   else {
     # don't refresh these if they don't exist
@@ -229,9 +328,13 @@ sub main {
     $options{html_build_mode} = -d sprintf '%s/src/main/html', $options{root};
   }
 
+  # 5.
   find_perl_modules( \%options );
+  $progress->update( ++$completed );
 
   if ( $options{'unit-tests'} ) {
+    $progress->target( ++$steps );
+
     INFO '...creating unit tests';
 
     create_unit_tests( \%options );
@@ -239,9 +342,11 @@ sub main {
     INFO '...finding unit-tests';
 
     create_unit_tests_list( \%options );
+    $progress->update( ++$completed );
   }
 
   if ( !$options{refresh} ) {
+    $progress->target( ++$steps );
     # copy extra files that do not need to be rendered, but are required
     # for the project's autoconfiscation to the project directory (see
     # resources/file_list.json)
@@ -249,6 +354,7 @@ sub main {
     INFO '...copying additional files';
 
     copy_list( \%options );
+    $progress->update( ++$completed );
   }
 
   # * create the Perl module requirement files
@@ -257,7 +363,9 @@ sub main {
   # - requirements.json
 
   if ( !$options{refresh} || $options{'check-dependencies'} ) {
+    $progress->target( ++$steps );
     INFO '...finding dependencies';
+
     INFO Dumper(
       [ refresh      => $options{refresh},
         dependencies => $options{'check-dependencies'}
@@ -265,9 +373,12 @@ sub main {
     );
 
     create_requirement_files( \%options );
+    $progress->update( ++$completed );
   }
 
+  # 6.
   set_rpm_build_options( \%options );
+  $progress->update( ++$completed );
 
   TRACE Dumper( [ options => \%options ] );
 
@@ -285,9 +396,13 @@ sub main {
 
   INFO '...rendering templates';
 
+  # 7.
   render_templates( \%options );
+  $progress->update( ++$completed );
 
   if ( !$options{refresh} ) {
+    $progress->target( $steps + 4 );
+
     %meta_data = (
       %meta_data,
       project       => $options{project},
@@ -296,13 +411,13 @@ sub main {
       creation_date => scalar localtime,
     );
 
-    DumpFile( sprintf( '%s/project.yaml', $options{root} ), \%meta_data );
-
     # create autotools/ax-extra-opts.m4 for first time
 
     system 'autoconf-ax-extra-opts', '--root', $options{root}, '--no-reconf';
 
     INFO '...re-rendering configure.ac';
+
+    $progress->update( ++$completed );
 
     render_tt_template(
       { template   => 'configure.ac.tt',
@@ -311,6 +426,8 @@ sub main {
         cleanup    => [qw(nl)],
       }
     );
+
+    $progress->update( ++$completed );
 
     my $cwd = getcwd;
 
@@ -322,13 +439,94 @@ sub main {
       };
     };
 
+    $progress->update( ++$completed );
+
     chdir $cwd;
 
     INFO '...creating initial ChangeLog entries';
 
     # create ChangeLog AFTER files are created in new project directory
     create_changelog( \%options );
+
+    $progress->update( ++$completed );
   }
+
+  # 8.
+  save_project_meta_data( \%options, \%meta_data );
+
+  $progress->update( ++$completed );
+
+  return;
+}
+
+########################################################################
+sub dump_project_options {
+########################################################################
+  my ($options) = @_;
+
+  my %meta_data = get_project_meta_data($options);
+
+  delete $meta_data{file_list};
+  delete $meta_data{autoconf_templaterc};
+
+  my %descriptions = (
+    'add-version-numbers' =>
+      q{whether to add version numbers to dependency files},
+    'author'          => q{the author},
+    'bash_build_mode' =>
+      q{whether to include a bash source directory in your project},
+    'check-dependencies' => q{whether to scan for dependencies},
+    'conf'               => q{autoconf-template-perl resoruce file},
+    'create-missing'     =>
+      q{whether to create missing files in manifest from stub template},
+    'creation_date' => q{project creation date},
+    'destdir'       => q{project destination directory},
+    'email'         => q{author's email address},
+    'exclude-dirs'  =>
+      q{sub-directories of your source directory to exlude from scanning},
+    'exclude-files'     => q{files to exclude when scanning source directory},
+    'exclude-templates' => q{templates to exclude from processing},
+    'html_build_mode'   =>
+      q{whether to include an html directory in your project},
+    'log-level' => q{log level},
+    'man-pages' =>
+      q{whether to build man pages from Perl scripts and modules},
+    'perlcritic_severity' =>
+      q{perlcritic severity level that will cause 'make check' to fail},
+    'pod-to-readme' =>
+      q{whether to create README.md files for each Perl module},
+    'project'        => q{project name},
+    'rpm-build-mode' => 'whether to disable dependency checking checking',
+    'rpm-install-from-cpan' =>
+      q{whether to include a %post section for installing Perl modules},
+    'source-dir' =>
+      q{original source directory from whence your project files came},
+    'unit-tests' => q{whether to include unit-test stubs},
+  );
+
+  my @data = map {
+    { description => $descriptions{$_},
+      option      => "--$_",
+      value       => $meta_data{$_}
+    }
+    }
+    sort keys %meta_data;
+
+  my $rows = [
+    Option => sub { return shift->{option}; },
+    Value  => sub {
+      my $v = shift->{value};
+      $v = ref $v ? join "\n",
+        @{$v} : $v =~ /^(0|1)$/xsm ? (qw( false true))[$1] : $v;
+    },
+    Description => sub { return shift->{description}; },
+  ];
+
+  print easy_table(
+    data          => \@data,
+    table_options => { headingText => 'Project Options' },
+    rows          => $rows,
+  );
 
   return;
 }
@@ -337,6 +535,8 @@ sub main {
 sub create_manifest {
 ########################################################################
   my ($options) = @_;
+
+  load_autoconf_templaterc($options);
 
   if ( !$options->{project} ) {
     print {*STDERR}
@@ -503,6 +703,10 @@ sub create_stub_file {
 
   my $file = $options->{'create-stub'};
 
+  my ( $project, $destdir ) = find_root($options);
+
+  my $root = "$destdir/$project";
+
   my ( $path, $ext ) = get_subdir_by_type($file);
 
   my $target_ext = $ext eq '.cgi' ? '.pl' : $ext;
@@ -510,8 +714,8 @@ sub create_stub_file {
   my @stubs = get_stubs($options);
 
   TRACE Dumper(
-    [ project => $options->{project},
-      destdir => $options->{destdir},
+    [ project => $project,
+      destdir => $destdir,
       file    => $file,
       path    => $path,
       ext     => $ext,
@@ -552,8 +756,7 @@ sub create_stub_file {
 
   $name =~ s/[.].*$//xsm;
 
-  my $dest_path = sprintf '%s/%s/%s%s', $options->{root},
-    $path, $name, $target_ext;
+  my $dest_path = sprintf '%s/%s/%s%s', $root, $path, $name, $target_ext;
 
   # only "built" files get .in extension...
   if ( any { $ext eq $_ } qw(pl pm yaml cfg json ini) ) {
@@ -733,6 +936,7 @@ Options                Arg        Description
 -M, --create-manifest             create a manifest file from the current directory
 -n, --author           name       author's name (default: "anonymouse")
     --pod-to-readme               create markdown from pod in .pm files
+    --progress-bar                whether to create a progress bar, (default: true)
 -p, --project          name       project name (default: "noname")
 -P, --project-root                root directory of project
 -Q, --quiet                       do not report progress
@@ -921,6 +1125,8 @@ sub list_stubs {
 ########################################################################
   my ($options) = @_;
 
+  $options->{autoconf_templaterc} = load_autoconf_templaterc($options);
+
   my @stubs = get_stubs($options);
 
   my $dist_dir = dist_dir('Autoconf-Template');
@@ -1003,9 +1209,16 @@ sub find_perl_modules {
 ########################################################################
 sub find_local_dependencies {
 ########################################################################
-  my ( $modules, $path ) = @_;
+  my ( $options, $modules, $path ) = @_;
 
   my $output = {};
+
+  my $progress  = $options->{progress};
+  my $steps     = $options->{steps};
+  my $completed = $options->{completed};
+
+  ${$steps} += @{$modules};
+  $progress->target( ${$steps} );
 
   for my $file ( @{$modules} ) {
     my $this = $file;
@@ -1017,6 +1230,8 @@ sub find_local_dependencies {
       $file = "$file.in";
     }
 
+    DEBUG Dumper( sprintf 'scanning %s for internal dependencies', $file );
+
     my $scanner = Module::ScanDeps::Static->new(
       { core => 0,
         path => "$file",
@@ -1024,6 +1239,7 @@ sub find_local_dependencies {
     );
 
     $scanner->parse;
+    $progress->update( ++${$completed} );
 
     my @dependencies = $scanner->get_dependencies();
 
@@ -1432,7 +1648,8 @@ sub get_dependencies {
   my $dirs = get_subdirs($perl_lib_root);
 
   my $all_dependencies = eval {
-    return find_local_dependencies( [@perl_modules], $perl_lib_root );
+    return find_local_dependencies( $options, [@perl_modules],
+      $perl_lib_root );
   };
 
   croak "error gathering dependencies: $EVAL_ERROR"
@@ -2021,8 +2238,6 @@ sub create_module_index {
   my @files = find_files( $path, 'pm', $FALSE );
 
   my %module_index;
-
-  INFO Dumper( [ files => \@files ] );
 
   foreach (@files) {
     my $file = $_;
