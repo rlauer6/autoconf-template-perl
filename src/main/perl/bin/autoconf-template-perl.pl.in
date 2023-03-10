@@ -1263,34 +1263,6 @@ sub find_local_dependencies {
 }
 
 ########################################################################
-sub get_subdirs {
-########################################################################
-  my ( $path, $dirs ) = @_;
-
-  opendir my $fh, "$path"
-    or croak "could not open directory: $OS_ERROR";
-
-  while ( my $file = readdir $fh ) {
-
-    next if $file =~ /^[t.][.]?$/xsm;
-
-    if ( -d "$path/$file" ) {
-      $dirs->{"$path/$file"} = [];
-      $dirs = get_subdirs( "$path/$file", $dirs );
-    }
-    else {
-      if ( $file =~ /[.]pm[.]in$/xsm ) {
-        push @{ $dirs->{$path} }, $file;
-      }
-    }
-  }
-
-  closedir $fh;
-
-  return $dirs;
-}
-
-########################################################################
 sub create_source_tree {
 ########################################################################
   my ($options) = @_;

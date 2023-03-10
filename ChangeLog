@@ -1,4 +1,16 @@
-Thu Mar  9 18:15:06 2023  Rob Lauer  <rlauer@usgn.net>
+Fri Mar 10 11:49:50 2023  Rob Lauer  <rlauer6@comcast.net>
+
+	[2.0.17 - remove empty dirs]:
+	* VERSION: bump
+	* src/main/perl/bin/autoconf-ax-requirements-check.pl.in
+	- sort list
+	* src/main/perl/bin/autoconf-template-perl.pl.in
+	(get_subdirs): moved to Autconf::Template::Utils
+	* src/main/perl/lib/Autoconf/Template/Utils.pm.in
+	(get_subdirs): added from above, call remove_empty_dirs()
+	(remove_empty_dirs): new
+
+Thu Mar  9 18:15:06 2023  Rob Lauer  <rlauer6@comcast.net>
 
 	[2.0.16 - progress bar]:
 	* VERSION: bump

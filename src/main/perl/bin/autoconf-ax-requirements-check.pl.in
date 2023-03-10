@@ -75,8 +75,9 @@ END_OF_TEMPLATE
   if ( @{$required} ) {
     $output = render_tt_template(
       { template   => \$template,
-        parameters => { required => $required },
-        outfile    => $options->{outfile}
+        parameters =>
+          { required => [ sort { $a->{name} cmp $b->{name} } @{$required} ] },
+        outfile => $options->{outfile}
       }
     );
   }
