@@ -1,3 +1,13 @@
+Fri Mar 10 14:36:18 2023  Rob Lauer  <rlauer6@comcast.net>
+
+	[2.0.18]:
+	* VERSION: bump
+	* src/main/perl/bin/autoconf-template-perl.pl.in
+	(main)
+	- don't override bash_build_mode, html_bulid_mode
+	(_set_defaults): update man_pages, unit_tests for TT
+	(load_autoconf_templaterc): assume missing boolean vars are false
+
 Fri Mar 10 11:49:50 2023  Rob Lauer  <rlauer6@comcast.net>
 
 	[2.0.17 - remove empty dirs]:

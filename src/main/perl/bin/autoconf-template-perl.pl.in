@@ -324,8 +324,10 @@ sub main {
   }
   else {
     # don't refresh these if they don't exist
-    $options{bash_build_mode} = -d sprintf '%s/src/main/bash', $options{root};
-    $options{html_build_mode} = -d sprintf '%s/src/main/html', $options{root};
+    $options{bash_build_mode} //= -d sprintf '%s/src/main/bash',
+      $options{root};
+    $options{html_build_mode} //= -d sprintf '%s/src/main/html',
+      $options{root};
   }
 
   # 5.
@@ -383,6 +385,8 @@ sub main {
   TRACE Dumper( [ options => \%options ] );
 
   $options{exclude_templates} //= [];
+
+  INFO Dumper( [ 'bash_build_mode' => $options{bash_build_mode} ] );
 
   if ( !$options{bash_build_mode} ) {
     push @{ $options{exclude_templates} }, 'bash/bin/Makefile.am.tt';
@@ -877,6 +881,9 @@ sub set_defaults {
   $options->{html_build_mode} = delete $options->{html};
   $options->{bash_build_mode} = delete $options->{bash};
 
+  $options->{unit_tests} = $options->{'unit-tests'};
+  $options->{man_pages}  = $options->{'man-pages'};
+
   $options->{'rpm-build-mode'}        //= $TRUE;
   $options->{'rpm-install-from-cpan'} //= $TRUE;
 
@@ -1021,10 +1028,13 @@ sub load_autoconf_templaterc {
 
     next if defined $options->{$options_var};
 
-    my $val = lc $config->val( 'global', $config_var );
+    my $var = $config->val( 'global', $config_var );
+    my $val = lc( $var // 'false' );
 
-    croak "invalid value boolean value for $_ ($val)"
+    croak "invalid boolean value for $config_var '$val'"
       if none { $val eq $_ } qw( true 1 yes on false 0 no off );
+
+    INFO Dumper( [ $config_var => $val ] );
 
     $options->{$options_var} = any { $val eq $_ } qw(true 0 yes on);
   }
