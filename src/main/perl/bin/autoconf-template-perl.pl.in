@@ -52,25 +52,25 @@ sub set_command {
   }
 
   if ( $options->{version} ) {
-    $command = 'version';
+    $command //= 'version';
   }
 
   if ( $options->{'create-stub'} ) {
-    $command = 'create-stub';
+    $command //= 'create-stub';
     push @{$command_args}, $options->{'create-stub'};
   }
 
   if ( $options->{'create-test-stub'} ) {
-    $command = 'create-test-stub';
+    $command //= 'create-test-stub';
     push @{$command_args}, $options->{'create-test-stub'};
   }
 
   if ( $options->{'list-stubs'} ) {
-    $command = 'list-stubs';
+    $command //= 'list-stubs';
   }
 
   if ( $options->{'refresh'} ) {
-    $command = 'refresh';
+    $command //= 'refresh';
   }
 
   if ( $command eq 'refresh' ) {
@@ -200,16 +200,20 @@ sub main {
       add-version-numbers
       rpm-build-mode
       rpm-install-from-cpan
-      exclude-dirs
-      exclude-files)
+      )
     ) {
+      $options{$_}   //= to_boolean( $meta_data{$_} );
+      $meta_data{$_} //= to_boolean( $options{$_} );
+    }
+
+    for (qw( exclude-dirs exclude-files)) {
       $options{$_} //= $meta_data{$_};
       $meta_data{$_} = $options{$_};
     }
 
-    $options{html}         //= $meta_data{html_build_mode};
-    $options{bash}         //= $meta_data{bash_build_mode};
-    $options{dependencies} //= $meta_data{'check-dependencies'};
+    $options{html}         //= to_boolean( $meta_data{html_build_mode} );
+    $options{bash}         //= to_boolean( $meta_data{bash_build_mode} );
+    $options{dependencies} //= to_boolean( $meta_data{'check-dependencies'} );
 
     $meta_data{'check-dependencies'} = $options{dependencies};
     $options{meta_data}              = \%meta_data;
@@ -218,6 +222,7 @@ sub main {
 
   # 2. set defaults
   set_defaults( \%options );
+
   $progress->update( ++$completed );
 
   if ( $options{'create-stub'} || $options{'create-test-stub'} ) {
@@ -925,7 +930,7 @@ Options                Arg        Description
 -------                ----       ------------
 -h, --help                        help
 -a, --all                         create all directories and unit-tests
-    --add-versions-numbers        default: true
+    --add-version-numbers         default: true
 -b, --bash                        build bash directories (default: true)
 -c, --create-missing              create any files in manifest that do not exist (default: false)
 -d, --destdir          directory  directory where project will be built
@@ -1013,15 +1018,7 @@ sub load_autoconf_templaterc {
 
   # convert boolean words to boolean value
   # ...command line options take precendence!
-  my @booleans = (
-    man_pages       => 'man-pages',
-    create_missing  => 'create-missing',
-    unit_tests      => 'unit-tests',
-    html            => 'html',
-    bash            => 'bash',
-    version_numbers => 'add-version-numbers',
-    pod_to_readme   => 'pod-to-readme',
-  );
+  my @booleans = %BOOLEAN_OPTIONS;
 
   for my $p ( pairs @booleans ) {
     my ( $config_var, $options_var ) = @{$p};
@@ -1036,7 +1033,7 @@ sub load_autoconf_templaterc {
 
     INFO Dumper( [ $config_var => $val ] );
 
-    $options->{$options_var} = any { $val eq $_ } qw(true 0 yes on);
+    $options->{$options_var} //= to_boolean($val);
   }
 
   my $perlcritic_severity = $config->val( 'global', 'perlcritic_severity' );

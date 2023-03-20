@@ -51,6 +51,16 @@ Readonly::Hash our %CONFIG_FILE_EXTENSIONS => (
   yaml_files   => 'yaml',
 );
 
+Readonly::Hash our %BOOLEAN_OPTIONS => (
+  man_pages       => 'man-pages',
+  create_missing  => 'create-missing',
+  unit_tests      => 'unit-tests',
+  html            => 'html',
+  bash            => 'bash',
+  version_numbers => 'add-version-numbers',
+  pod_to_readme   => 'pod-to-readme',
+);
+
 Readonly::Hash our %SUBDIRS_BY_TYPE => (
   '.html' => 'src/main/html/htdocs',
   '.css'  => 'src/main/html/css',
@@ -95,6 +105,7 @@ our %EXPORT_TAGS = (
       $COPYRIGHT
       %CONFIG_FILE_EXTENSIONS
       %SUBDIRS_BY_TYPE
+      %BOOLEAN_OPTIONS
     )
   ],
 );

@@ -17,7 +17,7 @@ resources_[% dir %]dir = $(resourcesdir)/[% dir %]
 
 RESOURCES_[% dir | upper %] = [% makefile_am_list(resources, dir) %]
 
-resources_[% dir %]_DATA = $(RESOURCES_[% dir | upper %])
+dist_resources_[% dir %]_DATA = $(RESOURCES_[% dir | upper %])
 [% END %]
 [% END %]
 all:

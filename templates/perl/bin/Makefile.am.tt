@@ -32,7 +32,7 @@ clean-generated-man-pages:
 	done
 [% END %]
 
-dist_noinst_DATA = $(UNIT_TESTS) $(PERLSCRIPTS)
+dist_noinst_DATA = $(UNIT_TESTS) $(ALLSCRIPTS)
 
 if DISTCHECK_HACK
 else

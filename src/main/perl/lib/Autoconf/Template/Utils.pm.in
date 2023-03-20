@@ -44,6 +44,7 @@ our @EXPORT_OK = qw(
   slurp_file
   strip_in
   timestamp
+  to_boolean
   version
 );
 
@@ -524,11 +525,25 @@ sub render_tt_template {
 }
 
 ########################################################################
+sub to_boolean {
+########################################################################
+  my ($val) = @_;
+
+  $val //= $EMPTY;
+
+  return ( any { $val eq $_ } qw(true 1 on yes) ) ? $TRUE : $FALSE;
+}
+
+########################################################################
 sub save_project_meta_data {
 ########################################################################
   my ( $options, $meta_data ) = @_;
 
   $meta_data->{updated_date} = scalar localtime;
+
+  foreach ( keys %BOOLEAN_OPTIONS ) {
+    $meta_data->{$_} = to_boolean( $meta_data->{$_} ) ? 'true' : 'false';
+  }
 
   DumpFile( sprintf( '%s/project.yaml', $options->{root} ), $meta_data );
 
