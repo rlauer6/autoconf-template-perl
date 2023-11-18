@@ -14,6 +14,7 @@ templates_bash_bindir = $(templates_bashdir)/bin
 
 templates_resourcesdir = $(templatesdir)/resources
 templates_configdir    = $(templatesdir)/config
+templates_cpandir      = $(templatesdir)/cpan
 templates_htmldir      = $(templatesdir)/html
 
 TEMPLATES = \
@@ -64,6 +65,10 @@ TEMPLATES_RESOURCES = \
 TEMPLATES_CONFIG = \
    config/Makefile.am.tt
 
+TEMPLATES_CPAN = \
+   cpan/Makefile.am.tt \
+   cpan/buildspec.yml.tt
+
 TEMPLATES_HTML = \
    html/Makefile.am.tt
 
@@ -92,4 +97,5 @@ templates_perl_lib_DATA    = $(TEMPLATES_PERL_LIB)
 templates_bash_bin_DATA    = $(TEMPLATES_BASH_BIN)
 templates_resources_DATA   = $(TEMPLATES_RESOURCES)
 templates_config_DATA      = $(TEMPLATES_CONFIG)
+templates_cpan_DATA        = $(TEMPLATES_CPAN)
 templates_html_DATA        = $(TEMPLATES_HTML)

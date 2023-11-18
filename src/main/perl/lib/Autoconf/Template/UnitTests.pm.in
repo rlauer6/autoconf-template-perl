@@ -4,12 +4,12 @@ use strict;
 use warnings;
 
 use Autoconf::Template::Constants qw(:all);
-use Autoconf::Template::Utils qw(:all);
+use Autoconf::Template::Utils     qw(:all);
 use Data::Dumper;
 use File::Basename qw(basename);
-use List::Util qw(pairs);
-use Log::Log4perl qw(:easy);
-use Scalar::Util qw(reftype);
+use List::Util     qw(pairs);
+use Log::Log4perl  qw(:easy);
+use Scalar::Util   qw(reftype);
 
 use parent qw(Exporter);
 
@@ -109,7 +109,7 @@ sub render_unit_test {
 
   $test_number ||= 0;
 
-  my $unit_test = sprintf '%s/t/%02d-%s.t', $path, $test_number, $name;
+  my $unit_test = sprintf '%s/t/%02d-%s.t.in', $path, $test_number, $name;
 
   if ( -e $unit_test ) {
     WARN sprintf sprintf 'unit test %s for %s already exists...skipping',

@@ -9,7 +9,7 @@
 # outputs .pc files (OK) or ,.pc.log files with issues
 perlcritic = @PERLCRITIC@
 
-PERLCRITIC_THEME = 'security||certrule||freenode'
+PERLCRITIC_THEME = 'pbp|security||certrule||freenode'
 PERLCRITIC_SEVERITY = 1
 PERLCRITIC_VERBOSITY = 9
 PERLCRITICRC = $(top_srcdir)/perlcriticrc

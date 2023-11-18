@@ -25,7 +25,7 @@ email  = anonymouse@example.org
 
 # create files from stubs if they are listed in the manifest
 # but do not exist
-create_missing = true
+create_missing = false
 
 # maximum severity level allowable
 perlcritic_severity = 3

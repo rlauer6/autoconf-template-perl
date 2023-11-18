@@ -25,6 +25,7 @@ RESOURCES = \
     autotools/am_build_mode.m4 \
     autotools/am_perlcritic_mode.m4 \
     autotools/ax_am_conditional_example.m4 \
+    autotools/ax_requirements_check.m4 \
     autotools/ax_deps_check.m4 \
     autotools/ax_distcheck_hack.m4 \
     autotools/apache_config.m4 \

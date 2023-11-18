@@ -56,6 +56,7 @@
     "ax_am_conditional_example.m4": "autotools/",
     "ax_deps_check.m4": "autotools/",
     "ax_distcheck_hack.m4": "autotools/",
+    "ax_requirements_check.m4": "autotools/",
     "autoconf-template-perlrc" : ".autoconf-template-perlrc",
     "install-from-cpan.in" : "",
     "bootstrap": [ "0755" ],
@@ -85,6 +86,8 @@
     "perl/lib/Makefile.am.tt": "src/main/perl/lib/Makefile.am",
     "perl/lib/perl-modules.inc.tt": "includes/perl-modules.inc",
     "resources/Makefile.am.tt": "resources/Makefile.am",
+    "cpan/Makefile.am.tt": "cpan/Makefile.am",
+    "cpan/buildspec.yml.tt": "cpan/buildspec.yml",
     "spec.in.tt": [ 0, "@project@.spec.in", [ "nl" ]]
   },
   "refresh": [

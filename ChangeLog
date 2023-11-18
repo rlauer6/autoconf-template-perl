@@ -1,4 +1,47 @@
-Mon Mar 20 15:58:21 2023  Rob Lauer  <rlauer@usgn.net>
+Sat Nov 18 08:42:46 2023  Rob Lauer  <rlauer6@comcast.net>
+
+	[2.0.20]:
+	* VERSION: bump
+	* README.md: generated
+	* README.md.in
+	- blurb re: dependency updates
+	- CPAN distributions
+	* includes/perlcritic.inc: add pbp to theme
+	* resources/autotools/ax_requirements_check.m4: new
+	* resources/Makefile.am: add above to build
+	* resources/autoconf-template-perlrc.in
+	- make create-missing default false
+	* resources/file_list.json
+	- add new templates
+	* src/main/perl/bin/autoconf-template-perl.pl.in
+	- --repo-name, --cpan-module-name, source-dir=s
+	(set_command): default command to empty
+	(create_manifest): default . to cwd
+	(set_defaults): set defaults for new options
+	(load_autoconf_templaterc): set new option repo-name
+	(create_source_tree): add cpan directory
+	(_copy_files): croak if malformed Perl module
+	(make_absolute): absolute path if start with '/'
+	* src/main/perl/lib/Autoconf/Template/UnitTests.pm.in:
+	(render_unit_test): save as .in files now
+	* templates/Makefile.am:
+	* templates/configure.ac.tt:
+	(do_subst_command):
+	- add scandeps, make_cpan_dist
+	- add cpan/Makefile
+	* templates/perl/lib/Makefile.am.tt:
+	- make docs
+	(CLEANFILES):
+	- add RUNIT_TESTS, GUNIT_TESTS
+	* templates/unit-tests.tt
+	- build from .in files
+	* templates/cpan/Makefile.am.tt: new
+	* templates/cpan/buildspec.yml.tt: new
+	* templates/Makefile.am.tt-
+	- add above to build
+	- add cpan dir
+
+Mon Mar 20 15:58:21 2023  Rob Lauer  <rlauer6@comcast.net>>
 
 	[2.0.19]:
 	* VERSION: bump

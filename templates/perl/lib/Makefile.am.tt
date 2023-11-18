@@ -10,11 +10,13 @@ include $(top_srcdir)/includes/perlcritic.inc
 [% unit_test_list = "pm" %]
 [% INCLUDE "unit-tests.tt" %]
 
-all:
+all: docs $(RUNIT_TESTS)
 
 CLEANFILES = \
     $(GALLMODULES) \
-    $(GPERLCRITIC_PM)
+    $(GPERLCRITIC_PM) \
+    $(RUNIT_TESTS) \
+    $(GUNIT_TESTS)
 
 .PHONY: clean-local
 clean-local:

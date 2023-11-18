@@ -1,6 +1,6 @@
 # README
 
-Last Updated: 03/08/23
+Last Updated: 11/18/23
 
 __This project is currently a work in progress and may not be ready for
 production.__
@@ -37,6 +37,7 @@ See [`NEWS`](NEWS.md) for the lastest news on releases.
 * [x] add web assets to RPM
 * [x] index for documentation
 * [x] `make cpan` for tarball distributions
+* [x] create CPAN distributions
 * [ ] add Apache configuration templates
 * [ ] allow sub-directories in `config` directory
 
@@ -85,6 +86,7 @@ See [`NEWS`](NEWS.md) for the lastest news on releases.
   * [Adding Files to the Distribution](#adding-files-to-the-distribution)
   * [`configure` Options](#configure-options)
   * [Perl Modules and RPMs](#perl-modules-and-rpms)
+  * [Building CPAN Distributions](#building-cpan-distributions)
 * [FAQs](#faqs)
 
 # Overview
@@ -292,7 +294,7 @@ that are _organized_, _extensible_ and _scalable_.
    ```
 1. run the `autoconf-template-perl` utility
    ```
-   autoconf-template-perl -d .
+   autoconf-template-perl -d . --create-missing
    ```
 1. initialize the build system
    ```
@@ -314,7 +316,8 @@ that are _organized_, _extensible_ and _scalable_.
 > As noted above, none of the assests listed above actually need to exist. The utility
 > will create stubs for you. [Perl scripts](#templates/stub.pl.tt) and
 > [module stubs](#templates/stubs.pm.tt)  will be
-> built from templates.
+> built from templates. Feel free to modify these as per your
+> requirements and likes. :-)
 
 If all goes well, you have installed a sample project that looks
 something like this:
@@ -1273,6 +1276,9 @@ requires.json
 autotools/ax_requirements_check.m4
 ```
 
+Re-run the `bootstrap` script. The next time you run `configure` the
+new dependencies will be verified if dependency checking is enabled.
+
 [Back to Table of Contents](#table-of-contents) 
 
 # Building an RPM
@@ -1533,6 +1539,10 @@ tests must pass for the distribution to be considered _working_.
 # Advanced Topics
 
 ## Creating Your Own Configuration Options
+
+The instructions below are designed for those who want to dive a
+little deeper into `autoconf` and `automake`.  You might find it
+helpful to follow along in the [GNU AutoMake documentation](https://www.gnu.org/software/automake/).
 
 Once you've created your project and `autoconf-template-perl` has
 created your `configure.ac` file, executing `./configure --help` will
@@ -1879,6 +1889,25 @@ containers that contain my Perl applications.  When building
 containers you can control all of the parameters and dependencies
 required for the build...and you can still couple a containerized
 build with the use of RPMs.
+
+[Back to Table of Contents](#table-of-contents) 
+
+## Building CPAN Distributions
+
+If your project implements Perl modules that you might want to
+upload to CPAN or you just want to create a packaged distribution for
+yourself you can do that using the tools in your generated project.
+
+In order to build a CPAN distribution you should have
+[`make-cpan-dist`](https://github.com/rlauer6/make-cpan-dist)
+installed. This utility will create a CPAN distribution from a
+specfication you supply as a YAML file.
+
+The YAML file is _mostly_ built for you so all you need to do is run
+`make cpan` in the `cpan` directory of your project.
+
+See the documentation for `make-cpan-dist` for information on how to
+create a `buildspec.yml` file.
 
 [Back to Table of Contents](#table-of-contents) 
 
