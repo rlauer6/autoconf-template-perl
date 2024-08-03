@@ -46,6 +46,7 @@ src/main/bash/**/*.sh
 cpan/provides
 cpan/resources
 cpan/test-requires
+cpan/extra-files
 cpan/*.tar.gz
 src/main/perl/bin/autoconf-ax-requirements-check
 src/main/perl/bin/autoconf-ax-extra-opts

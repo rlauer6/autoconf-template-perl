@@ -1,3 +1,19 @@
+Sat Aug  3 13:43:46 2024  Rob Lauer  <rlauer@usgn.net>
+
+	[2.0.21]:
+	* VERSION: bump
+	* README.md: generated
+	* README.md.in: perl5shardir
+	* configure.ac: likewise
+	* templates/configure.ac.tt: likewise
+	* src/main/perl/bin/autoconf-template-perl.pl.in
+	- whitespace
+	(main)
+	- don't croak if we can't fild file_list.json
+	- added dist-name option
+	(dump_project_options): added dist-name option
+	(help): likewise
+
 Sat Nov 18 08:42:46 2023  Rob Lauer  <rlauer6@comcast.net>
 
 	[2.0.20]:

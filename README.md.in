@@ -167,6 +167,7 @@ Optional Packages:
   --with-PACKAGE[=ARG]    use PACKAGE [ARG=yes]
   --without-PACKAGE       do not use PACKAGE (same as --with-PACKAGE=no)
   --with-perl5libdir (defaults to DATAROOTDIR/perl5)
+  --with-perl5sharedir (defaults to perl5libdir/auto/share/dist/dist-name)
   --with-perl-includes=DIR[:DIR:...]
                           prepend DIRs to Perl's @INC
   --with-apache-vhost-domain=name

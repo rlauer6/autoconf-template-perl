@@ -7,25 +7,25 @@ use strict;
 use warnings;
 
 use Autoconf::Template::Constants qw(:all);
-use Autoconf::Template::Utils     qw(:all);
+use Autoconf::Template::Utils qw(:all);
 use Autoconf::Template::UnitTests;
 
 use Capture::Tiny qw(capture);
-use Carp          qw(croak);
+use Carp qw(croak);
 use Config::IniFiles;
 use Cwd;
 use Data::Dumper;
-use Date::Format   qw(time2str);
-use English        qw(-no_match_vars);
+use Date::Format qw(time2str);
+use English qw(-no_match_vars);
 use File::Basename qw(basename fileparse dirname);
 use File::Copy;
 use File::Find;
-use File::Path     qw(make_path);
+use File::Path qw(make_path);
 use File::ShareDir qw(dist_dir);
-use Getopt::Long   qw(:config no_ignore_case);
-use JSON           qw(decode_json);
-use List::Util     qw(any none pairs);
-use Log::Log4perl  qw(:easy get_logger);
+use Getopt::Long qw(:config no_ignore_case);
+use JSON qw(decode_json);
+use List::Util qw(any none pairs);
+use Log::Log4perl qw(:easy get_logger);
 use Module::ScanDeps::Static;
 use Scalar::Util qw(reftype);
 use Term::ProgressBar;
@@ -90,9 +90,13 @@ sub main {
 
   check_for_autotools();
 
-  my $file_list = slurp_file( $FILE_LIST, type => 'json' );
+  my $file_list;
 
-  my %options = ( file_list => $file_list );
+  if ( -e $FILE_LIST ) {
+    $file_list = eval { return slurp_file( $FILE_LIST, type => 'json' ); };
+  }
+
+  my %options = ( file_list => $file_list // {} );
 
   # options are defined with '-' to separate words to make it easy to
   # type options on CLI
@@ -109,6 +113,7 @@ sub main {
     dependencies!
     description|D=s
     destdir|d=s
+    dist-name=s
     email|e=s
     exclude-dirs|E=s@
     exclude-files|F=s@
@@ -144,6 +149,8 @@ sub main {
   my $command = set_command( \%options, \@command_args );
 
   $options{'log-level'} //= 'info';
+  $options{'dist-name'} //= 'project';
+  $options{dist_name} = $options{'dist-name'};
 
   init_logger( $options{'log-level'} );
 
@@ -262,8 +269,7 @@ sub main {
     return;
   }
 
-  croak 'no destination dir, '
-    . "use --destdir to specify the location of your project directory\n"
+  croak 'no destination dir, ' . "use --destdir to specify the location of your project directory\n"
     if !$options{destdir}
     && !$options{refresh}
     && !$options{'create-stub'}
@@ -326,8 +332,7 @@ sub main {
     }
 
     if ( $options{html_build_mode} ) {
-      WARN
-        q{you said --no-html but you have  web assets, adding web sections};
+      WARN q{you said --no-html but you have  web assets, adding web sections};
     }
   }
 
@@ -349,10 +354,8 @@ sub main {
   }
   else {
     # don't refresh these if they don't exist
-    $options{bash_build_mode} //= -d sprintf '%s/src/main/bash',
-      $options{root};
-    $options{html_build_mode} //= -d sprintf '%s/src/main/html',
-      $options{root};
+    $options{bash_build_mode} //= -d sprintf '%s/src/main/bash', $options{root};
+    $options{html_build_mode} //= -d sprintf '%s/src/main/html', $options{root};
   }
 
   ######################################################################
@@ -512,54 +515,39 @@ sub dump_project_options {
   delete $meta_data{autoconf_templaterc};
 
   my %descriptions = (
-    'add-version-numbers' =>
-      q{whether to add version numbers to dependency files},
-    'author'          => q{the author},
-    'bash_build_mode' =>
-      q{whether to include a bash source directory in your project},
-    'check-dependencies' => q{whether to scan for dependencies},
-    'conf'               => q{autoconf-template-perl resoruce file},
-    'create-missing'     =>
-      q{whether to create missing files in manifest from stub template},
-    'creation_date' => q{project creation date},
-    'destdir'       => q{project destination directory},
-    'email'         => q{author's email address},
-    'exclude-dirs'  =>
-      q{sub-directories of your source directory to exlude from scanning},
-    'exclude-files'     => q{files to exclude when scanning source directory},
-    'exclude-templates' => q{templates to exclude from processing},
-    'html_build_mode'   =>
-      q{whether to include an html directory in your project},
-    'log-level' => q{log level},
-    'man-pages' =>
-      q{whether to build man pages from Perl scripts and modules},
-    'perlcritic_severity' =>
-      q{perlcritic severity level that will cause 'make check' to fail},
-    'pod-to-readme' =>
-      q{whether to create README.md files for each Perl module},
-    'project'        => q{project name},
-    'rpm-build-mode' => 'whether to disable dependency checking checking',
-    'rpm-install-from-cpan' =>
-      q{whether to include a %post section for installing Perl modules},
-    'source-dir' =>
-      q{original source directory from whence your project files came},
-    'unit-tests' => q{whether to include unit-test stubs},
+    'add-version-numbers'   => q{whether to add version numbers to dependency files},
+    'author'                => q{the author},
+    'bash_build_mode'       => q{whether to include a bash source directory in your project},
+    'check-dependencies'    => q{whether to scan for dependencies},
+    'conf'                  => q{autoconf-template-perl resoruce file},
+    'create-missing'        => q{whether to create missing files in manifest from stub template},
+    'creation_date'         => q{project creation date},
+    'destdir'               => q{project destination directory},
+    'dist-name'             => q{module distribtion name},
+    'email'                 => q{author's email address},
+    'exclude-dirs'          => q{sub-directories of your source directory to exlude from scanning},
+    'exclude-files'         => q{files to exclude when scanning source directory},
+    'exclude-templates'     => q{templates to exclude from processing},
+    'html_build_mode'       => q{whether to include an html directory in your project},
+    'log-level'             => q{log level},
+    'man-pages'             => q{whether to build man pages from Perl scripts and modules},
+    'perlcritic_severity'   => q{perlcritic severity level that will cause 'make check' to fail},
+    'pod-to-readme'         => q{whether to create README.md files for each Perl module},
+    'project'               => q{project name},
+    'rpm-build-mode'        => 'whether to disable dependency checking checking',
+    'rpm-install-from-cpan' => q{whether to include a %post section for installing Perl modules},
+    'source-dir'            => q{original source directory from whence your project files came},
+    'unit-tests'            => q{whether to include unit-test stubs},
   );
 
-  my @data = map {
-    { description => $descriptions{$_},
-      option      => "--$_",
-      value       => $meta_data{$_}
-    }
-    }
+  my @data = map { { description => $descriptions{$_}, option => "--$_", value => $meta_data{$_} } }
     sort keys %meta_data;
 
   my $rows = [
     Option => sub { return shift->{option}; },
     Value  => sub {
       my $v = shift->{value};
-      $v = ref $v ? join "\n",
-        @{$v} : $v =~ /^(0|1)$/xsm ? (qw( false true))[$1] : $v;
+      $v = ref $v ? join "\n", @{$v} : $v =~ /^(0|1)$/xsm ? (qw( false true))[$1] : $v;
     },
     Description => sub { return shift->{description}; },
   ];
@@ -581,13 +569,11 @@ sub create_manifest {
   load_autoconf_templaterc($options);
 
   if ( !$options->{project} ) {
-    print {*STDERR}
-      "WARNING: you do not have a project name (-p to add project name)\n";
+    print {*STDERR} "WARNING: you do not have a project name (-p to add project name)\n";
   }
 
   if ( !$options->{description} ) {
-    print {*STDERR}
-      "WARNING: you do not have a project description (-D to add description)\n";
+    print {*STDERR} "WARNING: you do not have a project description (-D to add description)\n";
   }
 
   my %files;
@@ -655,8 +641,7 @@ sub create_manifest {
     $files{$param} = [ filter_list( \@file_list, $srcdir, @exclude_files ) ];
   }
 
-  TRACE Dumper(
-    [ exclude => \@exclude_files, 'exclude-dirs' => \@exclude_dirs ] );
+  TRACE Dumper( [ exclude => \@exclude_files, 'exclude-dirs' => \@exclude_dirs ] );
 
   my @resources;
 
@@ -666,12 +651,10 @@ sub create_manifest {
       return
         if ( -d $_ ) || is_exclude_dir( $File::Find::name, \@exclude_dirs );
 
-      TRACE Dumper(
-        [ resource => $File::Find::name, exclude_dirs => \@exclude_dirs ] );
+      TRACE Dumper( [ resource => $File::Find::name, exclude_dirs => \@exclude_dirs ] );
 
       if ( $File::Find::name =~ /project[.]yaml/xsm ) {
-        croak
-          "traversing a directory that may already be a project...use -f to force\n";
+        croak "traversing a directory that may already be a project...use -f to force\n";
       }
 
       push @resources, $File::Find::name;
@@ -681,9 +664,7 @@ sub create_manifest {
 
   TRACE Dumper( [ files => \%files, resources => \@resources ] );
 
-  @resources
-    = filter_list( \@resources, $srcdir, @exclude_files,
-    map { @{ $files{$_} } } keys %files );
+  @resources = filter_list( \@resources, $srcdir, @exclude_files, map { @{ $files{$_} } } keys %files );
 
   $files{resources} = \@resources;
 
@@ -998,6 +979,7 @@ Options                Arg        Description
 -c, --create-missing              create any files in manifest that do not exist (default: false)
     --cpan-module-name            name of the CPAN module you are potentially building
 -d, --destdir          directory  directory where project will be built
+    --dist-name        string     name of the distribution, used for path of extra files          
 -D, --description                 project description
     --dependencies                whether to look for new dependencies on refresh, (default:true)
 -e, --email            email      author's email (default: $ENV{EMAIL} || anonymouse\@example.com)
@@ -1103,8 +1085,7 @@ sub load_autoconf_templaterc {
 
   my $perlcritic_severity = $config->val( 'global', 'perlcritic_severity' );
 
-  croak
-    'invalid value for "perlcritic_severity" in .autoconf-template-perlrc'
+  croak 'invalid value for "perlcritic_severity" in .autoconf-template-perlrc'
     if none { $perlcritic_severity eq $_ } qw(1 2 3 4 5);
 
   $options->{'perlcritic_severity'} = $options->{'perlcritic-severity'};
@@ -1151,8 +1132,7 @@ sub get_config_vars {
   DEBUG Dumper( [ 'dirs' => [ $PROJECT_DIR, $PERL5SHARE_DIR ] ] );
 
   if ( !$config ) {
-    $config = $options->{config}
-      = load_autoconf_templaterc( $options, $PROJECT_DIR, $PERL5SHARE_DIR ); # create manifest?
+    $config = $options->{config} = load_autoconf_templaterc( $options, $PROJECT_DIR, $PERL5SHARE_DIR ); # create manifest?
   }
 
   croak 'could not find .autoconf-template-perlrc'
@@ -1256,8 +1236,7 @@ sub find_perl_modules {
 
   my $dependencies = get_dependencies($options);
 
-  $options->{modules}
-    = create_dependency_tree( $dirs, $dependencies, $perl_lib_root );
+  $options->{modules} = create_dependency_tree( $dirs, $dependencies, $perl_lib_root );
 
   foreach my $file ( keys %{$dependencies} ) {
     strip_in( $dependencies->{$file} );
@@ -1420,8 +1399,7 @@ sub _copy_files {
 ########################################################################
   my (%args) = @_;
 
-  my ( $prefix, $file_list, $add_in, $options )
-    = @args{qw(prefix files add_in options)};
+  my ( $prefix, $file_list, $add_in, $options ) = @args{qw(prefix files add_in options)};
 
   DEBUG( Dumper( [ file_list => $file_list ] ) );
 
@@ -1680,8 +1658,7 @@ sub check_manifest {
       INFO 'config: ' . $file;
       $file = expand_filename($file);
 
-      croak sprintf "config files should have extensions of %s\n",
-        join $COMMA, values %CONFIG_FILE_EXTENSIONS
+      croak sprintf "config files should have extensions of %s\n", join $COMMA, values %CONFIG_FILE_EXTENSIONS
         if none { $file =~ /[.]$_$/xsm } values %CONFIG_FILE_EXTENSIONS;
 
       $file = make_absolute( $srcdir, $file );
@@ -1714,10 +1691,7 @@ sub get_dependencies {
 
   my $dirs = get_subdirs($perl_lib_root);
 
-  my $all_dependencies = eval {
-    return find_local_dependencies( $options, [@perl_modules],
-      $perl_lib_root );
-  };
+  my $all_dependencies = eval { return find_local_dependencies( $options, [@perl_modules], $perl_lib_root ); };
 
   croak "error gathering dependencies: $EVAL_ERROR"
     if !$all_dependencies || $EVAL_ERROR;
@@ -1924,9 +1898,7 @@ sub init_parameters {
 
     TRACE Dumper( [ perl_modules => $options->{perl_modules} ] );
 
-    $options->{perl_modules}
-      = [ map { find_module_filename( $_ . '.in' ) }
-        @{ $options->{perl_modules} } ];
+    $options->{perl_modules} = [ map { find_module_filename( $_ . '.in' ) } @{ $options->{perl_modules} } ];
 
     DEBUG Dumper(
       [ 'refreshing',
@@ -1953,11 +1925,9 @@ sub init_parameters {
     for my $p ( pairs @target_dirs ) {
       my ( $type, $dir ) = @{$p};
 
-      $options->{'strip-dir'} = sprintf '%s/src/main/%s', $options->{root},
-        $dir;
+      $options->{'strip-dir'} = sprintf '%s/src/main/%s', $options->{root}, $dir;
 
-      create_target_file_list( $options, [ $type => $options->{$type} ],
-        '.in' );
+      create_target_file_list( $options, [ $type => $options->{$type} ], '.in' );
     }
 
     DEBUG Dumper(
@@ -2062,8 +2032,7 @@ sub create_target_file_list {
     }
 
     if ( any { $var eq $_ }
-      qw(html_files javascript_files image_files css_files resources perl_scripts cgi_scripts )
-    ) {
+      qw(html_files javascript_files image_files css_files resources perl_scripts cgi_scripts ) ) {
       my $dirs = {};
 
       foreach (@targets) {
@@ -2213,8 +2182,7 @@ sub create_requirement_files {
 
   # create requirements file for each format using JSON file as input
   for my $format (qw( text m4 )) {
-    system @ax_requirements_check, '-o', $outfiles{$format}, '-f', $format,
-      '-i', $outfiles{'json'};
+    system @ax_requirements_check, '-o', $outfiles{$format}, '-f', $format, '-i', $outfiles{'json'};
   }
 
   return;
@@ -2334,8 +2302,7 @@ sub create_module_index {
       $description =~ s/^([^\n]+)\n(.*)\z/$1/xsm;
 
       if ( length $description > $MAX_DESCRIPTION_LENGTH ) {
-        $description = sprintf '%s...', substr $description, 0,
-          $MAX_DESCRIPTION_LENGTH;
+        $description = sprintf '%s...', substr $description, 0, $MAX_DESCRIPTION_LENGTH;
       }
     }
 

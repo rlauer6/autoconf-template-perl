@@ -75,6 +75,7 @@ do_subst_command='do_subst = sed \
   -e '"'"'s,[@]top_srcdir[@],$(top_srcdir),g'"'"' \
 \
   -e '"'"'s,[@]perl5libdir[@],$(perl5libdir),g'"'"' \
+  -e '"'"'s,[@]perl5sharedir[@],$(perl5sharedir),g'"'"' \
   -e '"'"'s,[@]perlrun[@],$(perlrun),g'"'"' \
   -e '"'"'s,[@]ksh[@],$(ksh),g'"'"' \
   -e '"'"'s,[@]scandeps[@],$(scandeps),g'"'"' \
@@ -207,6 +208,18 @@ AC_ARG_WITH(
         ]
 )
 
+AC_ARG_WITH(
+	[perl5sharedir],[  --with-perl5sharedir (defaults to $perl5libdir/auto/share/dist/[% dist_name %])],
+	[
+                perl5sharedir=$withval
+        ],
+        [
+        perl5sharedir=\${perl5libdir}/auto/share/dist/[% dist_name %]
+        ]
+)
+
+AC_SUBST([perl5sharedir])
+
 AC_SUBST([perl5libdir])
 
 AX_DISTCHECK_HACK
@@ -265,6 +278,7 @@ printf "               Configuration files: %s\n" "`__poor_mans_expand_file_name
 printf "\n"
 printf "                              perl: %s\n" "`__poor_mans_expand_file_name PERL`"
 printf "                       perl5libdir: %s\n" "`__poor_mans_expand_file_name perl5libdir`"
+printf "                     perl5sharedir: %s\n" "`__poor_mans_expand_file_name perl5sharedir`"
 printf "                              bash: %s\n" "`__poor_mans_expand_file_name BASHRUN`"
 [% IF html_build_mode -%]
 printf "\n"

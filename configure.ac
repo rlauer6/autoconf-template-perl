@@ -185,9 +185,17 @@ AC_ARG_WITH(
         ]
 )
 
-perl5sharedir=\${perl5libdir}/auto/share/Autoconf-Template
-
 AC_SUBST([perl5libdir])
+
+AC_ARG_WITH(
+	[perl5sharedir],[  --with-perl5sharedir (defaults to $perl5libdir/auto/share/dist/Autoconf-Template)],
+	[
+                perl5sharedir=$withval
+        ],
+        [
+        perl5sharedir=\${perl5libdir}/auto/share/dist/Autoconf-Template
+        ]
+)
 
 AC_SUBST([perl5sharedir])
 

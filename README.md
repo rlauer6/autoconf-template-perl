@@ -1,9 +1,6 @@
 # README
 
-Last Updated: 11/18/23
-
-__This project is currently a work in progress and may not be ready for
-production.__
+Last Updated: 08/03/24
 
 <p align="center">
 <img src="https://upload.wikimedia.org/wikipedia/en/2/22/Heckert_GNU_white.svg"
@@ -20,7 +17,7 @@ This is the README for the `autoconf-template-perl` project.  It
 contains, among other things a collection of useful tools for creating
 _autoconfiscated_ Perl based projects.  If you are on a system that uses
 the Redhat Package Manager, you can also use the `.spec` file in
-this project to create rpms.
+this project to create an rpm for your project.
 
 > I guess the fancy word I learned working with one of my employers for frameworks
 > like this is __accelerator__.
@@ -129,8 +126,8 @@ can use this framework effectively.
 
 # Features of the `autoconf-template-perl` Utility
 
-* Organizes your applications and scripts into an __easily recognizable and navigable
-  tree structure__
+* Organizes your applications and scripts into an __easily
+  recognizable and navigable tree structure__
   * Perl modules
   * Perl scripts
   * CGI scripts
@@ -146,6 +143,7 @@ can use this framework effectively.
 * Creation of stub _modules_, _scripts_, _html files_, etc from
   templates
 * Creation of an __RPM file__ for deployment on RedHat flavored systems
+* Creation of a CPAN distribution tarball
 
 [Back to Table of Contents](#table-of-contents) 
 
@@ -215,6 +213,7 @@ Optional Packages:
   --with-PACKAGE[=ARG]    use PACKAGE [ARG=yes]
   --without-PACKAGE       do not use PACKAGE (same as --with-PACKAGE=no)
   --with-perl5libdir (defaults to DATAROOTDIR/perl5)
+  --with-perl5sharedir (defaults to perl5libdir/auto/share/dist/dist-name)
   --with-perl-includes=DIR[:DIR:...]
                           prepend DIRs to Perl's @INC
   --with-apache-vhost-domain=name
@@ -388,12 +387,12 @@ git commit -m 'Big Bang!'
 
 [Back to Table of Contents](#table-of-contents) 
 
-
 # Requirements
 
 * `autoconf`
 * `automake`
 * `make`
+* [`md-utils.pl`](https://github.com/rlauer6/markdown-utils)
 * Perl modules (in addition to core modules)
   ```
   Date::Format
