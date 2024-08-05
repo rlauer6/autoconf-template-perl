@@ -1,3 +1,60 @@
+Mon Aug  5 11:38:35 2024  Rob Lauer  <rlauer@usgn.net>
+
+	[2.0.22]:
+	* VERSION: bump
+	* README.md: generated
+	* README.md.in: customizing build rules
+	* autotools/ads_PERL_MODULE.pm
+	- support .pl file requirements
+	- ignore errors on some modules that don't have versions
+	* resources/autotools/ads_PERL_MODULE.m4: likewise
+	* resources/file_list.json
+	- + src/main/perl/lib/README.md.tt (for index)
+	* templates/Makefile.am.tt: custom section
+	* templates/Makefile.tt: likewise
+	* templates/bash/bin/Makefile.am.tt: likewise
+	* templates/bash/bin/bash-bin.inc.tt: likewise
+	* templates/bash/bin/bash-scripts.inc.tt: likewise
+	* templates/config/Makefile.am.tt: likewise
+	* templates/html/Makefile.am.tt: likewise
+	* templates/perl/bin/Makefile.am.tt: likewise
+	* templates/perl/bin/perl-bin.inc.tt: likewise
+	* templates/perl/cgi-bin/Makefile.am.tt: likewise
+	* templates/perl/cgi-bin/perl-cgi-bin.inc.tt: likewise
+	* templates/perl/lib/perl-modules.inc.tt: likewise
+	* templates/resources/Makefile.am.tt: likewise
+	* templates/perl/lib/Makefile.am.tt
+	- likewise
+	- add index to doc target
+	- updated doc target to create README.md for all .pm files
+	* src/main/perl/bin/autoconf-template-perl.pl.in
+	- add cpan option
+	(main)
+	- load manifest if present on command line
+	- don't refresh cpan if directory does not exist
+	(create_manifest)
+	- don't croak if -f
+	(set_defaults): +cpan for all option
+	(create_source_tree)
+	- preserve custom sections for Makefiles in directory roots
+	(extract_custom_sections): new
+	(makefile_am_flatten_list): sort entries
+	(makefile_am_list): likewise
+	(_prefixed_list): likewise
+	(init_parameters): bash_scripts, not bashscripts
+	(render_templates): preserve custom sections
+	* templates/configure.ac.tt
+	- print localstatedir in readout
+	(do_subst_command)
+	- add perl5sharedir
+	- add ax_perl5_extra_includes
+	(AC_CONFIG_FILES): conditionally add cpan/Makefile
+	* templates/build-rules.tt
+	- remove mode hint
+	- remove markdown rule
+	* templates/unit-tests.tt: likewise
+	* templates/man_page-rules.tt: just change first '-' to /
+
 Sat Aug  3 13:43:46 2024  Rob Lauer  <rlauer@usgn.net>
 
 	[2.0.21]:

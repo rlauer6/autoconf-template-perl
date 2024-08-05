@@ -11,7 +11,7 @@ use Autoconf::Template::Utils qw(:all);
 use Autoconf::Template::UnitTests;
 
 use Capture::Tiny qw(capture);
-use Carp qw(croak);
+use Carp;
 use Config::IniFiles;
 use Cwd;
 use Data::Dumper;
@@ -131,6 +131,7 @@ sub main {
     quiet|Q
     refresh|r
     repo-name=s
+    cpan
     cpan-module-name=s
     rpm-build-mode|R!
     rpm-post-section!
@@ -230,6 +231,7 @@ sub main {
 
     $options{html}         //= to_boolean( $meta_data{html_build_mode} );
     $options{bash}         //= to_boolean( $meta_data{bash_build_mode} );
+    $options{cpan}         //= to_boolean( $meta_data{cpan_build_mode} );
     $options{dependencies} //= to_boolean( $meta_data{'check-dependencies'} );
 
     $meta_data{'check-dependencies'} = $options{dependencies};
@@ -283,7 +285,7 @@ sub main {
 
   delete $meta_data{autoconf_template_perlrc};
 
-  if ( !$options{refresh} ) {
+  if ( !$options{refresh} || $options{manifest} ) {
     $progress->target( ++$steps );
     $options{manifest} ||= $MANIFEST_FILE; # check cwd for manifest.yaml
 
@@ -332,7 +334,7 @@ sub main {
     }
 
     if ( $options{html_build_mode} ) {
-      WARN q{you said --no-html but you have  web assets, adding web sections};
+      WARN q{you said --no-html but you have web assets, adding web sections};
     }
   }
 
@@ -354,6 +356,7 @@ sub main {
   }
   else {
     # don't refresh these if they don't exist
+    $options{cpan_build_mode} //= -e sprintf '%s/cpan',          $options{root};
     $options{bash_build_mode} //= -d sprintf '%s/src/main/bash', $options{root};
     $options{html_build_mode} //= -d sprintf '%s/src/main/html', $options{root};
   }
@@ -654,7 +657,9 @@ sub create_manifest {
       TRACE Dumper( [ resource => $File::Find::name, exclude_dirs => \@exclude_dirs ] );
 
       if ( $File::Find::name =~ /project[.]yaml/xsm ) {
-        croak "traversing a directory that may already be a project...use -f to force\n";
+        carp "traversing a directory that may already be a project...\n";
+        croak "use -f to force\n"
+          if !$options->{force};
       }
 
       push @resources, $File::Find::name;
@@ -918,11 +923,13 @@ sub set_defaults {
   if ( $options->{all} ) {
     $options->{html}         = $TRUE;
     $options->{bash}         = $TRUE;
+    $options->{cpan}         = $TRUE;
     $options->{'unit-tests'} = $TRUE;
   }
 
   $options->{html_build_mode} = delete $options->{html};
   $options->{bash_build_mode} = delete $options->{bash};
+  $options->{cpan_build_mode} = delete $options->{cpan};
 
   $options->{unit_tests} = $options->{'unit-tests'};
   $options->{man_pages}  = $options->{'man-pages'};
@@ -1383,15 +1390,49 @@ sub create_source_tree {
     my ( $makefile, $subdirs ) = @{$p};
     next if !@{$subdirs};
 
+    my @custom_sections = extract_custom_sections($makefile);
+
     render_tt_template(
       { template   => 'Makefile.tt',
-        parameters => { dir_list => $subdirs },
+        parameters => { %{$options}, dir_list => $subdirs, custom_sections => \@custom_sections },
         outfile    => $makefile
       }
     );
   }
 
   return;
+}
+
+########################################################################
+sub extract_custom_sections {
+########################################################################
+  my ($makefile) = @_;
+
+  my @custom_sections;
+
+  my @makefile_text = split /\n/xsm, slurp_file( $makefile, comments => $TRUE );
+
+  my $custom;
+
+  foreach my $line (@makefile_text) {
+    if ($custom) {
+      push @{$custom}, $line;
+    }
+
+    next if $line !~ /^[#][#]\s.*$/xsm;
+
+    if ($custom) {
+      push @custom_sections, $custom;
+      $custom = undef;
+    }
+    else {
+      $custom = [$line];
+    }
+
+    next;
+  }
+
+  return @custom_sections;
 }
 
 ########################################################################
@@ -1708,10 +1749,10 @@ sub _prefixed_list {
 
   $sep //= $SLASH;
 
-  return @{$list}
+  return sort @{$list}
     if !$prefix;
 
-  return map {"$prefix$sep$_"} @{$list};
+  return map {"$prefix$sep$_"} sort @{$list};
 }
 
 ########################################################################
@@ -1729,7 +1770,7 @@ sub makefile_am_flatten_list {
     push @list, _prefixed_list( $prefix, $hash->{$k} );
   }
 
-  return _makefile_am_join(@list);
+  return _makefile_am_join( sort @list );
 }
 
 ########################################################################
@@ -1744,7 +1785,8 @@ sub makefile_am_list {
     ]
   );
 
-  return $EMPTY if !ref $file_list;
+  return $EMPTY
+    if !ref $file_list;
 
   return _makefile_am_join( _prefixed_list( $prefix, $file_list ) )
     if reftype($file_list) eq 'ARRAY';
@@ -1770,7 +1812,7 @@ sub makefile_am_list {
     @files = map {"$subdir/$_"} @files;
   }
 
-  return _makefile_am_join(@files);
+  return _makefile_am_join( sort @files );
 }
 
 ########################################################################
@@ -1911,7 +1953,7 @@ sub init_parameters {
     );
 
     $options->{bash_scripts}
-      = [ map { ( basename $_) . '.in' } @{ $options->{bashscripts} } ];
+      = [ map { ( basename $_) . '.in' } @{ $options->{bash_scripts} } ];
 
     my @target_dirs = (
       cgi_scripts      => 'perl/cgi-bin',
@@ -2127,6 +2169,14 @@ sub render_templates {
 
     # resolve any variables in file names (@project@.spec.in), e.g.
     $out = do_subst( $out, $parameters );
+
+    # preserve custom sections
+    my $name = basename($out);
+
+    if ( any { $name eq $_ } qw(Makefile.am perl-modules.inc perl-bin.inc perl-cgi-bin.inc) ) {
+      my @custom_sections = extract_custom_sections($out);
+      $parameters->{custom_sections} = \@custom_sections;
+    }
 
     render_tt_template(
       { template   => $template,

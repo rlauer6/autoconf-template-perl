@@ -58,6 +58,8 @@ MANPAGES = [% makefile_am_list(cgi_scripts) %]
 
 [% INCLUDE "manpage-rules.tt" %]
 
-[% man_pages %]
+[% END %]
 
+[% FOREACH section IN custom_sections %]
+[% section.join("\n") %]
 [% END %]

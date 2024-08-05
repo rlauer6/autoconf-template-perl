@@ -29,7 +29,7 @@ GMANPAGES = $(MANPAGES:.pl.in=.1man)
 
 $(GMANPAGES): $(TEMP_MANPAGES)
 	set -x; \
-	src=$(subst -,/,$@); \
+	src=$$(echo $@ | sed 's/-/\//'); \
 	tman=$$(dirname $$src)/$$(basename $$src .1man).tman; \
 	if test -e $$tman; then \
 	  cp $$tman $@; \

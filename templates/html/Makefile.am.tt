@@ -42,7 +42,7 @@ dist_apache_site_htdocs_[% dir %]_DATA = $(HTML_[% dir | upper %])
 [% END -%]
 [% END -%]
 
-########################################################################I
+########################################################################
 # IMAGES
 ########################################################################
 IMAGES = [% makefile_am_list(image_files, '.', 'images') %]
@@ -130,3 +130,6 @@ uninstall-local:
 	  rmdir $(DESTDIR)/$(apache_sitedir)/$$a 2>/dev/null || : ;\
 	done
 
+[% FOREACH section IN custom_sections %]
+[% section.join("\n") %]
+[% END %]

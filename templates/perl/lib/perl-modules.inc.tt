@@ -47,3 +47,7 @@ G3MANPAGES = $(GALLMODULES:.pm=.3man)
 [% END %]
 
 PERLCRITIC_PM = $(GALLMODULES)
+
+[% FOREACH section IN custom_sections %]
+[% section.join("\n") %]
+[% END %]

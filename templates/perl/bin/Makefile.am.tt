@@ -44,3 +44,7 @@ install-data-hook:
 
 uninstall-local:
 endif
+
+[% FOREACH section IN custom_sections %]
+[% section.join("\n") %]
+[% END %]

@@ -19,3 +19,7 @@ $(GBASHSCRIPTS): % : %.in
 	$(do_subst) $< > $@
 
 CLEANFILES = $(GBASHSCRIPTS)
+
+[% FOREACH section IN custom_sections %]
+[% section.join("\n") %]
+[% END %]

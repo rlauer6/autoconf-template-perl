@@ -1,6 +1,6 @@
 # README
 
-Last Updated: 08/03/24
+Last Updated: 08/05/24
 
 <p align="center">
 <img src="https://upload.wikimedia.org/wikipedia/en/2/22/Heckert_GNU_white.svg"
@@ -78,6 +78,8 @@ See [`NEWS`](NEWS.md) for the lastest news on releases.
   * [Creating a Module Index](#creating-a-module-index)
 * [Unit Tests](#unit-tests)
 * [Advanced Topics](#advanced-topics)
+  * [Customizing Build Rules](#customizing-build-rules)
+  * [Customizing the `all` Target](#customizing-the-all-target)
   * [Creating Your Own Configuration Options](#creating-your-own-configuration-options)
   * [Customizing Your Stub Files](#customizing-your-stub-files)
   * [Adding Files to the Distribution](#adding-files-to-the-distribution)
@@ -395,6 +397,8 @@ git commit -m 'Big Bang!'
 * [`md-utils.pl`](https://github.com/rlauer6/markdown-utils)
 * Perl modules (in addition to core modules)
   ```
+  Capture::Tiny
+  Config::Inifiles
   Date::Format
   File::ShareDir
   JSON
@@ -402,6 +406,8 @@ git commit -m 'Big Bang!'
   Module::ScanDeps::Static
   Readonly
   Template
+  Term::ProgressBar
+  Text::ASCIITable::EasyTable
   YAML
   ```
 * ...and various other standard Linux utilities
@@ -562,6 +568,8 @@ make install DESTDIR=/tmp/my-project
 tree /tmp/my-project | less
 ```
 
+[Back to Table of Contents](#table-of-contents)
+
 ## Automatically Creating A Manifest File
 
 To create a `manifest.yaml` that contains your project assets, you use
@@ -708,6 +716,8 @@ components. `autoconf-template-perl` recognizes the needs of those
 types of applications by creating directories and build instructions
 for web applications as well.
 
+[Back to Table of Contents](#table-of-contents)
+
 ## Root Directory
 
 The root of the project will contain your `configure.ac` file which is
@@ -789,6 +799,8 @@ included in the manifest.
              `-- t
 ```
 
+[Back to Table of Contents](#table-of-contents)
+
 # Building and Deploying Your Application
 
 ## Building Your Application
@@ -810,6 +822,8 @@ In general, the recipe for building your application looks like this:
 You can also build an RPM after creating your distribution
 tarball. [Building RPMs](#building-an-rpm) is a more complicated subject that is discussed
 later in this documenation.
+
+[Back to Table of Contents](#table-of-contents)
 
 ## Checking Your Project Distribution
 
@@ -882,6 +896,8 @@ How you deploy your application depends on how you have packaged it.
 If you have opted to use an RPM, deployment is done using `yum` or
 `rpm`. 
 
+[Back to Table of Contents](#table-of-contents)
+
 ## RPMs
 
 The entire deployed application has been laid out within the
@@ -889,6 +905,8 @@ RPM, so deployment is essentially done by `rpm` by copying the
 contents of the RPM to the target system.  Some additional steps might
 be performed in the `%post` section of the RPM if you are building
 Perl module dependencies at deployment time.
+
+[Back to Table of Contents](#table-of-contents)
 
 ## Tarballs
 
@@ -910,6 +928,8 @@ deployed.
 
 Try `./configure --help` to see a listing of all configuration
 options.
+
+[Back to Table of Contents](#table-of-contents)
 
 ## Standard Deployment Tree
 
@@ -1035,6 +1055,8 @@ structure without actually deploying to the intended targets.
 
 See [Creating Your Own Configuration
 Options](#creating-your-own-configuration-options)
+
+[Back to Table of Contents](#table-of-contents)
 
 ## Automake Configuration Variables
 
@@ -1220,6 +1242,8 @@ consider the intradependencies of the components within the project
 when making those decisions. Of course, it's not rocket science
 either. ;-)
 
+[Back to Table of Contents](#table-of-contents)
+
 ## Disabling Syntax Checking
 
 Syntax checking of Perl modules requires that all required Perl
@@ -1236,6 +1260,8 @@ the looking for required  Perl modules during execution of `configure`
 and the `--enable-rpm-build-mode` which
 will turn off syntax checking of Perl scripts and modules during a `make`.
 Substitution of `automake` variables will still occur however.
+
+[Back to Table of Contents](#table-of-contents)
 
 ## Perl Module Dependencies
 
@@ -1350,6 +1376,8 @@ follow the quick start recipe below.
    rpmbuild -tb $(ls -1t *.tar.gz | head -1)
    ```
 
+[Back to Table of Contents](#table-of-contents)
+
 ## Building RPMs from CPAN Modules
 
 There have been multiple attempts to create scripts that package CPAN
@@ -1363,6 +1391,8 @@ modules as RPMs. The most recent and most robust of which appears to be `cpantor
 
 If you are going to package your application as an RPM you should
 become familiar with these tools.
+
+[Back to Table of Contents](#table-of-contents)
 
 ## Signing an RPM
 
@@ -1388,6 +1418,8 @@ a `README.md` file for each Perl module in your `src/main/perl/lib`
 directories.  Use the `--man-pages` option to include the recipe for
 building `man` pages in the `Makefile`s.
 
+[Back to Table of Contents](#table-of-contents)
+
 ## README.md for Perl Modules
 
 Use the `--pod-to-readme` option to enable the creation of a
@@ -1397,6 +1429,8 @@ automatically created during a build. Execute `make docs` in the
 files will be created in a sub-directory whose name is the Perl module
 path.  Adding these files to your `git` repo gives you a convenient
 way to look at the module documentation.
+
+[Back to Table of Contents](#table-of-contents)
 
 ## Creating a Module Index
 
@@ -1413,6 +1447,8 @@ autoconf-template-perl create-index > src/main/perl/lib/README.md
 
 You can also use `make index` in the `src/main/perl/lib` directory to
 automatically create your `README.md` file.
+
+[Back to Table of Contents](#table-of-contents)
 
 # Unit Tests
 
@@ -1537,6 +1573,72 @@ tests must pass for the distribution to be considered _working_.
 
 # Advanced Topics
 
+## Customizing Build Rules
+
+If you are familiar enough with `automake` and wish to customize some
+aspect of the build, be aware that refreshing the project will normally
+overwrite your customizations. In order to make sure that a refresh
+does not lose your customizations, preface the custom section with a
+comment that begins with two (2) comment characters.  End the
+customized section with another comment that starts with two hash
+marks.  For example:
+
+```
+ ## foo recipe
+ 
+ foo: $(SOME_FOO_FILES)
+     do_something
+ 
+ ## end of foo recipe
+```
+
+You can customize any of the `Makefile.am` files that build your
+artifacts or the include files that specify the recipes for building
+Perl assets.
+
+* `includes/perl/lib/perl-modules.inc`
+* `includes/perl/bin/perl-bin.inc`
+* `includes/perl/cgi-bin/perl-cgi-bin.inc`
+* `includes/bash/bash-bin.inc`
+* `includes/bash/bash-scripts.inc`
+
+A typical use case might be if some modules are required by other
+modules which need to be built first.
+
+Suppose module `Foo` is used as a base class for `Bar` and `Buz`:
+
+```
+ ## dependencies
+ FOO_MODULES = \
+     Bar.pm.in \
+     Buz.pm.in
+     USGN/Integration/HMSHost/PurchaseOrder.pm.in
+ 
+ $(FOO): Foo.pm
+ ## end of dependencies
+```
+
+[Back to Table of Contents](#table-of-contents)
+
+## Customizing the `all` Target
+
+If you need to customize the `all` target, add a PHONY target like
+`ALL` to the list of dependencies in the existing `all` target.
+Create your build rule for `ALL`.  For example:
+
+```
+ .PHONY: ALL
+ 
+ ## custom target
+ ALL: foo.bar
+     cp $< $$(basename $< .bar).buz
+ ## end custom target
+ 
+ all: ALL
+```
+
+[Back to Table of Contents](#table-of-contents)
+
 ## Creating Your Own Configuration Options
 
 The instructions below are designed for those who want to dive a
@@ -1592,12 +1694,17 @@ autoconf-ax-extra-opts -o s3-bucket-name \
 --with-s3-bucket-name=bucket-name The bucket to store stuff in (default: my-private-bucket-name)
 ```
 
-To use this a configuration file for example:
+To use this in a configuration file for example:
 
 ```
 [s3]
 bucket_name = @s3_bucket_name@
 ```
+
+Don't forget to commit the updated `autotools/ax_extra_opts.m4`
+macro to your repository.
+
+[Back to Table of Contents](#table-of-contents)
 
 ## Customizing Your Stub Files
 
@@ -1681,6 +1788,8 @@ will be identified and added to the `m4` macro
 `autotools/ax_requirements_check.m4` so that `configure` will verify
 their existence in the target environment during the build.
 
+[Back to Table of Contents](#table-of-contents)
+
 ## `configure` Options
 
 Along with the standard `configure` options that allow you to alter the
@@ -1688,6 +1797,7 @@ install paths there are additonal options specific to
 `autoconf-template-perl` that control the building of your project.
 
 | Option | Description |
+| ------ | ----------- |
 | `--enable-distcheck-hack` | enables flag that use the `DISTCHECK_CONFIGURE_FLAGS`  you might have set in your project root `Makefile.am` (see [FAQs](#faqs)) |
 | `--disable-deps` | don't abort if dependencies are missing, just warn |
 | `--enable-rpm-build-mode` |  disables dependency checking and other behaviors that are only relevant outside of an RPM build |'
@@ -1697,9 +1807,12 @@ install paths there are additonal options specific to
 | `--with-perl5libdir` | where to install Perl modules, default: `$Config{installib}` |
 |  `--with-perl-includes` | additional Perl module paths that will prepended to `@INC` |
 
+[Back to Table of Contents](#table-of-contents)
+
 * Apache Configuration Options
 
 | Option | Description |
+| ------ | ----------- |
 | `--with-apache-vhost-domain=name` | domain name used to set `@apache_vhost_domain@` |
 | `--with-apache-vhostdir=DIR` | root directory for web application |
 | `--with-apache-vhost-confdir=DIR` |  where Apache looks for virtual host configuration files (_not currently used_) |
@@ -1710,8 +1823,6 @@ install paths there are additonal options specific to
 | `--with-architecture` | architecture (`noarch`, `x86_64`) (default: noarch |
 
 [Back to Table of Contents](#table-of-contents) 
-
-[Back to Table of Contents](#table-of-contents)
 
 ## Perl Modules and RPMs
 

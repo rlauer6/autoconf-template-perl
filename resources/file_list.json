@@ -65,7 +65,8 @@
     "perlcritic.inc": "includes/",
     "perlcriticrc": "perlcriticrc",
     "perltidyrc": "perltidyrc",
-    "prove.sh.in": "autotools/prove.sh.in"
+    "prove.sh.in": "autotools/prove.sh.in",
+    "templates/perl/lib/README.md.tt": "src/main/perl/lib/README.md.tt"
   },
   "templates": {
     "ax_perlcritic_config.m4.tt": "autotools/ax_perlcritic_config.m4",

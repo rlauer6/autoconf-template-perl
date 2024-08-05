@@ -21,3 +21,7 @@ dist_resources_[% dir %]_DATA = $(RESOURCES_[% dir | upper %])
 [% END %]
 [% END %]
 all:
+
+[% FOREACH section IN custom_sections %]
+[% section.join("\n") %]
+[% END %]

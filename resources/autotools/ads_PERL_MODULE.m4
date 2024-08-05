@@ -192,11 +192,11 @@ AC_DEFUN([ads_PERL_MODULE], [
     #
     if test "${_tmp_perl_mod_required_or_optional}" = 'REQUIRED'; then
         eval "'""${PERL}""'" "${ax_perl5_extra_includes_opt}" \
-                  -we "'""use strict; use ${_tmp_perl_mod_name} ${_tmp_perl_mod_version};""'"
+                  -we "'""if ( qq(${_tmp_perl_mod_name}) !~/\.pl/ ) { eval q(use ${_tmp_perl_mod_name} ${_tmp_perl_mod_version};) } else { require qq(${_tmp_perl_mod_name}); }""'"
     else
 
         eval "'""${PERL}""'" "${ax_perl5_extra_includes_opt}" \
-                  -we "'""use strict; use ${_tmp_perl_mod_name} ${_tmp_perl_mod_version};""'" 2>/dev/null
+                  -we "'""if ( qq(${_tmp_perl_mod_name}) !~/\.pl/ ) { eval q(use ${_tmp_perl_mod_name} ${_tmp_perl_mod_version};); } else { require qq(${_tmp_perl_mod_name}); }""'" 2>/dev/null
     fi
     if test $? -eq 0; then
         # Great, we have the module. Now print where it was found:
@@ -204,19 +204,31 @@ AC_DEFUN([ads_PERL_MODULE], [
           -MFile::Spec -wle "'"'
             use strict;
             my $modname = shift;
-            eval "require ${modname}";
+	    
+	    if ( $modname !~/\.pl/ ) {
+              eval "require ${modname};";
+	    }
+	    else {
+              eval "require qq(${modname});";
+	    }
             ${@} and die qq{Was unable to require module "$modname": ${@}};
-            $modname .= q{.pm};
-            my $found = undef;
-            my $shortpath = File::Spec->catdir( split(q{::}, $modname) );
-            my $fullpath;
-            if (exists $INC{ $shortpath } && defined $INC{ $shortpath }) {
+	    my $found;
+	    if ( $modname =~/\.pl/ ) {
+	      $found = 1;
+	    }
+            else { 
+	      $found = undef; 
+              $modname .= q{.pm};
+              my $shortpath = File::Spec->catdir( split(q{::}, $modname) );
+              my $fullpath;
+              if (exists $INC{ $shortpath } && defined $INC{ $shortpath }) {
                 $found = 1;
                 $fullpath = $INC{ $shortpath };
-            }
-            $fullpath = q{<path unavailable in %INC}
+              }
+              $fullpath = q{<path unavailable in %INC}
                 unless defined $fullpath && length $fullpath;
-            print $fullpath;
+              print $fullpath;
+	    }
             exit ($found ? 0 : 1);  # parens required
         '"'" "'""${_tmp_perl_mod_name}""'")"
         if test $? -ne 0; then
@@ -244,11 +256,15 @@ dnl FIXME: provide macro maintainer email address in error message
         # actually found on the system.
 
         _tmp_found_mod_version="$(
-          eval "'""${PERL}""'" "'""-M${_tmp_perl_mod_name}""'" \
+          eval "'""${PERL}""'" \
             "${ax_perl5_extra_includes_opt}" -wle "'"'
                my $modname = shift;
-               my $ver = "${modname}::VERSION";
-               print $$ver if defined $$ver && length $$ver;
+	       my $ver = "";
+	       if ( $modname !~/\.pl/ ) {
+		eval qq(use $modname);
+		$ver = "${modname}::VERSION";
+                }
+                print $$ver if defined $$ver && length $$ver;
             '"'" "'""${_tmp_perl_mod_name}""'"
         )"
         if test $? -ne 0; then

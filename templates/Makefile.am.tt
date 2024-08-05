@@ -53,3 +53,7 @@ EXTRA_DIST = \
     aclocal.m4
 
 DISTCHECK_CONFIGURE_FLAGS = --with-perlcritic-severity=[% perlcritic_severity %] --with-perl5libdir='\$(prefix)/shaer/perl5'
+
+[% FOREACH section IN custom_sections %]
+[% section.join("\n") %]
+[% END %]

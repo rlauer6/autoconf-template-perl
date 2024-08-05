@@ -1,5 +1,3 @@
-#-*- mode: makefile-gmake; -*-
-
 UNIT_TESTS = [% makefile_am_list(unit_tests.$unit_test_list) %]
 
 RUNIT_TESTS = $(UNIT_TESTS:.t.in=.t)

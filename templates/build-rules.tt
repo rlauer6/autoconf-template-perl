@@ -1,6 +1,3 @@
-# -*- mode: makefile-gmake; -*-
-# This is a Makefile rule use tabs!
-
 perlrun = $(PERL)
 
 if RPM_BUILD_MODE
@@ -43,6 +40,3 @@ PERLINCLUDE = \
 
 %.cgi: %.pl
 	cp $< $@
-
-%.md : %.pm
-	$(POD2MARKDOWN) < $< >$@

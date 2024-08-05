@@ -16,3 +16,7 @@
 # details.
 
 BASHSCRIPTS = [% makefile_am_list(bash_scripts) %]
+
+[% FOREACH section IN custom_sections %]
+[% section.join("\n") %]
+[% END %]

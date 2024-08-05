@@ -10,9 +10,10 @@ include $(top_srcdir)/includes/perlcritic.inc
 [% unit_test_list = "pm" %]
 [% INCLUDE "unit-tests.tt" %]
 
-all: docs $(RUNIT_TESTS)
+all: docs index $(RUNIT_TESTS)
 
 CLEANFILES = \
+    $(README_FILES) \
     $(GALLMODULES) \
     $(GPERLCRITIC_PM) \
     $(RUNIT_TESTS) \
@@ -31,22 +32,22 @@ clean-generated-man-pages:
 	test $$? -eq 0 || exit 1 ;\
 	done
 
-.PHONY: docs
-docs:
-	if test -z "$(POD2MARKDOWN)"; then \
-	  >&2 echo "ERROR: no pod2markdown...install Pod::Markdown first and re-configure"; \
-	fi
+README_FILES=$(GALLMODULES:.pm=/README.md.in)
+GREADME_FILES=$(README_FILES:.md.in=.md)
 
+.PHONY: docs
+docs: $(GALLMODULES) 
 	for a in $(GALLMODULES); do \
 	  dir="$$(dirname "$$a")"; \
-	  test -d "$$dir" || $(INSTALL) -d "$$dir"; \
 	  test -d "$$dir/$$(basename "$$a" .pm)" || $(INSTALL) -d "$$dir/$$(basename "$$a" .pm)"; \
-	  $(POD2MARKDOWN) $$a > "$$dir/$$(basename "$$a" .pm)"/README.md; \
+	  readme="$$dir/$$(basename "$$a" .pm)"/README.md; \
+	  $(POD2MARKDOWN) $$a > $$readme.in; \
+	  md-utils.pl $$readme.in > $$readme; \
 	done
 
 index: README.md
 
-README.md:
+README.md: $(GREADME_FILES)
 	autoconf-template-perl create-index > $@
 
 dist_noinst_DATA = $(ALLMODULES) $(UNIT_TESTS)
@@ -71,3 +72,7 @@ uninstall-local:
 	done
 
 endif
+
+[% FOREACH section IN custom_sections %]
+[% section.join("\n") %]
+[% END %]

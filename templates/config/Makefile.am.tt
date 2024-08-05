@@ -84,3 +84,7 @@ dist_noinst_DATA = $(ALLFILES)
 all:
 
 CLEANFILES = $(GALLFILES)
+
+[% FOREACH section IN custom_sections %]
+[% section.join("\n") %]
+[% END %]

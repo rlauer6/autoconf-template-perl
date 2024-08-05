@@ -61,3 +61,7 @@ MANPAGES = [% makefile_am_list(perl_scripts) %]
 
 [% INCLUDE "manpage-rules.tt" %]
 [% END %]
+
+[% FOREACH section IN custom_sections %]
+[% section.join("\n") %]
+[% END %]
