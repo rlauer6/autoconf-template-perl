@@ -1410,7 +1410,7 @@ sub extract_custom_sections {
 
   my @custom_sections;
 
-  my @makefile_text = split /\n/xsm, slurp_file( $makefile, comments => $TRUE );
+  my @makefile_text = eval { split /\n/xsm, slurp_file( $makefile, comments => $TRUE ); };
 
   my $custom;
 
@@ -1453,6 +1453,8 @@ sub _copy_files {
 
     $dest =~ s/$strip_dir//xsm;
 
+    my $source_dir = $options->{'source-dir'};
+
     DEBUG Dumper( [ source => $file, destination => $dest ] );
 
     # .pm files, we may have a directory hierarchy that we want to
@@ -1466,7 +1468,13 @@ sub _copy_files {
     # so use the package name to reflect the directory hierarchy
     #
     if ( $file =~ /[.]pm/xsm ) {
-      $dest = find_module_filename($file);
+      if ( -s $file ) {
+        $dest = find_module_filename($file);
+      }
+      else {
+        $dest = $file;
+        $dest =~ s/^$source_dir\///xsm;
+      }
 
       croak "malformed Perl module? no package info? ($file)\n"
         if !$dest;
@@ -1485,7 +1493,7 @@ sub _copy_files {
 
     create_path("$prefix/$dest");
 
-    if ( -e $file ) {
+    if ( -e $file && -s $file ) {
       copy( $file, "$prefix/$dest" );
     }
     else {
@@ -1505,7 +1513,9 @@ sub _copy_files {
         DEBUG Dumper( [ 'found a template ', $stub_name ] );
 
         if ( $ext eq '.pm' ) {
-          my $module_name = path_to_module($file);
+          my $module_name = $file;
+          $module_name =~ s/^$source_dir\///xsm;
+          $module_name = path_to_module($module_name);
           $parameters{module_name} = $module_name;
         }
 

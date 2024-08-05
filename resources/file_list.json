@@ -65,8 +65,7 @@
     "perlcritic.inc": "includes/",
     "perlcriticrc": "perlcriticrc",
     "perltidyrc": "perltidyrc",
-    "prove.sh.in": "autotools/prove.sh.in",
-    "templates/perl/lib/README.md.tt": "src/main/perl/lib/README.md.tt"
+    "prove.sh.in": "autotools/prove.sh.in"
   },
   "templates": {
     "ax_perlcritic_config.m4.tt": "autotools/ax_perlcritic_config.m4",
@@ -85,6 +84,7 @@
     "perl/cgi-bin/Makefile.am.tt": "src/main/perl/cgi-bin/Makefile.am",
     "perl/cgi-bin/perl-cgi-bin.inc.tt": "includes/perl-cgi-bin.inc",
     "perl/lib/Makefile.am.tt": "src/main/perl/lib/Makefile.am",
+    "perl/lib/README.md.tt": "src/main/perl/lib/README.md.tt",
     "perl/lib/perl-modules.inc.tt": "includes/perl-modules.inc",
     "resources/Makefile.am.tt": "resources/Makefile.am",
     "cpan/Makefile.am.tt": "cpan/Makefile.am",

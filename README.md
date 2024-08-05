@@ -45,6 +45,7 @@ See [`NEWS`](NEWS.md) for the lastest news on releases.
   * [Configuring Your Build](#configuring-your-build)
   * [Why Autoconfiscate?](#why-autoconfiscate?)
 * [Quick Start](#quick-start)
+* [An Even Quicker Start](#an-even-quicker-start)
 * [Requirements](#requirements)
 * [Getting Started](#getting-started)
   * [Automatically Creating A Manifest File](#automatically-creating-a-manifest-file)
@@ -278,7 +279,7 @@ that are _organized_, _extensible_ and _scalable_.
    dive into the gory details of how this utility is built, install from [CPAN](https://metacpan.org/pod/Autoconf::Template)_)
 1. Create a `manifest.yaml` file that describes the project and the
    assets you want to include (_they don't actually have to
-   exist!_). You can also use the utility to [_automagically_ create a
+   exist!_). You can also use `autoconf-template-perl` to [_automagically_ create a
    `manifest.yaml`](#automatically-creating-a-manifest-file) file from your project directory.
    ```
    project: foobar
@@ -314,8 +315,9 @@ that are _organized_, _extensible_ and _scalable_.
    make install DESTDIR=/tmp
    ```
 
-> As noted above, none of the assests listed above actually need to exist. The utility
-> will create stubs for you. [Perl scripts](#templates/stub.pl.tt) and
+> As noted above, none of the assets listed above actually need to exist. The utility
+> will create stubs for you. You can also create 0 length files to
+> force creation of stub. [Perl scripts](#templates/stub.pl.tt) and
 > [module stubs](#templates/stubs.pm.tt)  will be
 > built from templates. Feel free to modify these as per your
 > requirements and likes. :-)
@@ -382,6 +384,7 @@ If you are using `git` for source control, now is a good time to
 initialize your repository and commit the Big Bang!
 
 ```
+make clean
 git init
 git add .
 git commit -m 'Big Bang!'
@@ -389,12 +392,58 @@ git commit -m 'Big Bang!'
 
 [Back to Table of Contents](#table-of-contents) 
 
+# An Even Quicker Start
+
+Let's create a project with:
+
+* a Perl script
+* a Perl module
+* a confguration file
+* a Bash script
+
+First create placeholders for the assets you'll have in your project and then create a manifest:
+
+```
+sudo cpanm -n -v Autoconf::Template
+touch foo.pl
+mkdir Foo && touch Foo/Bar.pm
+touch foo.sh
+autoconf-template-perl -n 'Me' --create-manifest -D 'the foo project' \
+  -e 'me@example.org' -p foo >manifest.yaml
+```
+
+...now create the project in a temporary direct - not the current directory!
+
+```
+mkdir /tmp/foo
+autoconf-template-perl -d /tmp
+```
+
+...see if it works?
+
+```
+cd /tmp
+./bootstrap
+./configure
+make
+make check
+make dist
+```
+
+...commit the stub of your project
+
+```
+make clean
+git init
+git add .
+git commit -m 'Big Bang'
+```
+
 # Requirements
 
 * `autoconf`
 * `automake`
 * `make`
-* [`md-utils.pl`](https://github.com/rlauer6/markdown-utils)
 * Perl modules (in addition to core modules)
   ```
   Capture::Tiny
@@ -403,6 +452,7 @@ git commit -m 'Big Bang!'
   File::ShareDir
   JSON
   Log::Log4perl
+  Markdown::Render
   Module::ScanDeps::Static
   Readonly
   Template

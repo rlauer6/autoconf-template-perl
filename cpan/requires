@@ -1,9 +1,14 @@
+Capture::Tiny 0.48
+Config::IniFiles 3.000003
 Date::Format 2.24
 File::ShareDir 1.118
 JSON 4.07
 List::Util 1.33
 Log::Log4perl 1.55
+Markdown::Render 1.04
 Module::ScanDeps::Static 0.10
 Readonly 2.05
 Template 3.100
+Term::ProgressBar 2.23
+Text::ASCIITable::EasyTable 1.003
 YAML 1.30

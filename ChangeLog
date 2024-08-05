@@ -1,3 +1,17 @@
+Mon Aug  5 21:27:16 2024  Rob Lauer  <rlauer@usgn.net>
+
+	[2.1.0]:
+	* VERSION: bump
+	* README.md: generated
+	* README.md.in: stub file generation, even easier
+	* cpan/requires: additional modules required
+	* templates/Makefile.am.tt: remove cpan
+	* src/main/perl/bin/autconf-template-perl.pl.in
+	(extract_custom_sections)
+	- don't die on 0 length files
+	(_copy_files)
+	- create stubs for 0 length files
+
 Mon Aug  5 11:38:35 2024  Rob Lauer  <rlauer@usgn.net>
 
 	[2.0.22]:
