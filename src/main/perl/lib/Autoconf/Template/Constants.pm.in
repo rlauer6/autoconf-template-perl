@@ -36,7 +36,7 @@ Readonly our $MANIFEST_FILE => 'manifest.yaml';
 Readonly our $COPYRIGHT => <<"END_OF_COPYRIGHT";
 version $VERSION
 
-Copyright (C) 2023 TBC Development Group, LLC
+Copyright (C) 2023-2024 TBC Development Group, LLC
 License GPLv2+: GNU GPL version 2 or later <https://gnu.org/licenses/gpl-2.0.html>
 This is free software: you are free to change and redistribute it.
 There is NO WARRANTY, to the extent permitted by law.

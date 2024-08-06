@@ -22,9 +22,10 @@ use File::Copy;
 use File::Find;
 use File::Path qw(make_path);
 use File::ShareDir qw(dist_dir);
+use File::Temp qw(mkdtemp);
 use Getopt::Long qw(:config no_ignore_case);
 use JSON qw(decode_json);
-use List::Util qw(any none pairs);
+use List::Util qw(any none pairs uniq);
 use Log::Log4perl qw(:easy get_logger);
 use Module::ScanDeps::Static;
 use Scalar::Util qw(reftype);
@@ -124,6 +125,7 @@ sub main {
     log-level|l=s
     manifest|m=s
     man-pages!
+    output|o=s
     pod-to-readme!
     progress-bar!
     project-root|P=s
@@ -173,7 +175,29 @@ sub main {
   return dump_project_options( \%options )
     if $command eq 'dump-options';
 
-  return create_manifest( \%options )
+  if ( $options{'create-stub'} ) {
+    my ($project_root) = eval { find_root_dir( \%options ); };
+
+    if ( $options{output} || !$project_root ) {
+      create_stub_file( \%options );
+
+      return 0;
+    }
+  }
+
+  if ( !$options{refresh} && ( !$options{manifest} || $options{'create-manifest'} ) ) {
+    my $cwd = getcwd;
+
+    if ( !$options{'create-manifest'} && !$options{manifest} ) {
+      print {*STDERR} sprintf "WARNING: no manifest specified...creating %s/manifest.yaml from %s\n", $cwd,
+        $options{'source-dir'} // $cwd;
+      $options{manifest} = sprintf '%s/manifest.yaml', $cwd;
+    }
+
+    create_manifest( \%options );
+  }
+
+  return
     if $options{'create-manifest'};
 
   my $steps     = 8;
@@ -191,6 +215,8 @@ sub main {
   );
 
   $options{progress} = $progress;
+
+  check_destdir( \%options );
 
   ######################################################################
   # 1. load user's configuration files
@@ -270,12 +296,6 @@ sub main {
 
     return;
   }
-
-  croak 'no destination dir, ' . "use --destdir to specify the location of your project directory\n"
-    if !$options{destdir}
-    && !$options{refresh}
-    && !$options{'create-stub'}
-    && !$options{'create-test-stub'};
 
   TRACE Dumper( [ 'options', \%options ] );
 
@@ -508,6 +528,46 @@ sub main {
 }
 
 ########################################################################
+sub check_destdir {
+########################################################################
+  my ($options) = @_;
+
+  return
+    if $options->{destdir} || $options->{refresh};
+
+  return
+    if any { defined $_ && "$_" ne $EMPTY } @{$options}{qw(refresh create-stub create-test-stub)};
+
+  my $project_name = get_project_name($options);
+
+  my $tmpdir = mkdtemp( sprintf '%s-XXXXX', $project_name );
+
+  print {*STDERR} sprintf "WARNING: no destination directory specified - using temporary directory: [%s]\n",
+    $tmpdir;
+
+  $options->{destdir} = $tmpdir;
+
+  return;
+}
+
+########################################################################
+sub get_project_name {
+########################################################################
+  my ($options) = @_;
+
+  return $options->{project}
+    if $options->{project};
+
+  my $source_dir = $options->{'source_dir'} // getcwd;
+
+  if ( $source_dir =~ /[^\/][\/]([^\/]+)$/xsm ) {
+    $options->{project} = $1;
+  }
+
+  return $options->{project} // $EMPTY;
+}
+
+########################################################################
 sub dump_project_options {
 ########################################################################
   my ($options) = @_;
@@ -573,15 +633,19 @@ sub create_manifest {
 
   if ( !$options->{project} ) {
     print {*STDERR} "WARNING: you do not have a project name (-p to add project name)\n";
+    get_project_name($options);
+    print {*STDERR} sprintf "WARNING: using project name %s\n", $options->{project};
   }
 
   if ( !$options->{description} ) {
     print {*STDERR} "WARNING: you do not have a project description (-D to add description)\n";
+    $options->{description} = sprintf 'The %s project', $options->{project};
+    print {*STDERR} sprintf "WARNING: using '%s'\n", $options->{description};
   }
 
   my %files;
-
-  my $srcdir = $options->{'source-dir'} // getcwd;
+  my $cwd    = getcwd;
+  my $srcdir = $options->{'source-dir'} // $cwd;
 
   DEBUG(
     Dumper(
@@ -604,6 +668,13 @@ sub create_manifest {
   );
 
   my @exclude_files = @{ $options->{'exclude-files'} };
+  my $manifest_name = $options->{manifest};
+
+  if ($manifest_name) {
+    push @exclude_files, dirname($manifest_name) ? $manifest_name : "$cwd/$manifest_name";
+  }
+
+  push @exclude_files, qr/[.]*.log$/xsm;
 
   my @exclude_dirs = @{ $options->{'exclude-dirs'} };
 
@@ -683,7 +754,17 @@ sub create_manifest {
 
   while ( $manifest =~ s/\n\n/\n/xsm ) { }
 
-  print {*STDOUT} $manifest;
+  if ( $options->{manifest} ) {
+    open my $fh, '>', $options->{manifest}
+      or die sprintf "could not open %s for writing (%s)\n", $options->{manifest}, $OS_ERROR;
+
+    print {$fh} $manifest;
+
+    close $fh;
+  }
+  else {
+    print {*STDOUT} $manifest;
+  }
 
   return;
 }
@@ -755,11 +836,20 @@ sub create_stub_file {
 
   my $file = $options->{'create-stub'};
 
-  my ( $project, $destdir ) = find_root($options);
+  my ( $project, $destdir ) = eval { find_root_dir($options) };
+  $project //= $EMPTY;
 
-  my $root = "$destdir/$project";
+  my $root;
+  my ( $path, $ext );
 
-  my ( $path, $ext ) = get_subdir_by_type($file);
+  if ($project) {
+    $root = "$destdir/$project";
+
+    ( $path, $ext ) = get_subdir_by_type($file);
+  }
+  else {
+    $ext = ( $file =~ /([.].*)$/xsm )[0];
+  }
 
   my $target_ext = $ext eq '.cgi' ? '.pl' : $ext;
 
@@ -808,7 +898,7 @@ sub create_stub_file {
 
   $name =~ s/[.].*$//xsm;
 
-  my $dest_path = sprintf '%s/%s/%s%s', $root, $path, $name, $target_ext;
+  my $dest_path = $root ? sprintf '%s/%s/%s%s', $root, $path, $name, $target_ext : $EMPTY;
 
   # only "built" files get .in extension...
   if ( any { $ext eq $_ } qw(pl pm yaml cfg json ini) ) {
@@ -816,14 +906,39 @@ sub create_stub_file {
   }
 
   croak "$dest_path already exists...use -f to force\n"
-    if -e $dest_path && !$options->{force} && !$options->{refresh};
+    if $project && $dest_path && -e $dest_path && !$options->{force} && !$options->{refresh};
 
-  render_tt_template(
+  my $outfile = $options->{output} // $EMPTY;
+
+  if ( $outfile eq $DASH ) {
+    $outfile = $EMPTY;
+  }
+
+  TRACE Dumper(
     { template   => $parameters{template_name},
       parameters => \%parameters,
-      outfile    => $dest_path,
+      outfile    => $dest_path // $outfile,
     }
   );
+
+  my $output = render_tt_template(
+    { template   => $parameters{template_name},
+      parameters => \%parameters,
+      outfile    => $dest_path // $outfile,
+    }
+  );
+
+  if ( !$outfile ) {
+    print {*STDOUT} $output;
+  }
+  else {
+    open my $fh, '>', $outfile
+      or die "could not open $outfile for writing ($OS_ERROR)\n";
+
+    print {$fh} $output;
+
+    close $fh;
+  }
 
   return;
 }
@@ -898,7 +1013,7 @@ sub set_rpm_build_options {
 
   $rpm_options{man_pages} = $options->{'man-pages'};
 
-  $rpm_options{config_files} = @{ $options->{config} };
+  $rpm_options{config_files} = @{ $options->{config} || [] };
   $rpm_options{perl_modules} = @{ $options->{perl_modules} } ? $TRUE : $FALSE;
 
   $rpm_options{bin_files} ||= @{ $options->{bash_scripts} } ? $TRUE : $FALSE;
@@ -1014,7 +1129,7 @@ Options                Arg        Description
 -s, --source-dir       directory  source for files in manifest or when creating manifest
                                   (default: pwd)
     --strip-dir                   set to pwd to preserve file hierarchy
--S, --create-stub      filename   create a stub file
+    --create-stub      filename   create a stub file
 -t, --create-test-stub filename   create a stub unit test file
 -u, --unit-tests                  create unit test stubs (default: true)
 -v, --version                     report script version
@@ -1338,6 +1453,9 @@ sub create_source_tree {
   croak "directory $main_prefix exists - use -f to force\n"
     if -d $main_prefix && !$options->{force} && !$options->{refresh};
 
+  ########################################################################
+  # config, resources, cpan
+  ########################################################################
   for (qw(config resources cpan)) {
     make_path( sprintf '%s/%s', $root, $_ );
   }
@@ -1350,6 +1468,9 @@ sub create_source_tree {
 
   DEBUG Dumper( [ 'build tree options', [ @{$options}{qw(bash html)} ] ] );
 
+  ########################################################################
+  # bash html
+  ########################################################################
   for (qw(bash html)) {
     if ( $options->{ $_ . '_build_mode' } ) {
       push @main_dirs, $_;
@@ -1360,6 +1481,9 @@ sub create_source_tree {
     make_path("$main_prefix/$_");
   }
 
+  ########################################################################
+  # perl perl/lib perl/bin
+  ########################################################################
   my @perl_dirs = qw(lib bin);
   push @perl_dirs, $options->{html_build_mode} ? 'cgi-bin' : ();
 
@@ -1367,6 +1491,9 @@ sub create_source_tree {
     make_path("$main_prefix/perl/$_");
   }
 
+  ########################################################################
+  # bash bash/bin
+  ########################################################################
   my @bash_dirs;
 
   if ( $options->{bash_build_mode} ) {
@@ -1379,6 +1506,7 @@ sub create_source_tree {
 
   DEBUG Dumper( [ 'dirs', \@main_dirs, \@bash_dirs, \@perl_dirs ] );
 
+  # create top level Makefile.am (these typically just descend into sub-dirs)
   my (@makefiles) = (
     "$root/src/Makefile.am"           => ['main'],
     "$root/src/main/Makefile.am"      => \@main_dirs,
@@ -1448,12 +1576,11 @@ sub _copy_files {
 
     my $dest = $file;
 
-    my $strip_dir = $options->{'strip-dir'} // dirname($file);
-    $strip_dir .= $SLASH;
-
-    $dest =~ s/$strip_dir//xsm;
-
     my $source_dir = $options->{'source-dir'};
+
+    my $strip_dir = $options->{'strip-dir'} // $source_dir;
+
+    $dest =~ s/$strip_dir\/?//xsm;
 
     DEBUG Dumper( [ source => $file, destination => $dest ] );
 
@@ -1654,7 +1781,7 @@ sub check_manifest {
 
   # manifest overrides other parameters
   foreach (qw(project email description author)) {
-    $options->{$_} = $manifest->{$_};
+    $options->{$_} = $manifest->{$_} // $EMPTY;
   }
 
   if ( !$manifest || $EVAL_ERROR ) {
@@ -1776,7 +1903,7 @@ sub makefile_am_flatten_list {
 
   foreach my $k ( keys %{$hash} ) {
     my $prefix = $k ne $DOT ? $k : $EMPTY;
-    DEBUG Dumper( [ k => $k, prefix => $prefix, file => $hash->{$k} ] );
+    DEBUG Dumper( [ key => $k, prefix => $prefix, file => $hash->{$k} ] );
     push @list, _prefixed_list( $prefix, $hash->{$k} );
   }
 
@@ -1801,6 +1928,7 @@ sub makefile_am_list {
   return _makefile_am_join( _prefixed_list( $prefix, $file_list ) )
     if reftype($file_list) eq 'ARRAY';
 
+  # $file_list is a hash
   my @files;
 
   if ( !defined $prefix ) {
@@ -2035,12 +2163,18 @@ sub init_parameters {
 
     create_target_file_list( $options, \@file_lists );
 
+    TRACE Dumper(
+      [ json_files => $options->{json_files},
+        config     => $manifest->{config}
+      ]
+    );
+
     $options->{perl_modules}
       = [ map { find_module_filename($_) } @{ $manifest->{perl}->{lib} } ];
 
     # create arrays for each config files type that will be used in
     # the config/Makefile.am template ('ini_files', 'cfg_files', etc)
-    init_config_sections( $options, $options->{manifest}->{config} );
+    init_config_sections( $options, $manifest->{config} );
   }
 
   $options->{project} //= 'noname';
@@ -2057,12 +2191,62 @@ sub create_target_file_list {
   $ext //= $EMPTY;
 
   my $strip_dir = $options->{'strip-dir'};
-  $strip_dir .= $SLASH;
+  $strip_dir //= $options->{'source-dir'};
 
-  DEBUG Dumper( [ targets => $file_list ] );
+  print {*STDOUT} Dumper(
+    [ strip_dir  => $strip_dir,
+      source_dir => $options->{'source-dir'},
+    ]
+  );
+
+  TRACE Dumper( [ target_list => $file_list ] );
+
+  my %config_list;
+  my @config_dirs;
 
   # create arrays of just the file names from the source files
   for my $p ( pairs @{$file_list} ) {
+    my ( $var, $list ) = @{$p};
+
+    DEBUG Dumper( [ var => $var, list => $list ] );
+
+    # break up config files
+    if ( $var eq 'config' ) {
+      foreach my $ext (qw(json yaml ini cfg)) {
+        $config_list{ $ext . '_files' } = [ grep {/[.]$ext$/xsm} @{$list} ];
+      }
+
+      DEBUG Dumper( [ list => \%config_list ] );
+
+      foreach my $list ( values %config_list ) {
+        push @config_dirs, map { dirname $_ } @{$list};
+      }
+
+      @config_dirs = uniq @config_dirs;
+
+      TRACE Dumper(
+        [ config_dirs => \@config_dirs,
+          config_list => \%config_list
+        ]
+      );
+
+      foreach my $dir (@config_dirs) {
+        $dir =~ s/^$strip_dir\/?//xsm;
+        $dir ||= $DOT;
+      }
+
+      TRACE Dumper( [ config_dirs => \@config_dirs ] );
+
+      $options->{config_dirs} = \@config_dirs;
+    }
+    else {
+      $config_list{$var} = $list;
+    }
+  }
+
+  TRACE Dumper( [ config_list => \%config_list ] );
+
+  foreach my $p ( pairs %config_list ) {
     my ( $var, $list ) = @{$p};
 
     $list ||= [];
@@ -2070,11 +2254,17 @@ sub create_target_file_list {
     my @targets;
 
     foreach my $file ( @{$list} ) {
-      my $strip_dir = $options->{'strip-dir'} || dirname($file);
-      $strip_dir .= $SLASH;
+      # my $strip_dir = $options->{'strip-dir'} || dirname($file);
 
       my $target = $file;
-      $target =~ s/^$strip_dir//xsm;
+      $target =~ s/^$strip_dir\/?//xsm;
+
+      print {*STDOUT} Dumper(
+        [ strip_dir => $strip_dir,
+          target    => $target,
+          file      => $file,
+        ]
+      );
 
       if ( $target =~ /[.]cgi/xsm ) {
         $target =~ s/[.]cgi/.pl/xsm;
@@ -2084,8 +2274,11 @@ sub create_target_file_list {
     }
 
     if ( any { $var eq $_ }
-      qw(html_files javascript_files image_files css_files resources perl_scripts cgi_scripts ) ) {
+      qw(html_files javascript_files image_files css_files resources perl_scripts cgi_scripts bash_scripts json_files ini_files yaml_files cfg_files)
+    ) {
       my $dirs = {};
+
+      DEBUG Dumper( [ var => $var, targets => \@targets ] );
 
       foreach (@targets) {
         my $subdir = dirname($_) || $DOT;
@@ -2103,6 +2296,9 @@ sub create_target_file_list {
       }
 
       $options->{$var} = $dirs;
+
+      TRACE Dumper( [ var => $var, dirs => $dirs ] );
+
     }
     else {
       $options->{$var} = [@targets];
@@ -2134,6 +2330,9 @@ sub init_config_sections {
   #
   foreach my $p ( pairs %CONFIG_FILE_EXTENSIONS ) {
     my ( $type, $ext ) = @{$p};
+
+    next
+      if defined $options->{$type};
 
     my @config_files = grep {/[.]$ext$/xsm} @{$configs};
 

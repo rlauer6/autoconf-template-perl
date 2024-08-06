@@ -1,3 +1,36 @@
+Tue Aug  6 20:37:29 2024  Rob Lauer  <rlauer@usgn.net>
+
+	[2.1.1]:
+	* VERSION: bump
+	* README.md.in:
+	* README.md: generated
+	* src/main/perl/lib/Autoconf/Template/Constants.pm.in: copyright
+	* templates/bash/bin/Makefile.am.tt
+	- use generic build rule
+	- move some things to bash-bin.inc.tt
+	* templates/bash/bin/bash-bin.inc.tt
+	- support sub-directories
+	* templates/config/Makefile.am.tt: likewise
+	* src/main/perl/bin/autoconf-template-perl.pl.in
+	- new option --output
+	(main)
+	- allow create-stub outside of project
+	- create manifest if it does not exist
+	- create a temporary subdirectory if no --destdir
+	(check_destdir): new
+	(get_project_name): new
+	(create_manifest)
+	- set a default project name and description
+	- exclude log files and manifest
+	- write manifest to file if options{manifest}
+	(set_rpm_build_options): default for config of []
+	(_copy_files): default strip-dir to source-dir
+	(create_target_file_list)
+	- make default strip-dir = source dir
+	- separate out config files and create directory entries in hash
+	(init_config_sections)
+	- skip if alread populated
+
 Mon Aug  5 21:27:16 2024  Rob Lauer  <rlauer@usgn.net>
 
 	[2.1.0]:

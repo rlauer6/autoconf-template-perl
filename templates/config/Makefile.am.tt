@@ -19,65 +19,125 @@ SUBDIRS = .
 
 include $(top_srcdir)/includes/directories.inc
 
+sysconfdir = @sysconfdir@
+
 @do_subst_command@
+
+# only create these once
+[% FOREACH dir IN config_dirs %]
+[% IF dir != '.' %]sysconf_[% dir %]dir = $(sysconfdir)/[% dir %]
+dist_sysconf_[% dir %]_DATA = 
+[% END -%]
+[% END -%]
+
+GALLFILES =
 
 ########################################################################
 # .cfg files
 ########################################################################
-CONFIG  = [% makefile_am_list(config_files) %]
+CONFIG  = [% makefile_am_list(cfg_files, '.') %]
 
 GCONFIG = $(CONFIG:.cfg.in=.cfg)
+GALLFILES += $(GCONFIG)
+sysconf_DATA = $(GCONFIG)
+
+[% FOREACH dir IN cfg_files.keys -%]
+
+[% IF dir != '.' -%]
+
+CONFIG_[% dir | upper %] = [% makefile_am_list(cfg_files, dir) %]
+
+GCONFIG_[% dir | upper %] = $(CONFIG_[% dir | upper %]:.cfg.in=.cfg)
+GALLFILES += $(GCONFIG_[% dir | upper %])
+
+dist_sysconf_[% dir %]_DATA += $(GCONFIG_[% dir | upper %])
+[% END -%]
+[% END -%]
 
 ########################################################################
 # .ini files
 ########################################################################
-INI  = [% makefile_am_list(ini_files) %]
+INI  = [% makefile_am_list(ini_files, '.') %]
 
 GINI = $(INI:.ini.in=.ini)
+GALLFILES += $(GINI)
+
+sysconf_DATA += $(GINI)
+
+[% FOREACH dir IN ini_files.keys -%]
+[% IF dir != '.' -%]
+
+INI_[% dir | upper %] = [% makefile_am_list(ini_files, dir) %]
+
+GINI_[% dir | upper %] = $(INI_[% dir | upper %]:.ini.in=.ini)
+GALLFILES += $(GINI_[% dir | upper %])
+
+dist_sysconf_[% dir %]_DATA += $(GINI_[% dir | upper %])
+[% END -%]
+[% END -%]
 
 ########################################################################
 # .json files
 ########################################################################
-JSON  = [% makefile_am_list(json_files) %]
+JSON  = [% makefile_am_list(json_files, '.') %]
 
 GJSON = $(JSON:.json.in=.json)
+GALLFILES += $(GJSON)
+
+sysconf_DATA += $(GJSON)
+
+[% FOREACH dir IN json_files.keys -%]
+[% IF dir != '.' -%]
+
+JSON_[% dir | upper %] = [% makefile_am_list(json_files, dir) %]
+
+GJSON_[% dir | upper %] = $(JSON_[% dir | upper %]:.json.in=.json)
+GALLFILES += $(GJSON_[% dir | upper %])
+
+dist_sysconf_[% dir %]_DATA += $(GJSON_[% dir | upper %])
+[% END -%]
+[% END -%]
+
 
 ########################################################################
 # .yaml files
 ########################################################################
-YAML  = [% makefile_am_list(yaml_files) %]
+YAML  = [% makefile_am_list(yaml_files, '.') %]
 
 GYAML = $(YAML:.yaml.in=.yaml)
+GALLFILES += $(GYAML)
 
-ALLFILES = \
-    $(CONFIG) \
-    $(INI) \
-    $(JSON) \
-    $(YAML)
+sysconf_DATA += $(GYAML)
 
-GALLFILES = \
-    $(GCONFIG) \
-    $(GINI) \
-    $(GJSON) \
-    $(GYAML)
+[% FOREACH dir IN yaml_files.keys -%]
+
+[% IF dir != '.' -%]
+YAML_[% dir | upper %] = [% makefile_am_list(yaml_files, dir) %]
+
+GYAML_[% dir | upper %] = $(YAML_[% dir | upper %]:.yaml.in=.yaml)
+GALLFILES += $(GYAML_[% dir | upper %])
+
+dist_sysconf_[% dir %]_DATA += $(GYAML_[% dir | upper %])
+[% END -%]
+[% END -%]
+
+ALLFILES = [% makefile_am_flatten_list(json_files) %] [% makefile_am_flatten_list(yaml_files) %] [% makefile_am_flatten_list(ini_files) %] [% makefile_am_flatten_list(cfg_files) %]
 
 ########################################################################
 # build rules
 ########################################################################
 
-$(GCONFIG): % : %.in
+%.cfg: %.cfg.in
 	$(do_subst) $< > $@
 
-$(GINI): % : %.in
+%.ini: %.ini.in
 	$(do_subst) $< > $@
 
-$(GJSON): % : %.in
+%.json: %.json.in
 	$(do_subst) $< > $@
 
-$(GYAML): % : %.in
+%.yaml: %.yaml.in
 	$(do_subst) $< > $@
-
-sysconf_DATA = $(GALLFILES)
 
 dist_noinst_DATA = $(ALLFILES)
 

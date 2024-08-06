@@ -286,8 +286,7 @@ sub find_files_of_type {
 ########################################################################
   my (%args) = @_;
 
-  my ( $path, $type, $ext, $strip_in, $exclude_dirs )
-    = @args{qw(path type ext strip exclude_dirs)};
+  my ( $path, $type, $ext, $strip_in, $exclude_dirs ) = @args{qw(path type ext strip exclude_dirs)};
 
   return ()
     if !-d $path;
@@ -440,8 +439,7 @@ sub render_tt_template {
     @args{qw(template parameters outfile)} = @in;
   }
 
-  my ( $template, $parameters, $outfile )
-    = @args{qw( template parameters outfile)};
+  my ( $template, $parameters, $outfile ) = @args{qw( template parameters outfile)};
 
   my @cleanup = @{ $args{cleanup} || [] };
 

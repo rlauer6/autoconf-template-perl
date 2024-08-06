@@ -8,14 +8,11 @@ include $(top_srcdir)/includes/bash-bin.inc
 perlrun = @PERL@
 bashrun = @BASHRUN@
 
-GBASHSCRIPTS = $(BASHSCRIPTS:.sh.in=.sh)
-
-libexec_SCRIPTS = $(GBASHSCRIPTS)
-dist_noinst_DATA = $(BASHSCRIPTS)
+dist_noinst_DATA = $(ALLSCRIPTS)
 
 @do_subst_command@
 
-$(GBASHSCRIPTS): % : %.in
+%.sh: %.sh.in
 	$(do_subst) $< > $@
 
 CLEANFILES = $(GBASHSCRIPTS)

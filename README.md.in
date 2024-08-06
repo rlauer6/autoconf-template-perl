@@ -29,14 +29,14 @@ See [`NEWS`](NEWS.md) for the lastest news on releases.
 
 ---
 
-!# TODO for Version Next
+!# TODO
 
 * [x] add web assets to RPM
 * [x] index for documentation
 * [x] `make cpan` for tarball distributions
 * [x] create CPAN distributions
 * [ ] add Apache configuration templates
-* [ ] allow sub-directories in `config` directory
+* [x] allow sub-directories in `config` directory
 
 @TOC@
 
@@ -680,6 +680,7 @@ autoconf-template-perl --create-manifest --source-dir .
 | `l, --log-level level`| logging level, error, warn, info, debug, trace  (default: error) |
 | `L, --list-stubs`| lists the stub templates available |
 | `m, --manifest` |  filename  name of the YAML manifest file |
+| `o, --output` | name of the output file for stubs |
 | `p, --project name` | project name (default: "noname") |
 | `r, --refresh`| refresh after  addition of script or module |
 | `R, --rpm-build`| enable or disable RPM spec file |
@@ -702,11 +703,11 @@ These options default to true, use `-no-{option}` to disable
 
 # Project Source Tree
 
-Your Perl application project is laid out in a _specific_, _organized
+Your Perl application source tree is laid out in a _specific_, _organized
 hierarchy_ to create a standard layout that all of your team can navigate
-easily. It __does not__ reflect the way a project is eventually installed in
+easily. It __will not__ reflect the way a project is eventually installed in
 the target environment. See [Deploying Your
-Project](#deploying-your-project) for details regarding where
+Project](#deploying-your-project) for details regarding *where*
 artifacts are installed.
 
 The source tree hierarchy is based on common patterns and best
@@ -937,6 +938,7 @@ options.
 Using the configuration options show below will result in your
 application being installed in the locations shown in the table.
 
+This hierarchy is (for the most part) based on the standard [Linux File System Hierarchy](https://en.wikipedia.org/wiki/Filesystem_Hierarchy_Standard).
 ```
 ./configure --prefix=/usr --localstatedir=/var/ --sysconfdir=/etc
 ```
@@ -961,16 +963,21 @@ application being installed in the locations shown in the table.
 
 # Adding Artifacts to Your Project
 
-Adding additional files and resources to your project can be done by 
-dropping a new file in the target directory and refreshing the
-project. You can also use the `--create-stub` to add files that have
-stub templates (`.pl`, `.pm`, `.cgi`, etc).
+Adding additional files and resources to your project can be done by
+dropping a new file in the target directory and refreshing
+(`--refresh`) the project. You can also use the `--create-stub` option
+to create files that have supported stub templates (`.pl`, `.pm`, `.cgi`, etc).
 
 ```
 cp foo.txt my-project/resources/
 cd $PROJECT_HOME
 autoconf-template-perl --refresh
 ```
+
+Inside the project directory, this will add the new file to your
+project. Outside the project or if you use the `--output` option the
+stub will be either written to STDOUT when `--output` is not provided
+or `-` or the file name provided in the option.
 
 ```
 autoconf-template-perl --create-stub foo.pl

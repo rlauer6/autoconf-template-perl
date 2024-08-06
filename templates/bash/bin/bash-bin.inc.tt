@@ -15,7 +15,28 @@
 # See the README.md in the `autoconf-template-perl` project for more
 # details.
 
-BASHSCRIPTS = [% makefile_am_list(bash_scripts) %]
+BASHSCRIPTS = [% makefile_am_list(bash_scripts, '.') %]
+GBASHSCRIPTS = $(BASHSCRIPTS:.sh.in=.sh)
+
+libexec_SCRIPTS = $(GBASHSCRIPTS)
+
+[% FOREACH dir = bash_scripts.keys -%]
+[% IF dir != '.' -%]
+libexec_[% dir %]dir = $(libexecdir)/[% dir %]
+
+BASHSCRIPTS_[% dir | upper %] = [% makefile_am_list(bash_scripts, dir) %]
+
+GBASHSCRIPTS_[% dir | upper %] = $(BASHSCRIPTS_[% dir | upper %]:.sh.in=.sh)
+
+libexec_[% dir %]_SCRIPTS = $(GBASHSCRIPTS_[% dir | upper %])
+
+[% END %]
+[% END %]
+
+ALLSCRIPTS = [% makefile_am_flatten_list(bash_scripts) %]
+
+GALLSCRIPTS = $(ALLSCRIPTS:.sh.in=.sh)
+
 
 [% FOREACH section IN custom_sections %]
 [% section.join("\n") %]
