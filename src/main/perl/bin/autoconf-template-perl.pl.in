@@ -76,6 +76,10 @@ sub set_command {
     $command //= 'refresh';
   }
 
+  if ( $options->{'dump-options'} ) {
+    $command = 'dump-options';
+  }
+
   $command //= $EMPTY;
 
   if ( $command eq 'refresh' ) {
@@ -115,6 +119,7 @@ sub main {
     description|D=s
     destdir|d=s
     dist-name=s
+    dump-options
     email|e=s
     exclude-dirs|E=s@
     exclude-files|F=s@
@@ -146,7 +151,9 @@ sub main {
     version
   );
 
-  GetOptions( \%options, @options_specs );
+  if ( !GetOptions( \%options, @options_specs ) ) {
+    exit $FAILURE;
+  }
 
   my @command_args;
   my $command = set_command( \%options, \@command_args );
@@ -175,10 +182,11 @@ sub main {
   return dump_project_options( \%options )
     if $command eq 'dump-options';
 
-  if ( $options{'create-stub'} ) {
+  if ( $command eq 'create-stub' ) {
     my ($project_root) = eval { find_root_dir( \%options ); };
 
     if ( $options{output} || !$project_root ) {
+
       create_stub_file( \%options );
 
       return 0;
@@ -839,19 +847,23 @@ sub create_stub_file {
   my ( $project, $destdir ) = eval { find_root_dir($options) };
   $project //= $EMPTY;
 
-  my $root;
-  my ( $path, $ext );
+  my $output = $options->{output}; # just output stub, don't insert into project
 
-  if ($project) {
-    $root = "$destdir/$project";
-
-    ( $path, $ext ) = get_subdir_by_type($file);
-  }
-  else {
-    $ext = ( $file =~ /([.].*)$/xsm )[0];
-  }
+  my $ext = ( $file =~ /([.].*)$/xsm )[0];
 
   my $target_ext = $ext eq '.cgi' ? '.pl' : $ext;
+
+  if ( !$output && !$project ) {
+    $output = $DASH;
+  }
+
+  my $root = $output ? $EMPTY : "$destdir/$project";
+
+  my $path;
+
+  if ( !$output ) {
+    ($path) = get_subdir_by_type($file);
+  }
 
   my @stubs = get_stubs($options);
 
@@ -901,14 +913,14 @@ sub create_stub_file {
   my $dest_path = $root ? sprintf '%s/%s/%s%s', $root, $path, $name, $target_ext : $EMPTY;
 
   # only "built" files get .in extension...
-  if ( any { $ext eq $_ } qw(pl pm yaml cfg json ini) ) {
+  if ( $dest_path && any { $ext eq $_ } qw(pl pm yaml cfg json ini) ) {
     $dest_path .= '.in';
   }
 
   croak "$dest_path already exists...use -f to force\n"
-    if $project && $dest_path && -e $dest_path && !$options->{force} && !$options->{refresh};
+    if $dest_path && -e $dest_path && !$options->{force} && !$options->{refresh};
 
-  my $outfile = $options->{output} // $EMPTY;
+  my $outfile = $output // $EMPTY;
 
   if ( $outfile eq $DASH ) {
     $outfile = $EMPTY;
@@ -921,7 +933,7 @@ sub create_stub_file {
     }
   );
 
-  my $output = render_tt_template(
+  my $content = render_tt_template(
     { template   => $parameters{template_name},
       parameters => \%parameters,
       outfile    => $dest_path // $outfile,
@@ -929,13 +941,13 @@ sub create_stub_file {
   );
 
   if ( !$outfile ) {
-    print {*STDOUT} $output;
+    print {*STDOUT} $content;
   }
   else {
     open my $fh, '>', $outfile
       or die "could not open $outfile for writing ($OS_ERROR)\n";
 
-    print {$fh} $output;
+    print {$fh} $content;
 
     close $fh;
   }
@@ -1157,7 +1169,7 @@ sub load_autoconf_templaterc {
 ########################################################################
   my ( $options, @paths ) = @_;
 
-  croak q{usage: load_autoconf_templaterc($options, [@paths])}
+  croak q{usage: load_autoconf_templaterc(options, paths)}
     if !ref $options;
 
   if ( !@paths ) {
@@ -1254,7 +1266,7 @@ sub get_config_vars {
   DEBUG Dumper( [ 'dirs' => [ $PROJECT_DIR, $PERL5SHARE_DIR ] ] );
 
   if ( !$config ) {
-    $config = $options->{config} = load_autoconf_templaterc( $options, $PROJECT_DIR, $PERL5SHARE_DIR ); # create manifest?
+    $config = $options->{config} = load_autoconf_templaterc($options); # create manifest?
   }
 
   croak 'could not find .autoconf-template-perlrc'
@@ -2193,7 +2205,7 @@ sub create_target_file_list {
   my $strip_dir = $options->{'strip-dir'};
   $strip_dir //= $options->{'source-dir'};
 
-  print {*STDOUT} Dumper(
+  TRACE Dumper(
     [ strip_dir  => $strip_dir,
       source_dir => $options->{'source-dir'},
     ]
@@ -2259,7 +2271,7 @@ sub create_target_file_list {
       my $target = $file;
       $target =~ s/^$strip_dir\/?//xsm;
 
-      print {*STDOUT} Dumper(
+      TRACE Dumper(
         [ strip_dir => $strip_dir,
           target    => $target,
           file      => $file,

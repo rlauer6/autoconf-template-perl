@@ -16,6 +16,9 @@ use Readonly;
 Readonly our $TRUE  => 1;
 Readonly our $FALSE => 0;
 
+Readonly our $SUCCESS => 0;                # shell success
+Readonly our $FAILURE => 1;                # shell failure
+
 # chars
 Readonly our $EMPTY => q{};
 Readonly our $SPACE => q{ };
@@ -76,6 +79,8 @@ our %EXPORT_TAGS = (
     qw(
       $TRUE
       $FALSE
+      $SUCCESS
+      $FAILURE
     )
   ],
   chars => [

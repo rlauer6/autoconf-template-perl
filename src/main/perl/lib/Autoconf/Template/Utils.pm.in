@@ -582,8 +582,7 @@ sub find_root_dir {
     }
   }
 
-  croak
-    q{Unable to find the root of your project. Use --project-root option or run 'configure'}
+  croak q{Unable to find the root of your project. Use --project-root option or run 'configure'}
     if !$project || !$destdir;
 
   @{$options}{qw(destdir project)} = ( $destdir, $project );
